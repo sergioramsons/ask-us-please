@@ -37,11 +37,14 @@ const Index = () => {
     if (fromQuery || fromSession) {
       setCurrentView('create-ticket');
       const phone = params.get('phone') || sessionStorage.getItem('yeastarPhone') || '';
-      toast({ title: 'Helpdesk launched', description: phone ? `Caller: ${phone}` : 'Launched from Yeastar PBX' });
+      const name = params.get('name') || sessionStorage.getItem('yeastarName') || '';
+      const caller = name ? `${name} (${phone})` : phone;
+      toast({ title: 'Helpdesk launched', description: caller ? `Caller: ${caller}` : 'Launched from Yeastar PBX' });
 
       // cleanup session flags to avoid re-trigger
       sessionStorage.removeItem('yeastarLaunch');
       sessionStorage.removeItem('yeastarPhone');
+      sessionStorage.removeItem('yeastarName');
     }
   }, []);
 

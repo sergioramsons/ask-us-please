@@ -13,7 +13,9 @@ export default function YeastarLaunch() {
   try {
     sessionStorage.setItem("yeastarLaunch", "1");
     const phone = search.get("phone");
+    const name = search.get("name");
     if (phone) sessionStorage.setItem("yeastarPhone", phone);
+    if (name) sessionStorage.setItem("yeastarName", name);
   } catch {}
 
   // Redirect to home with preserved params

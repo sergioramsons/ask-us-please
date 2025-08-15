@@ -40,7 +40,7 @@ const YeastarIntegration = () => {
       <Presets />
       <Parameters>
         <Parameter Name="ContactUrlType" Value="specify_url_format" />
-        <Parameter Name="URLFormat" Value="{{.app_url}}/yeastar?popup=helpdesk&phone={{.Phone}}" />
+        <Parameter Name="URLFormat" Value="{{.app_url}}/yeastar?popup=helpdesk&phone={{.CallerNumber}}&name={{.CallerDisplayName}}" />
         <Parameter Name="ContactFieldForUri" />
         <Parameter Name="ContactsIdEnable" Value="1" />
         <Parameter Name="FirstNameEnable" Value="1" />
@@ -59,7 +59,7 @@ const YeastarIntegration = () => {
         <Parameter Name="CustomValueEnable" Value="1" />
       </Parameters>
       <Requests>
-        <Request Name="contacts" Method="GET" ResponseType="application/json" URLFormat="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-contacts?phone={{UrlEncode .Phone}}">
+        <Request Name="contacts" Method="GET" ResponseType="application/json" URLFormat="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-contacts?phone={{UrlEncode .CallerNumber}}">
           <Parameters />
           <Outputs Next="GetIdentities">
             <Output Name="ContactsId" Path="users.#.id" />
