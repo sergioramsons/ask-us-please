@@ -122,7 +122,19 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
   };
 
   const handleResponseSubmit = (response: string, isInternal: boolean) => {
-    // Reload comments after new response is added
+    // Optimistically add the new comment, then reload from DB
+    setComments(prev => [
+      ...prev,
+      {
+        id: `temp-${Date.now()}`,
+        ticket_id: ticket.id,
+        content: response,
+        is_internal: isInternal,
+        created_by: null,
+        created_at: new Date().toISOString(),
+        profile: null
+      }
+    ]);
     loadComments();
   };
 
