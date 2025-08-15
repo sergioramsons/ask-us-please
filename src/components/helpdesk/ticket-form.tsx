@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TicketPriority, TicketCategory } from "@/types/ticket";
 import { useToast } from "@/hooks/use-toast";
+import { useContacts } from "@/hooks/useContacts";
+import { Contact } from "@/types/contact";
 
 interface TicketFormData {
   title: string;
@@ -24,6 +26,9 @@ interface TicketFormProps {
 
 export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
   const { toast } = useToast();
+  const { contacts, getContactByEmail } = useContacts();
+  const [customerSuggestions, setCustomerSuggestions] = useState<Contact[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [formData, setFormData] = useState<TicketFormData>({
     title: '',
     description: '',
@@ -32,6 +37,40 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
     customerName: '',
     customerEmail: ''
   });
+
+  const handleEmailChange = (email: string) => {
+    setFormData({ ...formData, customerEmail: email });
+    
+    if (email.length > 2) {
+      const suggestions = contacts.filter(contact => 
+        contact.email.toLowerCase().includes(email.toLowerCase()) ||
+        `${contact.first_name} ${contact.last_name}`.toLowerCase().includes(email.toLowerCase())
+      ).slice(0, 5);
+      setCustomerSuggestions(suggestions);
+      setShowSuggestions(suggestions.length > 0);
+    } else {
+      setShowSuggestions(false);
+    }
+
+    // Auto-fill name if exact email match found
+    const existingContact = getContactByEmail(email);
+    if (existingContact) {
+      setFormData(prev => ({ 
+        ...prev, 
+        customerEmail: email,
+        customerName: `${existingContact.first_name} ${existingContact.last_name}` 
+      }));
+    }
+  };
+
+  const selectContact = (contact: Contact) => {
+    setFormData(prev => ({
+      ...prev,
+      customerEmail: contact.email,
+      customerName: `${contact.first_name} ${contact.last_name}`
+    }));
+    setShowSuggestions(false);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,16 +123,35 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
                 required
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 relative">
               <Label htmlFor="customerEmail">Customer Email *</Label>
               <Input
                 id="customerEmail"
                 type="email"
                 value={formData.customerEmail}
-                onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })}
+                onChange={(e) => handleEmailChange(e.target.value)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                onFocus={() => {
+                  if (customerSuggestions.length > 0) setShowSuggestions(true);
+                }}
                 placeholder="Enter customer email"
                 required
               />
+              {showSuggestions && (
+                <div className="absolute top-full left-0 right-0 z-10 bg-white border border-gray-200 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                  {customerSuggestions.map(contact => (
+                    <div
+                      key={contact.id}
+                      className="p-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => selectContact(contact)}
+                    >
+                      <div className="font-medium">{contact.first_name} {contact.last_name}</div>
+                      <div className="text-sm text-gray-600">{contact.email}</div>
+                      {contact.company && <div className="text-xs text-gray-500">{contact.company}</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

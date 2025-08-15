@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      contacts: {
+        Row: {
+          address: string | null
+          city: string | null
+          company: string | null
+          country: string | null
+          created_at: string
+          created_by: string | null
+          email: string
+          first_name: string
+          id: string
+          job_title: string | null
+          last_name: string
+          notes: string | null
+          phone: string | null
+          postal_code: string | null
+          state: string | null
+          status: string | null
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          company?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          email: string
+          first_name: string
+          id?: string
+          job_title?: string | null
+          last_name: string
+          notes?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          state?: string | null
+          status?: string | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          company?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          first_name?: string
+          id?: string
+          job_title?: string | null
+          last_name?: string
+          notes?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          state?: string | null
+          status?: string | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       departments: {
         Row: {
           created_at: string
