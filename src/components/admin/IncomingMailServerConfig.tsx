@@ -21,7 +21,8 @@ interface IncomingMailServer {
   host: string;
   port: number;
   username: string;
-  password: string;
+  password?: string; // Optional since we use secure view
+  password_status?: string; // Shows encryption status
   use_ssl: boolean;
   use_tls: boolean;
   is_active: boolean;
@@ -32,6 +33,7 @@ interface IncomingMailServer {
   auto_create_tickets: boolean;
   auto_assign_department?: string;
   created_at: string;
+  updated_at: string;
   last_check?: string;
   password_encrypted: boolean;
 }
@@ -69,11 +71,8 @@ const IncomingMailServerConfig = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      // Map secure view data to expected format
-      return data?.map(server => ({
-        ...server,
-        password: '***encrypted***' // Hide password in UI
-      })) as IncomingMailServer[];
+      // Use secure view data directly (passwords are already secured)
+      return data as IncomingMailServer[];
     },
   });
 
@@ -261,22 +260,11 @@ const fetchEmailsMutation = useMutation({
   },
 });
 
-  const handleEditServer = async (server: IncomingMailServer) => {
-    let decryptedPassword = server.password;
-    
-    // Decrypt password if it's encrypted
-    if (server.password_encrypted && server.password) {
-      try {
-        decryptedPassword = await decryptPassword(server.password);
-      } catch (error) {
-        console.warn('Failed to decrypt password:', error);
-      }
-    }
-
+  const handleEditServer = (server: IncomingMailServer) => {
     setFormData({
       ...server,
-      password: decryptedPassword,
-      password_encrypted: false, // Mark as decrypted for form handling
+      password: '', // Clear password field for security - user must re-enter
+      password_encrypted: false, // Mark as requiring new password
     });
     setSelectedServer(server);
     setShowForm(true);
@@ -557,12 +545,17 @@ const fetchEmailsMutation = useMutation({
             <TableBody>
               {servers.map((server) => (
                 <TableRow key={server.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{server.name}</div>
-                      <div className="text-sm text-muted-foreground">{server.username}</div>
-                    </div>
-                  </TableCell>
+                   <TableCell>
+                     <div>
+                       <div className="font-medium">{server.name}</div>
+                       <div className="text-sm text-muted-foreground">{server.username}</div>
+                       <div className="text-xs">
+                         <Badge variant={server.password_encrypted ? "default" : "destructive"} className="text-xs">
+                           {server.password_status || (server.password_encrypted ? '***encrypted***' : '***unencrypted***')}
+                         </Badge>
+                       </div>
+                     </div>
+                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="uppercase">
                       {server.server_type}

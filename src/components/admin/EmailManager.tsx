@@ -18,13 +18,16 @@ interface EmailServer {
   smtp_host: string;
   smtp_port: number;
   smtp_username: string;
-  smtp_password: string;
+  smtp_password?: string; // Optional since we use secure view
+  password_status?: string; // Shows encryption status
   sender_name: string;
   sender_email: string;
   reply_to?: string;
   use_tls: boolean;
   is_active: boolean;
+  password_encrypted: boolean;
   created_at: string;
+  updated_at: string;
 }
 
 interface EmailTemplate {
@@ -79,12 +82,8 @@ export function EmailManager() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      // Map secure view data to expected format
-      const serverData = data?.map(server => ({
-        ...server,
-        smtp_password: '***encrypted***' // Hide password in UI
-      })) || [];
-      setServers(serverData);
+      // Use secure view data directly (passwords are already secured)
+      setServers(data || []);
     } catch (error: any) {
       toast({
         title: "Error loading email servers",
@@ -172,7 +171,7 @@ export function EmailManager() {
       smtp_host: server.smtp_host,
       smtp_port: server.smtp_port,
       smtp_username: server.smtp_username,
-      smtp_password: server.smtp_password,
+      smtp_password: '', // Clear password field for security - user must re-enter
       sender_name: server.sender_name,
       sender_email: server.sender_email,
       reply_to: server.reply_to || '',
@@ -449,6 +448,11 @@ export function EmailManager() {
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {server.smtp_host}:{server.smtp_port} • {server.use_tls ? 'TLS' : 'No TLS'}
+                      </p>
+                      <p className="text-xs">
+                        <Badge variant={server.password_encrypted ? "default" : "destructive"} className="text-xs">
+                          {server.password_status || (server.password_encrypted ? '***encrypted***' : '***unencrypted***')}
+                        </Badge>
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
