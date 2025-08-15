@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0';
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -165,6 +165,17 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Check if user has notifications enabled (in a real app, you'd check user preferences)
     // For now, we'll assume notifications are enabled
+
+    // Initialize Resend safely at request time
+    const apiKey = Deno.env.get('RESEND_API_KEY');
+    if (!apiKey) {
+      console.error('RESEND_API_KEY is not set');
+      return new Response(
+        JSON.stringify({ error: 'Email service not configured', details: 'Missing RESEND_API_KEY' }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+    const resend = new Resend(apiKey);
 
     const template = getEmailTemplate(notification);
     const fromEmail = "BS-HelpDesk <onboarding@resend.dev>";
