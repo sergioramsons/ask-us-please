@@ -35,20 +35,23 @@ const handler = async (req: Request): Promise<Response> => {
       const clientId = url.searchParams.get('client_id');
       const clientSecret = url.searchParams.get('client_secret');
       const redirectUri = url.searchParams.get('redirect_uri');
-      const state = url.searchParams.get('state');
+      const incomingState = url.searchParams.get('state');
+
+      // Always ensure a non-empty state to satisfy clients expecting it
+      const state = incomingState && incomingState.trim() !== ''
+        ? incomingState
+        : `state_${Date.now()}`;
       
       console.log('OAuth authorization request:', { clientId, redirectUri, state });
       
-      // Generate authorization code
+      // Generate authorization code (includes provided creds for later recovery)
       const authCode = btoa(`${clientId}:${clientSecret}:${Date.now()}`);
       
       // Redirect back to Yeastar with authorization code
       if (redirectUri) {
         const redirectUrl = new URL(redirectUri);
         redirectUrl.searchParams.set('code', authCode);
-        if (state) {
-          redirectUrl.searchParams.set('state', state);
-        }
+        redirectUrl.searchParams.set('state', state);
         
         console.log('Redirecting to:', redirectUrl.toString());
         
@@ -64,6 +67,7 @@ const handler = async (req: Request): Promise<Response> => {
       // Fallback if no redirect_uri
       return new Response(JSON.stringify({
         authorization_code: authCode,
+        state,
         expires_in: 3600
       }), {
         status: 200,
