@@ -1,0 +1,168 @@
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { StatusBadge, PriorityBadge } from "@/components/ui/status-badge";
+import { Ticket, TicketStatus } from "@/types/ticket";
+import { ArrowLeft, User, Mail, Calendar, Tag, MessageSquare } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+interface TicketDetailProps {
+  ticket: Ticket;
+  onBack: () => void;
+  onStatusChange: (ticketId: string, status: TicketStatus) => void;
+}
+
+export function TicketDetail({ ticket, onBack, onStatusChange }: TicketDetailProps) {
+  const { toast } = useToast();
+  const [currentStatus, setCurrentStatus] = useState<TicketStatus>(ticket.status);
+
+  const handleStatusChange = (newStatus: TicketStatus) => {
+    setCurrentStatus(newStatus);
+    onStatusChange(ticket.id, newStatus);
+    toast({
+      title: "Status Updated",
+      description: `Ticket status changed to ${newStatus.replace('-', ' ')}.`
+    });
+  };
+
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  };
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center gap-4">
+        <Button variant="outline" onClick={onBack} className="shrink-0">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Tickets
+        </Button>
+        <h1 className="text-2xl font-bold text-foreground">Ticket Details</h1>
+      </div>
+
+      <Card className="shadow-medium">
+        <CardHeader>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <CardTitle className="text-xl mb-2">{ticket.title}</CardTitle>
+              <div className="flex items-center gap-3">
+                <StatusBadge status={currentStatus} />
+                <PriorityBadge priority={ticket.priority} />
+                <Badge variant="outline" className="capitalize">
+                  {ticket.category.replace('-', ' ')}
+                </Badge>
+              </div>
+            </div>
+            <div className="shrink-0">
+              <Select value={currentStatus} onValueChange={handleStatusChange}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="in-progress">In Progress</SelectItem>
+                  <SelectItem value="resolved">Resolved</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 text-sm">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">{ticket.customer.name}</p>
+                  <p className="text-muted-foreground">Customer</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 text-sm">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">{ticket.customer.email}</p>
+                  <p className="text-muted-foreground">Email</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 text-sm">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">{formatDate(ticket.createdAt)}</p>
+                  <p className="text-muted-foreground">Created</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 text-sm">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">{formatDate(ticket.updatedAt)}</p>
+                  <p className="text-muted-foreground">Last Updated</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t pt-6">
+            <div className="flex items-center gap-2 mb-3">
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              <h3 className="font-semibold">Description</h3>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-4">
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                {ticket.description}
+              </p>
+            </div>
+          </div>
+
+          {ticket.tags && ticket.tags.length > 0 && (
+            <div className="border-t pt-6">
+              <div className="flex items-center gap-2 mb-3">
+                <Tag className="h-4 w-4 text-muted-foreground" />
+                <h3 className="font-semibold">Tags</h3>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {ticket.tags.map((tag, index) => (
+                  <Badge key={index} variant="secondary">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {ticket.assignee && (
+            <div className="border-t pt-6">
+              <div className="flex items-center gap-2 mb-3">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <h3 className="font-semibold">Assigned To</h3>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
+                  {ticket.assignee.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="font-medium">{ticket.assignee.name}</p>
+                  <p className="text-sm text-muted-foreground">{ticket.assignee.email}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

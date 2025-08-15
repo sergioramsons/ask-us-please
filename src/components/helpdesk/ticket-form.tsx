@@ -1,0 +1,169 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TicketPriority, TicketCategory } from "@/types/ticket";
+import { useToast } from "@/hooks/use-toast";
+
+interface TicketFormData {
+  title: string;
+  description: string;
+  priority: TicketPriority;
+  category: TicketCategory;
+  customerName: string;
+  customerEmail: string;
+}
+
+interface TicketFormProps {
+  onSubmit: (ticket: TicketFormData) => void;
+  onCancel?: () => void;
+}
+
+export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState<TicketFormData>({
+    title: '',
+    description: '',
+    priority: 'medium',
+    category: 'general',
+    customerName: '',
+    customerEmail: ''
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.title || !formData.description || !formData.customerName || !formData.customerEmail) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    onSubmit(formData);
+    
+    // Reset form
+    setFormData({
+      title: '',
+      description: '',
+      priority: 'medium',
+      category: 'general',
+      customerName: '',
+      customerEmail: ''
+    });
+
+    toast({
+      title: "Success",
+      description: "Ticket created successfully!"
+    });
+  };
+
+  return (
+    <Card className="shadow-medium animate-fade-in">
+      <CardHeader>
+        <CardTitle>Create New Ticket</CardTitle>
+        <CardDescription>
+          Fill out the form below to create a new support ticket.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="customerName">Customer Name *</Label>
+              <Input
+                id="customerName"
+                value={formData.customerName}
+                onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                placeholder="Enter customer name"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="customerEmail">Customer Email *</Label>
+              <Input
+                id="customerEmail"
+                type="email"
+                value={formData.customerEmail}
+                onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })}
+                placeholder="Enter customer email"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="title">Title *</Label>
+            <Input
+              id="title"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder="Brief description of the issue"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Description *</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Detailed description of the issue..."
+              rows={4}
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="priority">Priority</Label>
+              <Select value={formData.priority} onValueChange={(value: TicketPriority) => setFormData({ ...formData, priority: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Select value={formData.category} onValueChange={(value: TicketCategory) => setFormData({ ...formData, category: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="technical">Technical</SelectItem>
+                  <SelectItem value="billing">Billing</SelectItem>
+                  <SelectItem value="general">General</SelectItem>
+                  <SelectItem value="feature-request">Feature Request</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <Button type="submit" className="flex-1 bg-gradient-primary hover:opacity-90 transition-opacity">
+              Create Ticket
+            </Button>
+            {onCancel && (
+              <Button type="button" variant="outline" onClick={onCancel}>
+                Cancel
+              </Button>
+            )}
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}

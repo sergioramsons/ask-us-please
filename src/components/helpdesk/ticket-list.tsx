@@ -1,0 +1,129 @@
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { StatusBadge, PriorityBadge } from "@/components/ui/status-badge";
+import { Ticket, TicketStatus } from "@/types/ticket";
+import { Search, Eye, Clock, User } from "lucide-react";
+
+interface TicketListProps {
+  tickets: Ticket[];
+  onViewTicket: (ticket: Ticket) => void;
+}
+
+export function TicketList({ tickets, onViewTicket }: TicketListProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<TicketStatus | 'all'>('all');
+
+  const filteredTickets = tickets.filter(ticket => {
+    const matchesSearch = ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         ticket.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         ticket.customer.email.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  };
+
+  return (
+    <Card className="shadow-medium animate-fade-in">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <span>Support Tickets</span>
+          <span className="text-sm font-normal text-muted-foreground">
+            ({filteredTickets.length} {filteredTickets.length === 1 ? 'ticket' : 'tickets'})
+          </span>
+        </CardTitle>
+        
+        <div className="flex flex-col sm:flex-row gap-4 pt-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search tickets..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={(value: TicketStatus | 'all') => setStatusFilter(value)}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="open">Open</SelectItem>
+              <SelectItem value="in-progress">In Progress</SelectItem>
+              <SelectItem value="resolved">Resolved</SelectItem>
+              <SelectItem value="closed">Closed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </CardHeader>
+      
+      <CardContent>
+        {filteredTickets.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>No tickets found matching your criteria.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredTickets.map((ticket, index) => (
+              <div
+                key={ticket.id}
+                className="p-4 border rounded-lg hover:shadow-soft transition-all duration-200 animate-slide-up"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="font-medium text-foreground truncate">
+                        {ticket.title}
+                      </h3>
+                      <StatusBadge status={ticket.status} />
+                      <PriorityBadge priority={ticket.priority} />
+                    </div>
+                    
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+                      <div className="flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        <span>{ticket.customer.name}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        <span>{formatDate(ticket.createdAt)}</span>
+                      </div>
+                    </div>
+                    
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {ticket.description}
+                    </p>
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onViewTicket(ticket)}
+                    className="shrink-0"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
