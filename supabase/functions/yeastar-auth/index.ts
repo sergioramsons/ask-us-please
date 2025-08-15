@@ -113,19 +113,36 @@ const handler = async (req: Request): Promise<Response> => {
       const code = (payload.code as string) || formParams.get('code') || '';
       const redirect_uri = (payload.redirect_uri as string) || formParams.get('redirect_uri') || '';
 
+      // Try to recover client credentials from the authorization code itself (format: clientId:clientSecret:timestamp)
+      let codeClientId = '';
+      let codeClientSecret = '';
+      try {
+        const decoded = atob(code || '');
+        const [cid, csec] = decoded.split(':');
+        codeClientId = cid || '';
+        codeClientSecret = csec || '';
+      } catch (_) {
+        // ignore if code is not decodable
+      }
+
+      // Prefer explicit credentials; fall back to those embedded in the code
+      const effectiveClientId = client_id || codeClientId;
+      const effectiveClientSecret = client_secret || codeClientSecret;
+
       console.log('Token request received', {
         hasClientId: !!client_id,
         hasClientSecret: !!client_secret,
         grant_type,
         hasCode: !!code,
         hasRedirect: !!redirect_uri,
+        fromCode: { hasId: !!codeClientId, hasSecret: !!codeClientSecret }
       });
 
-      // Strictly validate client credentials against stored secrets if provided
+      // Validate client credentials against stored secrets if provided
       if (EXPECTED_CLIENT_ID && EXPECTED_CLIENT_SECRET) {
-        const idMatch = client_id === EXPECTED_CLIENT_ID;
-        const secretMatch = client_secret === EXPECTED_CLIENT_SECRET;
-        console.log('Client validation check', { idMatch, secretMatch, providedClientId: client_id });
+        const idMatch = effectiveClientId === EXPECTED_CLIENT_ID;
+        const secretMatch = effectiveClientSecret === EXPECTED_CLIENT_SECRET;
+        console.log('Client validation check', { idMatch, secretMatch, providedClientId: effectiveClientId, source: client_id ? 'body/basic' : 'code' });
         if (!idMatch || !secretMatch) {
           return new Response(JSON.stringify({
             error: 'invalid_client',
@@ -134,7 +151,7 @@ const handler = async (req: Request): Promise<Response> => {
         }
       } else {
         // If secrets are not configured, ensure some creds are present
-        if (!client_id || !client_secret) {
+        if (!effectiveClientId || !effectiveClientSecret) {
           return new Response(JSON.stringify({
             error: 'invalid_client',
             error_description: 'Client credentials missing',
@@ -149,7 +166,7 @@ const handler = async (req: Request): Promise<Response> => {
         }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
 
-      const accessToken = btoa(`${client_id}:${Date.now()}`);
+      const accessToken = btoa(`${effectiveClientId}:${Date.now()}`);
       const refreshToken = btoa(`${accessToken}:refresh`);
 
       return new Response(JSON.stringify({
