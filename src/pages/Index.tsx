@@ -339,6 +339,16 @@ const Index = () => {
                 <span className="text-sm">{user?.email}</span>
               </div>
               
+              {currentView !== 'dashboard' && (
+                <Button 
+                  onClick={() => setCurrentView('dashboard')}
+                  variant="outline"
+                  className="border-white/20 text-white hover:bg-white/10"
+                >
+                  ← Back to Dashboard
+                </Button>
+              )}
+              
               {currentView === 'dashboard' && (
                 <>
                   <Button 
