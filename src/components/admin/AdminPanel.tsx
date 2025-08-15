@@ -12,6 +12,7 @@ import { EmailNotificationTester } from "@/components/admin/EmailNotificationTes
 import { SMSTester } from "@/components/admin/SMSTester";
 import { ContactsManager } from "@/components/admin/ContactsManager";
 import YeastarIntegration from "@/components/admin/YeastarIntegration";
+import ThreeCXIntegration from "@/components/admin/ThreeCXIntegration";
 import { ChannelManager } from "@/components/channels/ChannelManager";
 import { UnifiedInbox } from "@/components/channels/UnifiedInbox";
 import { Ticket } from "@/types/ticket";
@@ -128,7 +129,18 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
         </TabsContent>
         
         <TabsContent value="pbx" className="space-y-4">
-          <YeastarIntegration />
+          <Tabs defaultValue="yeastar" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="yeastar">Yeastar PBX</TabsTrigger>
+              <TabsTrigger value="3cx">3CX PBX</TabsTrigger>
+            </TabsList>
+            <TabsContent value="yeastar">
+              <YeastarIntegration />
+            </TabsContent>
+            <TabsContent value="3cx">
+              <ThreeCXIntegration />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
         
         <TabsContent value="account" className="space-y-4">
