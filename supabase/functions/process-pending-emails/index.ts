@@ -40,57 +40,71 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    let processedCount = 0;
-    const errors: string[] = [];
+let createdTickets = 0;
+let markedProcessed = 0;
+const errors: string[] = [];
 
-    for (const email of pendingEmails) {
-      try {
-        // Check if this is an auto-reply
-        const isAutoReply = email.subject.toLowerCase().includes('auto') ||
-                           email.subject.toLowerCase().includes('automatic') ||
-                           email.subject.toLowerCase().includes('out of office') ||
-                           email.subject.toLowerCase().includes('vacation');
+for (const email of pendingEmails) {
+  try {
+    // Check if this is an auto-reply
+    const subject = (email.subject || '').toLowerCase();
+    const isAutoReply = subject.includes('auto') ||
+                        subject.includes('automatic') ||
+                        subject.includes('out of office') ||
+                        subject.includes('vacation');
 
-        if (!isAutoReply) {
-          const ticket = await createTicketFromEmail(email);
-          if (ticket) {
-            console.log('Created ticket:', ticket.ticket_number, 'for email:', email.id);
-            
-            // Update email record with ticket reference
-            await supabase
-              .from('incoming_emails')
-              .update({ 
-                ticket_id: ticket.id,
-                processed: true 
-              })
-              .eq('id', email.id);
-            
-            processedCount++;
-          }
-        } else {
-          // Mark auto-reply emails as processed without creating tickets
-          await supabase
-            .from('incoming_emails')
-            .update({ processed: true })
-            .eq('id', email.id);
-        }
-        
-      } catch (emailError: any) {
-        console.error(`Error processing email ${email.id}:`, emailError);
-        errors.push(`Email ${email.id}: ${emailError.message}`);
+    if (!isAutoReply) {
+      const ticket = await createTicketFromEmail(email);
+      if (ticket) {
+        console.log('Created ticket:', ticket.ticket_number, 'for email:', email.id);
+        // Update email record with ticket reference
+        const { error: updateErr } = await supabase
+          .from('incoming_emails')
+          .update({ 
+            ticket_id: ticket.id,
+            processed: true 
+          })
+          .eq('id', email.id);
+        if (updateErr) throw updateErr;
+        createdTickets++;
+        markedProcessed++;
+      } else {
+        // Ticket creation failed silently; still mark as processed to avoid re-processing loop
+        const { error: markErr } = await supabase
+          .from('incoming_emails')
+          .update({ processed: true })
+          .eq('id', email.id);
+        if (markErr) throw markErr;
+        markedProcessed++;
+        errors.push(`Email ${email.id}: Ticket creation returned no result`);
       }
+    } else {
+      // Mark auto-reply emails as processed without creating tickets
+      const { error: markErr } = await supabase
+        .from('incoming_emails')
+        .update({ processed: true })
+        .eq('id', email.id);
+      if (markErr) throw markErr;
+      markedProcessed++;
     }
+    
+  } catch (emailError: any) {
+    console.error(`Error processing email ${email.id}:`, emailError);
+    errors.push(`Email ${email.id}: ${emailError.message || emailError}`);
+  }
+}
 
-    return new Response(
-      JSON.stringify({
-        success: errors.length === 0,
-        message: `Processed ${processedCount} pending emails, created ${processedCount} tickets`,
-        processedCount,
-        totalEmails: pendingEmails.length,
-        errors: errors.length > 0 ? errors : undefined
-      }),
-      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-    );
+return new Response(
+  JSON.stringify({
+    success: errors.length === 0,
+    message: `Processed ${markedProcessed} pending emails, created ${createdTickets} tickets`,
+    createdTickets,
+    markedProcessed,
+    totalEmails: pendingEmails.length,
+    errors: errors.length > 0 ? errors : undefined
+  }),
+  { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+);
 
   } catch (error: any) {
     console.error("Error in process-pending-emails:", error);
