@@ -126,8 +126,11 @@ export class NotificationService {
         return false;
       }
 
-      console.log('SMS sent successfully:', data);
-      return true;
+      const success = (data as any)?.success === true;
+      if (!success) {
+        console.warn('NotificationService: SMS reported failure from edge function:', data);
+      }
+      return success;
     } catch (error) {
       console.error('Failed to send SMS:', error);
       return false;
