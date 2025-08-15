@@ -312,13 +312,27 @@ export function EmailServerConfig() {
         </CardHeader>
       </Card>
 
-      <Tabs defaultValue="settings" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="settings">Email Settings</TabsTrigger>
-          <TabsTrigger value="templates">Templates</TabsTrigger>
-          <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
-          <TabsTrigger value="test">Test & Debug</TabsTrigger>
+      <Tabs defaultValue="settings" className="flex gap-6" orientation="vertical">
+        <TabsList className="flex flex-col h-fit w-48 p-1">
+          <TabsTrigger value="settings" className="w-full justify-start">
+            <Settings className="h-4 w-4 mr-2" />
+            Email Settings
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="w-full justify-start">
+            <Mail className="h-4 w-4 mr-2" />
+            Templates
+          </TabsTrigger>
+          <TabsTrigger value="webhooks" className="w-full justify-start">
+            <Server className="h-4 w-4 mr-2" />
+            Webhooks
+          </TabsTrigger>
+          <TabsTrigger value="test" className="w-full justify-start">
+            <Send className="h-4 w-4 mr-2" />
+            Test & Debug
+          </TabsTrigger>
         </TabsList>
+
+        <div className="flex-1">{/* This will contain all TabsContent */}
 
         <TabsContent value="settings">
           <div className="space-y-6">
@@ -688,6 +702,7 @@ export function EmailServerConfig() {
             </CardContent>
           </Card>
         </TabsContent>
+        </div>
       </Tabs>
     </div>
   );
