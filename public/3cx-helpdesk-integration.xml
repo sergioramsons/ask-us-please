@@ -1,10 +1,9 @@
 <?xml version="1.0"?>
-<Crm xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Country="US" Name="Lovable Helpdesk" Version="1" SupportsEmojis="false">
+<Crm xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Country="US" Name="LovableHelpdesk" Version="1" SupportsEmojis="false" ListPageSize="0">
   <Number Prefix="AsIs" MaxLength="[MaxLength]" />
   <Connection MaxConcurrentRequests="5" />
   <Parameters>
     <Parameter Name="ServerUrl" Type="String" Parent="General Configuration" Editor="String" Title="Helpdesk Server URL" Default="https://thzdazcmswmeolaiijml.supabase.co" />
-    <Parameter Name="ApiKey" Type="String" Parent="General Configuration" Editor="String" Title="API Key" />
   </Parameters>
   <Authentication Type="No" />
   <Scenarios>
@@ -23,10 +22,9 @@
         <Variable Name="FirstName" Path="users.0.first_name" />
         <Variable Name="LastName" Path="users.0.last_name" />
         <Variable Name="Email" Path="users.0.email" />
-        <Variable Name="Phone" Path="users.0.phone" />
         <Variable Name="CompanyName" Path="users.0.company" />
       </Variables>
-      <Outputs>
+      <Outputs AllowEmpty="false">
         <Output Type="ContactUrl" Value="https://helpdesk.bernsergsolutions.com/yeastar?popup=helpdesk&amp;phone=[Number]&amp;name=[FirstName] [LastName]" />
         <Output Type="FirstName" Value="[FirstName]" />
         <Output Type="LastName" Value="[LastName]" />
@@ -35,71 +33,6 @@
         <Output Type="PhoneBusiness" Value="[Number]" />
         <Output Type="EntityType" Value="Contacts" />
         <Output Type="EntityId" Value="[ContactID]" />
-      </Outputs>
-    </Scenario>
-    <Scenario Id="CreateContactRecordFromClient" Type="REST">
-      <Request Url="[ServerUrl]/functions/v1/yeastar-contacts" MessagePasses="0" RequestType="Post" ResponseType="Json" RequestEncoding="Json">
-        <PostValues>
-          <Value Key="first_name" Type="String">[CreateContactFirstName]</Value>
-          <Value Key="last_name" Type="String">[CreateContactLastName]</Value>
-          <Value Key="phone" Type="String">[CreateContactPhoneNumber]</Value>
-          <Value Key="email" Type="String">[CreateContactEmail]</Value>
-          <Value Key="company" Type="String">[CreateContactCompany]</Value>
-        </PostValues>
-      </Request>
-      <Rules>
-        <Rule Type="Any">id</Rule>
-      </Rules>
-      <Variables>
-        <Variable Name="ContactID" Path="id" />
-        <Variable Name="FirstName" Path="first_name" />
-        <Variable Name="LastName" Path="last_name" />
-        <Variable Name="Email" Path="email" />
-        <Variable Name="Phone" Path="phone" />
-        <Variable Name="CompanyName" Path="company" />
-      </Variables>
-      <Outputs>
-        <Output Type="ContactUrl" Value="https://helpdesk.bernsergsolutions.com/yeastar?popup=helpdesk&amp;phone=[Phone]&amp;name=[FirstName] [LastName]" />
-        <Output Type="FirstName" Value="[FirstName]" />
-        <Output Type="LastName" Value="[LastName]" />
-        <Output Type="Email" Value="[Email]" />
-        <Output Type="CompanyName" Value="[CompanyName]" />
-        <Output Type="PhoneBusiness" Value="[Phone]" />
-        <Output Type="EntityType" Value="Contacts" />
-        <Output Type="EntityId" Value="[ContactID]" />
-      </Outputs>
-    </Scenario>
-    <Scenario Id="ReportCall" Type="REST">
-      <Request Url="[ServerUrl]/functions/v1/yeastar-tickets" MessagePasses="0" RequestType="Post" ResponseType="Json" RequestEncoding="Json">
-        <PostValues>
-          <Value Key="ticket" Type="Object">
-            <Value Key="subject" Type="String">Call from [CallStartTime] - [CallerNumber] to [CalleeNumber]</Value>
-            <Value Key="description" Type="String">Call Details:
-- From: [CallerNumber]
-- To: [CalleeNumber]  
-- Duration: [CallDuration]
-- Date: [CallStartTime]
-- Type: [CallType]</Value>
-            <Value Key="priority" Type="String">normal</Value>
-            <Value Key="status" Type="String">new</Value>
-            <Value Key="tags" Type="Array">
-              <Value Type="String">3cx-call</Value>
-              <Value Type="String">[CallType]</Value>
-            </Value>
-          </Value>
-        </PostValues>
-      </Request>
-      <Rules>
-        <Rule Type="Any">ticket</Rule>
-      </Rules>
-      <Variables>
-        <Variable Name="TicketID" Path="ticket.id" />
-        <Variable Name="TicketNumber" Path="ticket.ticket_number" />
-      </Variables>
-      <Outputs>
-        <Output Type="EntityType" Value="Tickets" />
-        <Output Type="EntityId" Value="[TicketID]" />
-        <Output Type="ContactUrl" Value="https://helpdesk.bernsergsolutions.com/tickets/[TicketID]" />
       </Outputs>
     </Scenario>
   </Scenarios>
