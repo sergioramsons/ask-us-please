@@ -323,31 +323,46 @@ export function EmailServerConfig() {
         </CardHeader>
       </Card>
 
-      <Tabs defaultValue="settings" className="flex gap-6" orientation="vertical">
-        <TabsList className="flex flex-col h-fit w-48 p-1">
-          <TabsTrigger value="settings" className="w-full justify-start">
+      <Tabs defaultValue="settings" className="flex flex-row gap-6" orientation="vertical">
+        <TabsList className="flex flex-col h-fit w-48 p-1 bg-muted">
+          <TabsTrigger 
+            value="settings" 
+            className="w-full justify-start data-[state=active]:bg-background data-[state=active]:text-foreground"
+          >
             <Settings className="h-4 w-4 mr-2" />
             Email Settings
           </TabsTrigger>
-          <TabsTrigger value="templates" className="w-full justify-start">
+          <TabsTrigger 
+            value="templates" 
+            className="w-full justify-start data-[state=active]:bg-background data-[state=active]:text-foreground"
+          >
             <Mail className="h-4 w-4 mr-2" />
             Templates
           </TabsTrigger>
-          <TabsTrigger value="webhooks" className="w-full justify-start">
+          <TabsTrigger 
+            value="webhooks" 
+            className="w-full justify-start data-[state=active]:bg-background data-[state=active]:text-foreground"
+          >
             <Server className="h-4 w-4 mr-2" />
             Webhooks
           </TabsTrigger>
-          <TabsTrigger value="test" className="w-full justify-start">
+          <TabsTrigger 
+            value="test" 
+            className="w-full justify-start data-[state=active]:bg-background data-[state=active]:text-foreground"
+          >
             <Send className="h-4 w-4 mr-2" />
             Test & Debug
           </TabsTrigger>
-          <TabsTrigger value="security" className="w-full justify-start">
+          <TabsTrigger 
+            value="security" 
+            className="w-full justify-start data-[state=active]:bg-background data-[state=active]:text-foreground"
+          >
             <AlertCircle className="h-4 w-4 mr-2" />
             Security
           </TabsTrigger>
         </TabsList>
 
-        <div className="flex-1">{/* This will contain all TabsContent */}
+        <div className="flex-1 min-w-0">{/* This will contain all TabsContent */}
 
         <TabsContent value="settings">
           <div className="space-y-6">
