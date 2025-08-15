@@ -10,6 +10,7 @@ import { AdminPanel } from "@/components/admin/AdminPanel";
 import { ReportsDashboard } from "@/components/reports/ReportsDashboard";
 import { EnhancedTicketForm } from "@/components/helpdesk/EnhancedTicketForm";
 import { EnhancedTicketDetail } from "@/components/helpdesk/EnhancedTicketDetail";
+import { AccountDashboard } from "@/components/account/AccountDashboard";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { mockTickets } from "@/data/mock-tickets";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,7 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Headphones, LogOut, User, Settings, BarChart3 } from "lucide-react";
 
-type View = 'dashboard' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports';
+type View = 'dashboard' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports' | 'account';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -155,6 +156,14 @@ const Index = () => {
                     <BarChart3 className="h-4 w-4 mr-2" />
                     Reports
                   </Button>
+                  <Button 
+                    onClick={() => setCurrentView('account')}
+                    variant="outline"
+                    className="border-white/20 text-white hover:bg-white/10"
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    Account
+                  </Button>
                   {isAdmin() && (
                     <Button 
                       onClick={() => setCurrentView('admin-panel')}
@@ -205,6 +214,10 @@ const Index = () => {
 
         {currentView === 'admin-panel' && (
           <AdminPanel tickets={tickets} onCreateTicket={handleCreateTicket} />
+        )}
+
+        {currentView === 'account' && (
+          <AccountDashboard onBack={() => setCurrentView('dashboard')} />
         )}
 
         {currentView === 'ticket-detail' && selectedTicket && (
