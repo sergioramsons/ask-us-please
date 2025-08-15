@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CRMTemplates>
+  <Template Name="Lovable Helpdesk" AuthType="Bearer Token" Simultaneous="5">
+    <Number Prefix="" MaxLength="15" MinLength="3"/>
+    <Connection>
+      <Server Name="Lovable Helpdesk API" Address="thzdazcmswmeolaiijml.supabase.co" Port="443" SSL="true"/>
+    </Connection>
+    <Parameters>
+      <Parameter Name="api_token" DisplayName="API Token" Type="password" Required="true"/>
+      <Parameter Name="domain" DisplayName="Helpdesk Domain" Type="string" Required="true" Default="thzdazcmswmeolaiijml"/>
+    </Parameters>
+    <Authentication Type="Bearer">
+      <Header Name="Authorization" Value="Bearer {api_token}"/>
+      <Header Name="Content-Type" Value="application/json"/>
+    </Authentication>
+    <Scenarios>
+      <Scenario Type="GetContact" Name="Contact Lookup">
+        <Request Type="HTTP" Method="GET" URL="/functions/v1/yeastar-contacts?phone={number}"/>
+        <Response>
+          <Contact Name="{users.0.name}" Company="{users.0.company}" 
+                   Phone="{users.0.phone}" Email="{users.0.email}" 
+                   CrmLink="https://helpdesk.bernsergsolutions.com/yeastar?popup=helpdesk&amp;phone={number}&amp;name={users.0.name}"/>
+        </Response>
+      </Scenario>
+      <Scenario Type="CreateContact" Name="Create New Contact">
+        <Request Type="HTTP" Method="POST" URL="/functions/v1/yeastar-contacts">
+          <Header Name="Content-Type" Value="application/json"/>
+          <Body>{"name": "{displayname}", "phone": "{number}", "notes": "Created from 3CX call"}</Body>
+        </Request>
+        <Response>
+          <Contact Name="{name}" Phone="{phone}" Email="{email}" 
+                   CrmLink="https://helpdesk.bernsergsolutions.com/yeastar?popup=helpdesk&amp;phone={number}&amp;name={name}"/>
+        </Response>
+      </Scenario>
+      <Scenario Type="GetAgents" Name="Agent Lookup">
+        <Request Type="HTTP" Method="GET" URL="/functions/v1/yeastar-users"/>
+        <Response>
+          <Agent ID="{users.#.id}" Name="{users.#.name}" Email="{users.#.email}"/>
+        </Response>
+      </Scenario>
+      <Scenario Type="CreateTicket" Name="Create Support Ticket">
+        <Request Type="HTTP" Method="POST" URL="/functions/v1/yeastar-tickets">
+          <Header Name="Content-Type" Value="application/json"/>
+          <Body>{"ticket": {"subject": "Call from {callerid} to {dialed}", "description": "Call details: Duration {duration}s, Date: {datetime}", "priority": "normal", "status": "new", "tags": ["3cx-call", "{calltype}"]}}</Body>
+        </Request>
+        <Response>
+          <Ticket ID="{ticket.id}" URL="https://helpdesk.bernsergsolutions.com/tickets/{ticket.id}"/>
+        </Response>
+      </Scenario>
+      <Scenario Type="LogCall" Name="Call Journal">
+        <Request Type="HTTP" Method="POST" URL="/functions/v1/yeastar-tickets/{ticketid}/comments">
+          <Header Name="Content-Type" Value="application/json"/>
+          <Body>{"comment": {"content": "Call log: {calltype} call from {callerid} to {dialed}, Duration: {duration}s, Recording: {recordingurl}", "is_internal": false}}</Body>
+        </Request>
+        <Response>
+          <Success/>
+        </Response>
+      </Scenario>
+    </Scenarios>
+  </Template>
+</CRMTemplates>
