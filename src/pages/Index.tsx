@@ -10,13 +10,15 @@ import { mockTickets } from "@/data/mock-tickets";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Headphones, LogOut, User } from "lucide-react";
+import { useFreshdeskSync } from "@/hooks/useFreshdeskSync";
+import { Plus, Headphones, LogOut, User, RefreshCw } from "lucide-react";
 
 type View = 'dashboard' | 'create-ticket' | 'ticket-detail';
 
 const Index = () => {
   const { user, loading } = useAuth();
   const { toast } = useToast();
+  const { isLoading: isSyncing, syncTickets, createTicketInFreshdesk, updateTicketInFreshdesk } = useFreshdeskSync();
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -46,24 +48,23 @@ const Index = () => {
     closed: tickets.filter(t => t.status === 'closed').length
   };
 
-  const handleCreateTicket = (ticketData: any) => {
-    const newTicket: Ticket = {
-      id: Date.now().toString(),
+  const handleCreateTicket = async (ticketData: any) => {
+    // Create ticket in Freshdesk
+    const freshdeskTicket = await createTicketInFreshdesk({
       title: ticketData.title,
       description: ticketData.description,
       status: 'open',
       priority: ticketData.priority,
       category: ticketData.category,
-      customer: {
-        name: ticketData.customerName,
-        email: ticketData.customerEmail
-      },
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+      customerName: ticketData.customerName,
+      customerEmail: ticketData.customerEmail,
+      tags: [],
+    });
 
-    setTickets(prev => [newTicket, ...prev]);
-    setCurrentView('dashboard');
+    if (freshdeskTicket) {
+      setTickets(prev => [freshdeskTicket, ...prev]);
+      setCurrentView('dashboard');
+    }
   };
 
   const handleViewTicket = (ticket: Ticket) => {
@@ -71,16 +72,36 @@ const Index = () => {
     setCurrentView('ticket-detail');
   };
 
-  const handleStatusChange = (ticketId: string, status: TicketStatus) => {
-    setTickets(prev => prev.map(ticket =>
-      ticket.id === ticketId
-        ? { ...ticket, status, updatedAt: new Date() }
-        : ticket
+  const handleStatusChange = async (ticketId: string, status: TicketStatus) => {
+    const ticket = tickets.find(t => t.id === ticketId);
+    if (!ticket) return;
+
+    // Update in Freshdesk if it's a Freshdesk ticket
+    if (ticket.id.startsWith('fd-') && (ticket as any).freshdeskId) {
+      const success = await updateTicketInFreshdesk((ticket as any).freshdeskId, { status });
+      if (!success) return;
+    }
+
+    setTickets(prev => prev.map(t =>
+      t.id === ticketId
+        ? { ...t, status, updatedAt: new Date() }
+        : t
     ));
     
     // Update selected ticket if it's the one being changed
     if (selectedTicket?.id === ticketId) {
       setSelectedTicket(prev => prev ? { ...prev, status, updatedAt: new Date() } : null);
+    }
+  };
+
+  const handleSyncWithFreshdesk = async () => {
+    const syncedTickets = await syncTickets();
+    if (syncedTickets.length > 0) {
+      setTickets(prev => {
+        // Merge synced tickets with existing ones, avoiding duplicates
+        const existing = prev.filter(t => !t.id.startsWith('fd-'));
+        return [...syncedTickets, ...existing];
+      });
     }
   };
 
@@ -123,13 +144,24 @@ const Index = () => {
               </div>
               
               {currentView === 'dashboard' && (
-                <Button 
-                  onClick={() => setCurrentView('create-ticket')}
-                  className="bg-white text-primary hover:bg-blue-50"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Ticket
-                </Button>
+                <>
+                  <Button 
+                    onClick={handleSyncWithFreshdesk}
+                    variant="outline"
+                    disabled={isSyncing}
+                    className="border-white/20 text-white hover:bg-white/10"
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+                    Sync Freshdesk
+                  </Button>
+                  <Button 
+                    onClick={() => setCurrentView('create-ticket')}
+                    className="bg-white text-primary hover:bg-blue-50"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Ticket
+                  </Button>
+                </>
               )}
               
               <Button 
