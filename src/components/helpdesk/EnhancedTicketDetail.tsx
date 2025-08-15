@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Ticket, TicketComment, TicketAttachment } from '@/types/ticket';
 import { TicketResponseForm } from './TicketResponseForm';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   ArrowLeft, 
   Calendar, 
@@ -32,8 +34,42 @@ interface EnhancedTicketDetailProps {
 }
 
 export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: EnhancedTicketDetailProps) {
-  const formatDate = (date: Date) => {
-    return format(date, 'PPP p');
+  const [comments, setComments] = useState<any[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(true);
+
+  // Load comments from database
+  const loadComments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ticket_comments')
+        .select(`
+          *,
+          profiles:created_by (
+            display_name,
+            user_id
+          )
+        `)
+        .eq('ticket_id', ticket.id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      setComments(data || []);
+    } catch (error) {
+      console.error('Error loading comments:', error);
+    } finally {
+      setCommentsLoading(false);
+    }
+  };
+
+  // Load comments on mount
+  useEffect(() => {
+    loadComments();
+  }, [ticket.id]);
+
+  const formatDate = (date: Date | string) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return format(dateObj, 'PPP p');
   };
 
   const getSeverityColor = (severity: string) => {
@@ -62,6 +98,11 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
     const resolved = new Date(ticket.resolvedAt);
     const diffHours = (resolved.getTime() - created.getTime()) / (1000 * 60 * 60);
     return diffHours.toFixed(1);
+  };
+
+  const handleResponseSubmit = (response: string, isInternal: boolean) => {
+    // Reload comments after new response is added
+    loadComments();
   };
 
   return (
@@ -210,34 +251,43 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
           )}
 
           {/* Comments */}
-          {ticket.comments && ticket.comments.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5" />
-                  Comments ({ticket.comments.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                Comments ({comments.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {commentsLoading ? (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground">Loading comments...</p>
+                </div>
+              ) : comments.length > 0 ? (
                 <ScrollArea className="h-96">
                   <div className="space-y-4">
-                    {ticket.comments.map((comment) => (
+                    {comments.map((comment) => (
                       <div key={comment.id} className="border rounded-lg p-4">
                         <div className="flex items-center gap-3 mb-2">
                           <Avatar className="h-8 w-8">
                             <AvatarFallback>
-                              {comment.author.name.split(' ').map(n => n[0]).join('')}
+                              {comment.profiles?.display_name ? 
+                                comment.profiles.display_name.split(' ').map((n: string) => n[0]).join('') : 
+                                'U'
+                              }
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <span className="font-medium">{comment.author.name}</span>
-                              {comment.isInternal && (
+                              <span className="font-medium">
+                                {comment.profiles?.display_name || 'User'}
+                              </span>
+                              {comment.is_internal && (
                                 <Badge variant="secondary" className="text-xs">Internal</Badge>
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground">
-                              {formatDate(comment.createdAt)}
+                              {formatDate(comment.created_at)}
                             </p>
                           </div>
                         </div>
@@ -246,9 +296,13 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
                     ))}
                   </div>
                 </ScrollArea>
-              </CardContent>
-            </Card>
-          )}
+              ) : (
+                 <p className="text-center text-muted-foreground py-4">
+                   No comments yet. Be the first to respond!
+                 </p>
+               )}
+            </CardContent>
+          </Card>
 
           {/* Attachments */}
           {ticket.attachments && ticket.attachments.length > 0 && (
@@ -290,9 +344,7 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
             ticketSubject={ticket.title}
             ticketStatus={ticket.status}
             priority={ticket.priority}
-            onSubmit={(response, isInternal) => {
-              console.log('New response:', { response, isInternal, ticketId: ticket.id });
-            }}
+            onSubmit={handleResponseSubmit}
           />
         </div>
 

@@ -58,86 +58,123 @@ export function TicketResponseForm({
       return;
     }
 
-    // Send email if not internal and customer email is provided
-    if (!isInternal && customerEmail) {
-      setIsSendingEmail(true);
-      try {
-        // Check if there's an active custom email server
-        const { data: activeServer } = await supabase
-          .from('email_servers')
-          .select('*')
-          .eq('is_active', true)
-          .limit(1)
-          .single();
+    try {
+      // Save the comment to the database
+      const { data: comment, error: commentError } = await supabase
+        .from('ticket_comments')
+        .insert({
+          ticket_id: ticketId,
+          content: response,
+          is_internal: isInternal,
+          created_by: (await supabase.auth.getUser()).data.user?.id
+        })
+        .select('*')
+        .single();
 
-        let emailResponse;
-        
-        if (activeServer) {
-          // Use custom email server
-          emailResponse = await supabase.functions.invoke('send-custom-email', {
-            body: {
-              ticketId,
-              customerName,
-              customerEmail,
-              subject: ticketSubject,
-              message: response,
-              agentName: 'Support Agent', // This would come from auth context in real app
-              ticketStatus,
-              priority,
-              isResolution: ticketStatus === 'resolved',
-              emailServerId: activeServer.id
-            }
-          });
-        } else {
-          // Fallback to Resend
-          emailResponse = await supabase.functions.invoke('send-ticket-email', {
-            body: {
-              ticketId,
-              customerName,
-              customerEmail,
-              subject: ticketSubject,
-              message: response,
-              agentName: 'Support Agent', // This would come from auth context in real app
-              ticketStatus,
-              priority,
-              isResolution: ticketStatus === 'resolved'
-            }
-          });
-        }
+      if (commentError) {
+        throw commentError;
+      }
 
-        if (emailResponse.error) {
-          console.error('Email sending error:', emailResponse.error);
+      // Update ticket's last activity
+      const { error: ticketError } = await supabase
+        .from('tickets')
+        .update({ 
+          last_activity_at: new Date().toISOString(),
+          ...(ticketStatus !== 'resolved' && !isInternal && { first_response_at: new Date().toISOString() })
+        })
+        .eq('id', ticketId);
+
+      if (ticketError) {
+        console.warn('Could not update ticket activity:', ticketError);
+      }
+
+      // Send email if not internal and customer email is provided
+      if (!isInternal && customerEmail) {
+        setIsSendingEmail(true);
+        try {
+          // Check if there's an active custom email server
+          const { data: activeServer } = await supabase
+            .from('email_servers')
+            .select('*')
+            .eq('is_active', true)
+            .limit(1)
+            .single();
+
+          let emailResponse;
+          
+          if (activeServer) {
+            // Use custom email server
+            emailResponse = await supabase.functions.invoke('send-custom-email', {
+              body: {
+                ticketId,
+                customerName,
+                customerEmail,
+                subject: ticketSubject,
+                message: response,
+                agentName: 'Support Agent', // This would come from auth context in real app
+                ticketStatus,
+                priority,
+                isResolution: ticketStatus === 'resolved',
+                emailServerId: activeServer.id
+              }
+            });
+          } else {
+            // Fallback to Resend
+            emailResponse = await supabase.functions.invoke('send-ticket-email', {
+              body: {
+                ticketId,
+                customerName,
+                customerEmail,
+                subject: ticketSubject,
+                message: response,
+                agentName: 'Support Agent', // This would come from auth context in real app
+                ticketStatus,
+                priority,
+                isResolution: ticketStatus === 'resolved'
+              }
+            });
+          }
+
+          if (emailResponse.error) {
+            console.error('Email sending error:', emailResponse.error);
+            toast({
+              title: "Response saved",
+              description: "Response saved but email could not be sent. Please check email configuration.",
+              variant: "destructive",
+            });
+          } else {
+            const serverType = activeServer ? 'custom SMTP server' : 'Resend';
+            toast({
+              title: "Response sent",
+              description: `Your response has been sent to ${customerEmail} via ${serverType}`,
+            });
+          }
+        } catch (error) {
+          console.error('Email error:', error);
           toast({
-            title: "Warning",
-            description: "Response saved but email could not be sent. Please check email configuration.",
+            title: "Response saved", 
+            description: "Response saved but email delivery failed.",
             variant: "destructive",
           });
-        } else {
-          const serverType = activeServer ? 'custom SMTP server' : 'Resend';
-          toast({
-            title: "Response sent",
-            description: `Your response has been sent to ${customerEmail} via ${serverType}`,
-          });
+        } finally {
+          setIsSendingEmail(false);
         }
-      } catch (error) {
-        console.error('Email error:', error);
+      } else {
         toast({
-          title: "Warning", 
-          description: "Response saved but email delivery failed.",
-          variant: "destructive",
+          title: "Response saved",
+          description: `Your ${isInternal ? 'internal note' : 'response'} has been added to the ticket.`,
         });
-      } finally {
-        setIsSendingEmail(false);
       }
-    }
 
-    onSubmit?.(response, isInternal);
-    setResponse('');
-    
-    if (isInternal || !customerEmail) {
+      onSubmit?.(response, isInternal);
+      setResponse('');
+      
+    } catch (error: any) {
+      console.error('Error saving response:', error);
       toast({
-        title: "Response saved",
-        description: `Your ${isInternal ? 'internal note' : 'response'} has been added to the ticket.`,
+        title: "Error",
+        description: "Could not save response. Please try again.",
+        variant: "destructive",
       });
     }
   };
