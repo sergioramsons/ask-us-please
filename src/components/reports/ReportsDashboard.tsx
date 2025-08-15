@@ -12,6 +12,7 @@ import { useDepartments } from '@/hooks/useDepartments';
 import { TicketAnalytics } from './TicketAnalytics';
 import { PerformanceMetrics } from './PerformanceMetrics';
 import { DepartmentReports } from './DepartmentReports';
+import { CuratedReports } from './CuratedReports';
 import { ReportFilters } from '@/types/reports';
 import { Ticket } from '@/types/ticket';
 import { BarChart3, Calendar as CalendarIcon, Download, Filter, RefreshCw, FileText, FileSpreadsheet } from 'lucide-react';
@@ -311,12 +312,17 @@ export function ReportsDashboard({ tickets }: ReportsDashboardProps) {
 
       {/* Reports Content */}
       {reportsData ? (
-        <Tabs defaultValue="analytics" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="curated" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="curated">Curated Reports</TabsTrigger>
             <TabsTrigger value="analytics">Ticket Analytics</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
             <TabsTrigger value="departments">Departments</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="curated" className="mt-6">
+            <CuratedReports />
+          </TabsContent>
 
           <TabsContent value="analytics" className="mt-6">
             <TicketAnalytics report={reportsData.ticketReport} />
