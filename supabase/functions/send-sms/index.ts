@@ -30,10 +30,28 @@ const handler = async (req: Request): Promise<Response> => {
     // Clean destination number (remove + if present)
     const cleanDestination = destination.replace(/^\+/, '');
 
+    // SMS API configuration - using secure environment variables
+    const smsApiUser = Deno.env.get('SMS_API_USER');
+    const smsApiPassword = Deno.env.get('SMS_API_PASSWORD');
+    
+    if (!smsApiUser || !smsApiPassword) {
+      console.error('SMS API credentials not configured');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'SMS service not configured' 
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     // Construct SMS API URL
     const apiUrl = new URL('https://api.rmlconnect.net:8443/bulksms/bulksms');
-    apiUrl.searchParams.set('username', 'bernsergsms');
-    apiUrl.searchParams.set('password', 'Ber@2025');
+    apiUrl.searchParams.set('username', smsApiUser);
+    apiUrl.searchParams.set('password', smsApiPassword);
     apiUrl.searchParams.set('type', '0');
     apiUrl.searchParams.set('dlr', '1');
     apiUrl.searchParams.set('destination', cleanDestination);
