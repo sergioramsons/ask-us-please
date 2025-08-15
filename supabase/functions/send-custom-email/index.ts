@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0';
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,6 +27,61 @@ interface EmailServerConfig {
   sender_name: string;
   sender_email: string;
   reply_to?: string;
+}
+
+// Encryption/decryption helpers (fallback to dev key if needed)
+const ALGORITHM = 'AES-GCM';
+const KEY_LENGTH = 256;
+const DEV_KEY_MATERIAL = 'helpdesk-dev-encryption-key-2024-secure';
+const DEV_SALT = 'helpdesk-dev-salt-2024';
+const ITERATIONS = 600000;
+
+async function deriveKey(material: string): Promise<CryptoKey> {
+  const keyMaterial = new TextEncoder().encode(material);
+  const importedKey = await crypto.subtle.importKey(
+    'raw',
+    keyMaterial,
+    { name: 'PBKDF2' },
+    false,
+    ['deriveKey']
+  );
+  return await crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: new TextEncoder().encode(DEV_SALT),
+      iterations: ITERATIONS,
+      hash: 'SHA-256'
+    },
+    importedKey,
+    { name: ALGORITHM, length: KEY_LENGTH },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+async function decryptPasswordFlexible(encryptedPassword: string): Promise<string> {
+  const clean = encryptedPassword.startsWith('enc:') ? encryptedPassword.slice(4) : encryptedPassword;
+  const candidates: string[] = [];
+  const envKey = Deno.env.get('ENCRYPTION_KEY');
+  if (envKey) candidates.push(envKey);
+  // Always try the DEV key as fallback (matches frontend)
+  candidates.push(DEV_KEY_MATERIAL);
+
+  const combined = new Uint8Array(atob(clean).split('').map((c) => c.charCodeAt(0)));
+  if (combined.length < 13) throw new Error('Invalid encrypted data format');
+  const iv = combined.slice(0, 12);
+  const ciphertext = combined.slice(12);
+
+  for (const material of candidates) {
+    try {
+      const key = await deriveKey(material);
+      const decrypted = await crypto.subtle.decrypt({ name: ALGORITHM, iv }, key, ciphertext);
+      return new TextDecoder().decode(decrypted);
+    } catch (_) {
+      // try next material
+    }
+  }
+  throw new Error('Failed to decrypt password with available keys');
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -59,30 +114,53 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '' // Use service role for backend operations
     );
 
-    // Get email server configuration for sender details (optional)
-    let emailConfig: EmailServerConfig = {
-      sender_name: "Support Team",
-      sender_email: "support@helpdesk.dev",
-      reply_to: "support@helpdesk.dev"
-    };
-
+    // Fetch active SMTP server configuration
+    let emailServer: any = null;
     if (emailServerId) {
       const { data, error } = await supabase
         .from('email_servers')
-        .select('sender_name, sender_email, reply_to')
+        .select('*')
         .eq('id', emailServerId)
+        .eq('is_active', true)
         .single();
-      
-      if (!error && data) {
-        emailConfig = {
-          sender_name: data.sender_name || emailConfig.sender_name,
-          sender_email: data.sender_email || emailConfig.sender_email,
-          reply_to: data.reply_to || data.sender_email || emailConfig.reply_to
-        };
+      if (error) {
+        console.error('Error fetching email server by id:', error);
+        throw new Error('Email server configuration not found');
       }
+      emailServer = data;
+    } else {
+      const { data, error } = await supabase
+        .from('email_servers')
+        .select('*')
+        .eq('is_active', true)
+        .limit(1)
+        .single();
+      if (error) {
+        console.error('No active email server found:', error);
+        throw new Error('No active email server configured');
+      }
+      emailServer = data;
     }
 
-    console.log("Using email config:", emailConfig.sender_name);
+    if (!emailServer) {
+      throw new Error('No email server configuration available');
+    }
+
+    console.log('Using email server:', emailServer.name);
+
+    // Decrypt password if encrypted
+    let smtpPassword = emailServer.smtp_password;
+    if (emailServer.password_encrypted) {
+      try {
+        smtpPassword = await decryptPasswordFlexible(emailServer.smtp_password);
+        console.log('SMTP password decrypted successfully');
+      } catch (e) {
+        console.error('SMTP password decryption failed:', e);
+        throw new Error('Failed to decrypt email server password');
+      }
+    } else {
+      console.warn('WARNING: Email server password is not encrypted');
+    }
 
     // Generate email HTML template
     const emailHtml = `
@@ -144,7 +222,7 @@ const handler = async (req: Request): Promise<Response> => {
               }
               
                <p>Thank you for choosing our service!</p>
-               <p>Best regards,<br>${emailConfig.sender_name}</p>
+               <p>Best regards,<br>${emailServer.sender_name}</p>
             </div>
             
             <div class="footer">
@@ -156,28 +234,43 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    // Send email using Resend
-    const emailResponse = await resend.emails.send({
-      from: `${emailConfig.sender_name} <${emailConfig.sender_email}>`,
-      to: [customerEmail],
-      replyTo: emailConfig.reply_to,
+    // Send email using SMTP
+    const client = new SMTPClient({
+      connection: {
+        hostname: emailServer.smtp_host,
+        port: emailServer.smtp_port,
+        tls: emailServer.use_tls,
+        auth: {
+          username: emailServer.smtp_username,
+          password: smtpPassword,
+        },
+      },
+    });
+
+    await client.send({
+      from: `${emailServer.sender_name} <${emailServer.sender_email}>`,
+      to: customerEmail,
+      replyTo: emailServer.reply_to || emailServer.sender_email,
       subject: `[Ticket #${ticketId}] ${isResolution ? 'Resolved: ' : ''}${subject}`,
+      content: emailHtml,
       html: emailHtml,
     });
 
-    console.log("Email sent successfully via Resend:", emailResponse.id);
+    await client.close();
+
+    console.log('Custom SMTP email sent successfully');
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Email sent successfully via Resend",
-        emailId: emailResponse.id,
-        sender: emailConfig.sender_name
+        message: 'Email sent successfully via SMTP',
+        server: emailServer.name,
+        encrypted: emailServer.password_encrypted
       }), 
       {
         status: 200,
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           ...corsHeaders,
         },
       }
@@ -190,7 +283,7 @@ const handler = async (req: Request): Promise<Response> => {
       JSON.stringify({ 
         success: false,
         error: error.message,
-        details: "Failed to send email via Resend. Please check your configuration." 
+        details: 'Failed to send email via SMTP. Please check your email server configuration and encryption.' 
       }),
       {
         status: 500,
