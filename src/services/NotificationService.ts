@@ -32,8 +32,13 @@ export class NotificationService {
         return false;
       }
 
-      console.log('Notification sent successfully:', data);
-      return true;
+      const success = (data as any)?.success === true;
+      if (!success) {
+        console.warn('NotificationService: Email reported failure from edge function:', data);
+      } else {
+        console.log('NotificationService: Email sent successfully:', data);
+      }
+      return success;
     } catch (error) {
       console.error('Failed to send notification:', error);
       return false;
