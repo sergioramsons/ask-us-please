@@ -22,9 +22,11 @@ interface TicketFormData {
 interface TicketFormProps {
   onSubmit: (ticket: TicketFormData) => void;
   onCancel?: () => void;
+  defaultPhone?: string;
+  defaultName?: string;
 }
 
-export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
+export function TicketForm({ onSubmit, onCancel, defaultPhone, defaultName }: TicketFormProps) {
   const { toast } = useToast();
   const { contacts, getContactByEmail } = useContacts();
   const [customerSuggestions, setCustomerSuggestions] = useState<Contact[]>([]);
@@ -34,9 +36,12 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
     description: '',
     priority: 'medium',
     category: 'general',
-    customerName: '',
+    customerName: defaultName || '',
     customerEmail: ''
   });
+
+  // Add phone field to show caller info
+  const [phoneNumber, setPhoneNumber] = useState(defaultPhone || '');
 
   const handleEmailChange = (email: string) => {
     setFormData({ ...formData, customerEmail: email });
@@ -123,6 +128,20 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
                 required
               />
             </div>
+            
+            {defaultPhone && (
+              <div className="space-y-2">
+                <Label htmlFor="phoneNumber">Phone Number</Label>
+                <Input
+                  id="phoneNumber"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="Phone number"
+                  readOnly={!!defaultPhone}
+                  className={defaultPhone ? "bg-muted" : ""}
+                />
+              </div>
+            )}
             <div className="space-y-2 relative">
               <Label htmlFor="customerEmail">Customer Email *</Label>
               <Input

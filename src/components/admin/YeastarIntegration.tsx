@@ -40,7 +40,7 @@ const YeastarIntegration = () => {
       <Presets />
       <Parameters>
         <Parameter Name="ContactUrlType" Value="specify_url_format" />
-        <Parameter Name="URLFormat" Value="{{.app_url}}/yeastar?popup=helpdesk&amp;phone={{.CallerNumber}}&amp;name={{.CallerDisplayName}}" />
+        <Parameter Name="URLFormat" Value="https://helpdesk.bernsergsolutions.com/yeastar?popup=helpdesk&amp;phone={{.CallerNumber}}&amp;name={{.CallerDisplayName}}" />
         <Parameter Name="ContactFieldForUri" />
         <Parameter Name="ContactsIdEnable" Value="1" />
         <Parameter Name="FirstNameEnable" Value="1" />

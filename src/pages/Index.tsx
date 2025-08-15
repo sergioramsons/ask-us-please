@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DashboardStats } from "@/components/helpdesk/dashboard-stats";
 import { TicketForm } from "@/components/helpdesk/ticket-form";
 import { TicketList } from "@/components/helpdesk/ticket-list";
@@ -27,6 +28,8 @@ const Index = () => {
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [showHelpdeskPopup, setShowHelpdeskPopup] = useState(false);
+  const [callerInfo, setCallerInfo] = useState<{phone: string; name: string} | null>(null);
 
   // Auto-launch helpdesk when coming from Yeastar
   useEffect(() => {
@@ -35,9 +38,12 @@ const Index = () => {
     const fromSession = sessionStorage.getItem('yeastarLaunch') === '1';
 
     if (fromQuery || fromSession) {
-      setCurrentView('create-ticket');
       const phone = params.get('phone') || sessionStorage.getItem('yeastarPhone') || '';
       const name = params.get('name') || sessionStorage.getItem('yeastarName') || '';
+      
+      setCallerInfo({ phone, name });
+      setShowHelpdeskPopup(true);
+      
       const caller = name ? `${name} (${phone})` : phone;
       toast({ title: 'Helpdesk launched', description: caller ? `Caller: ${caller}` : 'Launched from Yeastar PBX' });
 
@@ -100,6 +106,7 @@ const Index = () => {
 
     setTickets(prev => [newTicket, ...prev]);
     setCurrentView('dashboard');
+    setShowHelpdeskPopup(false); // Close popup after ticket creation
 
     // Send notification for new ticket
     if (ticketData.customerEmail) {
@@ -279,6 +286,29 @@ const Index = () => {
           />
         )}
       </main>
+
+      {/* Helpdesk Popup Modal */}
+      <Dialog open={showHelpdeskPopup} onOpenChange={setShowHelpdeskPopup}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Headphones className="h-5 w-5" />
+              Create Support Ticket
+              {callerInfo && (
+                <span className="text-sm font-normal text-muted-foreground">
+                  - {callerInfo.name ? `${callerInfo.name} (${callerInfo.phone})` : callerInfo.phone}
+                </span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <TicketForm 
+            onSubmit={handleCreateTicket}
+            onCancel={() => setShowHelpdeskPopup(false)}
+            defaultPhone={callerInfo?.phone}
+            defaultName={callerInfo?.name}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
