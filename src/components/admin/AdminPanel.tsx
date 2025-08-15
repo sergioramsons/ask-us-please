@@ -12,8 +12,10 @@ import { EmailNotificationTester } from "@/components/admin/EmailNotificationTes
 import { SMSTester } from "@/components/admin/SMSTester";
 import { ContactsManager } from "@/components/admin/ContactsManager";
 import YeastarIntegration from "@/components/admin/YeastarIntegration";
+import { ChannelManager } from "@/components/channels/ChannelManager";
+import { UnifiedInbox } from "@/components/channels/UnifiedInbox";
 import { Ticket } from "@/types/ticket";
-import { Mail, Shield, BarChart3, Settings, Workflow, Clock, User, Bell, Users, MessageSquare, Phone } from "lucide-react";
+import { Mail, Shield, BarChart3, Settings, Workflow, Clock, User, Bell, Users, MessageSquare, Phone, Inbox } from "lucide-react";
 
 interface AdminPanelProps {
   tickets: Ticket[];
@@ -33,8 +35,16 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
         <p className="text-muted-foreground">Manage email settings, users, reports, workflows, and create enhanced tickets</p>
       </div>
       
-      <Tabs defaultValue="email" className="space-y-6">
-<TabsList className="grid w-full grid-cols-11">
+      <Tabs defaultValue="channels" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-12">
+          <TabsTrigger value="channels" className="flex items-center gap-2">
+            <Inbox className="h-4 w-4" />
+            Channels
+          </TabsTrigger>
+          <TabsTrigger value="inbox" className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            Unified Inbox
+          </TabsTrigger>
           <TabsTrigger value="email" className="flex items-center gap-2">
             <Mail className="h-4 w-4" />
             Email Settings
@@ -75,11 +85,15 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
             <User className="h-4 w-4" />
             Account
           </TabsTrigger>
-          <TabsTrigger value="enhanced-ticket" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Enhanced Ticket
-          </TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="channels" className="space-y-4">
+          <ChannelManager />
+        </TabsContent>
+        
+        <TabsContent value="inbox" className="space-y-4 h-[800px]">
+          <UnifiedInbox />
+        </TabsContent>
         
         <TabsContent value="email" className="space-y-4">
           <EmailManager />
@@ -120,6 +134,7 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
         <TabsContent value="account" className="space-y-4">
           <AccountDashboard />
         </TabsContent>
+        
         
         <TabsContent value="enhanced-ticket" className="space-y-4">
           <EnhancedTicketForm 
