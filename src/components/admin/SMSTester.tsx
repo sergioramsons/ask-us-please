@@ -18,7 +18,10 @@ export const SMSTester: React.FC = () => {
   const { toast } = useToast();
 
   const handleSendTest = async () => {
+    console.log('SMSTester: handleSendTest called with data:', smsData);
+    
     if (!smsData.destination || !smsData.message) {
+      console.log('SMSTester: Validation failed - missing fields');
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields",
@@ -27,6 +30,7 @@ export const SMSTester: React.FC = () => {
       return;
     }
 
+    console.log('SMSTester: Starting SMS send process');
     setIsLoading(true);
     try {
       const success = await NotificationService.sendSMS(smsData);
