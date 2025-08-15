@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUserRoles, AppRole } from '@/hooks/useUserRoles';
 import { useDepartments, Department } from '@/hooks/useDepartments';
+import { supabase } from '@/integrations/supabase/client';
 import { Shield, UserPlus, UserMinus, Building2, Plus, Trash2 } from 'lucide-react';
 
 interface UserWithRole {
@@ -25,6 +26,14 @@ export function UserRoleManager() {
   const [selectedDepartment, setSelectedDepartment] = useState<string>('');
   const [newDepartmentName, setNewDepartmentName] = useState('');
   const [newDepartmentDesc, setNewDepartmentDesc] = useState('');
+  
+  // New user form state
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserDisplayName, setNewUserDisplayName] = useState('');
+  const [newUserDepartment, setNewUserDepartment] = useState<string>('');
+  const [newUserRole, setNewUserRole] = useState<AppRole>('user');
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
   
   const { getUsersWithRoles, assignRole, removeRole, isLoading, isAdmin } = useUserRoles();
   const { 
@@ -77,6 +86,61 @@ export function UserRoleManager() {
     }
   };
 
+  const handleCreateUser = async () => {
+    if (!newUserEmail.trim() || !newUserPassword.trim()) {
+      return;
+    }
+
+    setIsCreatingUser(true);
+    try {
+      // Create user account
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: newUserEmail,
+        password: newUserPassword,
+        user_metadata: {
+          display_name: newUserDisplayName
+        },
+        email_confirm: true // Skip email verification for admin-created users
+      });
+
+      if (authError) throw authError;
+
+      if (authData.user) {
+        // Update profile with display name and department
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            display_name: newUserDisplayName || null,
+            department_id: newUserDepartment === 'none' ? null : newUserDepartment || null
+          })
+          .eq('user_id', authData.user.id);
+
+        if (profileError) {
+          console.error('Error updating profile:', profileError);
+        }
+
+        // Assign role if not default 'user'
+        if (newUserRole !== 'user') {
+          await assignRole(authData.user.id, newUserRole);
+        }
+
+        // Clear form
+        setNewUserEmail('');
+        setNewUserPassword('');
+        setNewUserDisplayName('');
+        setNewUserDepartment('');
+        setNewUserRole('user');
+
+        // Reload users
+        await loadUsers();
+      }
+    } catch (error: any) {
+      console.error('Error creating user:', error);
+    } finally {
+      setIsCreatingUser(false);
+    }
+  };
+
   if (!isAdmin()) {
     return (
       <Card>
@@ -100,8 +164,9 @@ export function UserRoleManager() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="users">Users & Roles</TabsTrigger>
+            <TabsTrigger value="create-user">Create User</TabsTrigger>
             <TabsTrigger value="departments">Departments</TabsTrigger>
           </TabsList>
           
@@ -221,6 +286,103 @@ export function UserRoleManager() {
                 <p>No users found</p>
               </div>
             )}
+          </TabsContent>
+          
+          <TabsContent value="create-user" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserPlus className="h-5 w-5" />
+                  Create New User
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="new-user-email">Email Address *</Label>
+                    <Input
+                      id="new-user-email"
+                      type="email"
+                      value={newUserEmail}
+                      onChange={(e) => setNewUserEmail(e.target.value)}
+                      placeholder="user@company.com"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="new-user-password">Password *</Label>
+                    <Input
+                      id="new-user-password"
+                      type="password"
+                      value={newUserPassword}
+                      onChange={(e) => setNewUserPassword(e.target.value)}
+                      placeholder="Temporary password"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="new-user-name">Display Name</Label>
+                    <Input
+                      id="new-user-name"
+                      value={newUserDisplayName}
+                      onChange={(e) => setNewUserDisplayName(e.target.value)}
+                      placeholder="John Doe"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="new-user-dept">Department</Label>
+                    <Select value={newUserDepartment} onValueChange={setNewUserDepartment}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No Department</SelectItem>
+                        {departments.map((dept) => (
+                          <SelectItem key={dept.id} value={dept.id}>
+                            {dept.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="new-user-role">Initial Role</Label>
+                    <Select value={newUserRole} onValueChange={(value: AppRole) => setNewUserRole(value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="user">User</SelectItem>
+                        <SelectItem value="moderator">Moderator</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2 pt-4">
+                  <Button 
+                    onClick={handleCreateUser} 
+                    disabled={!newUserEmail.trim() || !newUserPassword.trim() || isCreatingUser}
+                    className="flex-1"
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    {isCreatingUser ? 'Creating User...' : 'Create User'}
+                  </Button>
+                </div>
+                
+                <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                  <strong>Note:</strong> The user will be created with email verification automatically confirmed. 
+                  They can log in immediately with the provided credentials and should change their password on first login.
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
           
           <TabsContent value="departments" className="space-y-4">
