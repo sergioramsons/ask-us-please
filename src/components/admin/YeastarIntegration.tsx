@@ -241,7 +241,7 @@ const YeastarIntegration = () => {
                 <p><strong>Helpdesk Domain:</strong> thzdazcmswmeolaiijml</p>
                 <p><strong>Client ID:</strong> 913688101601</p>
                 <p><strong>Client Secret:</strong> LC527X58GES9XS45</p>
-                <p><strong>Callback URL:</strong> https://bernserg.ras.yeastar.com/integration/callback/api/helpdesk/6d9b0a67a84a426dbcd4c230842868d1/</p>
+                <p><strong>Callback URL:</strong> Use your actual Yeastar PBX callback URL</p>
               </div>
           </div>
           
