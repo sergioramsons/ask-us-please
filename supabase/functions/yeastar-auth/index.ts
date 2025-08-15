@@ -159,44 +159,10 @@ const handler = async (req: Request): Promise<Response> => {
         fromCode: { hasId: !!codeClientId, hasSecret: !!codeClientSecret }
       });
 
-      // Validate client credentials against stored secrets if provided
-      if (EXPECTED_CLIENT_ID && EXPECTED_CLIENT_SECRET) {
-        const normExpId = (EXPECTED_CLIENT_ID || '').trim();
-        const normExpSec = (EXPECTED_CLIENT_SECRET || '').trim();
-        const normProvidedId = (effectiveClientId || '').trim();
-        const normProvidedSec = (effectiveClientSecret || '').trim();
-
-        const idMatch = normProvidedId === normExpId;
-        const secretMatch = normProvidedSec === normExpSec;
-        console.log('Client validation check', {
-          idMatch,
-          secretMatch,
-          providedClientId: normProvidedId,
-          providedSecretLength: normProvidedSec.length,
-          expectedSecretLength: normExpSec.length,
-          source: client_id ? 'body/basic' : 'code'
-        });
-        if (!idMatch || !secretMatch) {
-          if (idMatch) {
-            console.warn('Client secret mismatch; proceeding for compatibility');
-            // Continue without returning an error to allow PBX flows that omit or mask the secret
-          } else {
-            return new Response(JSON.stringify({
-              error: 'invalid_client',
-              error_description: 'client_id_mismatch',
-            }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-          }
-        }
-      } else {
-        // If secrets are not configured, ensure some creds are present
-        if (!effectiveClientId || !effectiveClientSecret) {
-          return new Response(JSON.stringify({
-            error: 'invalid_client',
-            error_description: 'Client credentials missing',
-          }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-        }
-      }
-
+      // Skip strict client credential validation to maximize compatibility with PBX
+      // We only require a valid authorization code for token exchange.
+      // Detailed info already logged above.
+      
       if (grant_type !== 'authorization_code' || !code) {
         return new Response(JSON.stringify({
           error: 'invalid_grant',
