@@ -30,11 +30,34 @@ const handler = async (req: Request): Promise<Response> => {
     if (url.pathname.includes('/oauth/authorizations/new')) {
       const clientId = url.searchParams.get('client_id');
       const clientSecret = url.searchParams.get('client_secret');
+      const redirectUri = url.searchParams.get('redirect_uri');
+      const state = url.searchParams.get('state');
       
-      // For simplicity, we'll generate a static authorization code
-      // In production, you'd want proper OAuth flow
+      console.log('OAuth authorization request:', { clientId, redirectUri, state });
+      
+      // Generate authorization code
       const authCode = btoa(`${clientId}:${clientSecret}:${Date.now()}`);
       
+      // Redirect back to Yeastar with authorization code
+      if (redirectUri) {
+        const redirectUrl = new URL(redirectUri);
+        redirectUrl.searchParams.set('code', authCode);
+        if (state) {
+          redirectUrl.searchParams.set('state', state);
+        }
+        
+        console.log('Redirecting to:', redirectUrl.toString());
+        
+        return new Response(null, {
+          status: 302,
+          headers: {
+            'Location': redirectUrl.toString(),
+            ...corsHeaders
+          }
+        });
+      }
+      
+      // Fallback if no redirect_uri
       return new Response(JSON.stringify({
         authorization_code: authCode,
         expires_in: 3600
