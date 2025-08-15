@@ -266,14 +266,17 @@ export function UserProfileManager() {
               <div className="space-y-2">
                 <Label htmlFor="department">Department</Label>
                 <Select
-                  value={formData.department_id}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, department_id: value }))}
+                  value={formData.department_id || "no-department"}
+                  onValueChange={(value) => setFormData(prev => ({ 
+                    ...prev, 
+                    department_id: value === "no-department" ? "" : value 
+                  }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select department" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No Department</SelectItem>
+                    <SelectItem value="no-department">No Department</SelectItem>
                     {departments.map(dept => (
                       <SelectItem key={dept.id} value={dept.id}>
                         {dept.name}
