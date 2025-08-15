@@ -41,7 +41,7 @@ const ThreeCXIntegration = () => {
         <Output Type="LastName" Value="[LastName]" />
         <Output Type="Email" Value="[Email]" />
         <Output Type="CompanyName" Value="[CompanyName]" />
-        <Output Type="PhoneBusiness" Value="[Phone]" />
+        <Output Type="PhoneBusiness" Value="[Number]" />
         <Output Type="EntityType" Value="Contacts" />
         <Output Type="EntityId" Value="[ContactID]" />
       </Outputs>
