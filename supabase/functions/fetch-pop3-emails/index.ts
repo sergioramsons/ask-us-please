@@ -352,18 +352,13 @@ async function processIncomingEmail(emailData: any, server: any) {
 }
 
 async function checkAutoTicketCreation(emailData: any): Promise<boolean> {
-  const supportEmails = ['support@', 'help@', 'tickets@', 'contact@'];
-  
-  const isSupportEmail = supportEmails.some(prefix => 
-    emailData.to.email.toLowerCase().includes(prefix)
-  );
-  
+  // Create tickets for all emails except auto-replies
   const isAutoReply = emailData.subject.toLowerCase().includes('auto') ||
                      emailData.subject.toLowerCase().includes('automatic') ||
                      emailData.subject.toLowerCase().includes('out of office') ||
                      emailData.subject.toLowerCase().includes('vacation');
   
-  return isSupportEmail && !isAutoReply;
+  return !isAutoReply;
 }
 
 async function createTicketFromEmail(emailRecord: any, emailData: any, server: any) {

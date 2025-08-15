@@ -37,3 +37,6 @@ verify_jwt = false
 
 [functions.fetch-pop3-emails]
 verify_jwt = false
+
+[functions.process-pending-emails]
+verify_jwt = false
