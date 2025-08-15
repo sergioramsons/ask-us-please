@@ -176,9 +176,19 @@ const handler = async (req: Request): Promise<Response> => {
       html: template.html,
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    console.log("Resend response:", emailResponse);
 
-    // Log the notification in the database (optional)
+    if (emailResponse.error) {
+      console.error("Resend send error:", emailResponse.error);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: "Email send failed",
+          error: emailResponse.error,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
     try {
       await supabase.from('email_server_audit').insert({
         action: 'NOTIFICATION_SENT',
