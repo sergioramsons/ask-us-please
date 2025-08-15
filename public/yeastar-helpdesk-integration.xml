@@ -7,9 +7,9 @@
       <Parameters>
         <Parameter Name="AuthMethod" Value="oauth2" />
         <Parameter Name="TokenType" Value="Bearer" />
-        <Parameter Name="AuthEndPoint" Value="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-auth/oauth/authorizations/new?client_id={{.client_id}}&amp;client_secret={{.client_secret}}" />
-        <Parameter Name="TokenEndPoint" Value="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-auth/oauth/tokens" />
-        <Parameter Name="AdditionalQueryString" />
+    <Parameter Name="AuthEndPoint" Value="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-auth/oauth/authorizations/new?client_id={{.client_id}}&amp;client_secret={{.client_secret}}&amp;redirect_uri={{UrlEncode .callback_url}}" />
+    <Parameter Name="TokenEndPoint" Value="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-auth/oauth/tokens" />
+    <Parameter Name="AdditionalQueryString" />
         <Parameter Name="Scope" Value="read write" />
         <Parameter Father="AuthOption" Name="NoNeedRefreshAccessToken" Value="1" />
         <Parameter Father="TokenErrorMap" Type="TokenInvalid" Name="TokenInvalid" Value="invalid_token" />

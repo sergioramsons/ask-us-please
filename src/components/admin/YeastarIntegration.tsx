@@ -17,7 +17,7 @@ const YeastarIntegration = () => {
       <Parameters>
         <Parameter Name="AuthMethod" Value="oauth2" />
         <Parameter Name="TokenType" Value="Bearer" />
-        <Parameter Name="AuthEndPoint" Value="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-auth/oauth/authorizations/new?client_id={{.client_id}}&amp;client_secret={{.client_secret}}" />
+        <Parameter Name="AuthEndPoint" Value="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-auth/oauth/authorizations/new?client_id={{.client_id}}&amp;client_secret={{.client_secret}}&amp;redirect_uri={{UrlEncode .callback_url}}" />
         <Parameter Name="TokenEndPoint" Value="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-auth/oauth/tokens" />
         <Parameter Name="AdditionalQueryString" />
         <Parameter Name="Scope" Value="read write" />
@@ -28,6 +28,7 @@ const YeastarIntegration = () => {
         <Parameter Father="CustomFieldList" Name="helpdesk_domain" Editor="string" Title="Helpdesk Domain" Key="helpdesk_domain" />
         <Parameter Father="CustomFieldList" Name="client_id" Editor="password" Title="Client ID" Key="client_id" />
         <Parameter Father="CustomFieldList" Name="client_secret" Editor="password" Title="Client Secret" Key="client_secret" />
+        <Parameter Father="CustomFieldList" Name="callback_url" Editor="string" Title="Callback URL" Key="callback_url" />
         <Parameter Father="PopulateTemplateString" Name="Content-Type" Type="Header" Value="application/json" />
         <Parameter Father="PopulateTemplateString" Name="Accept" Type="Header" Value="application/json" />
       </Parameters>
@@ -235,11 +236,12 @@ const YeastarIntegration = () => {
         <CardContent className="space-y-4">
           <div className="bg-muted p-4 rounded-lg">
             <h3 className="font-semibold mb-2">Configuration Values:</h3>
-            <div className="text-sm space-y-1">
-              <p><strong>Helpdesk Domain:</strong> thzdazcmswmeolaiijml</p>
-              <p><strong>Client ID:</strong> helpdesk_client (or any unique ID)</p>
-              <p><strong>Client Secret:</strong> your_secure_secret_key</p>
-            </div>
+              <div className="text-sm space-y-1">
+                <p><strong>Helpdesk Domain:</strong> thzdazcmswmeolaiijml</p>
+                <p><strong>Client ID:</strong> 913688101601</p>
+                <p><strong>Client Secret:</strong> LC527X58GES9XS45</p>
+                <p><strong>Callback URL:</strong> https://bernserg.ras.yeastar.com/integration/callback/api/helpdesk/6d9b0a67a84a426dbcd4c230842868d1/</p>
+              </div>
           </div>
           
           <div className="flex gap-2">
