@@ -178,6 +178,13 @@ export type Database = {
             referencedRelation: "email_servers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "email_server_audit_server_id_fkey"
+            columns: ["server_id"]
+            isOneToOne: false
+            referencedRelation: "email_servers_secure"
+            referencedColumns: ["id"]
+          },
         ]
       }
       email_servers: {
@@ -525,12 +532,141 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      email_servers_secure: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          is_active: boolean | null
+          name: string | null
+          password_encrypted: boolean | null
+          reply_to: string | null
+          sender_email: string | null
+          sender_name: string | null
+          smtp_host: string | null
+          smtp_port: number | null
+          smtp_username: string | null
+          updated_at: string | null
+          use_tls: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          password_encrypted?: boolean | null
+          reply_to?: string | null
+          sender_email?: string | null
+          sender_name?: string | null
+          smtp_host?: string | null
+          smtp_port?: number | null
+          smtp_username?: string | null
+          updated_at?: string | null
+          use_tls?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          password_encrypted?: boolean | null
+          reply_to?: string | null
+          sender_email?: string | null
+          sender_name?: string | null
+          smtp_host?: string | null
+          smtp_port?: number | null
+          smtp_username?: string | null
+          updated_at?: string | null
+          use_tls?: boolean | null
+        }
+        Relationships: []
+      }
+      incoming_mail_servers_secure: {
+        Row: {
+          auto_assign_department: string | null
+          auto_create_tickets: boolean | null
+          auto_process: boolean | null
+          check_interval: number | null
+          created_at: string | null
+          delete_after_process: boolean | null
+          folder_name: string | null
+          host: string | null
+          id: string | null
+          is_active: boolean | null
+          last_check: string | null
+          name: string | null
+          password_encrypted: boolean | null
+          port: number | null
+          server_type: string | null
+          updated_at: string | null
+          use_ssl: boolean | null
+          use_tls: boolean | null
+          username: string | null
+        }
+        Insert: {
+          auto_assign_department?: string | null
+          auto_create_tickets?: boolean | null
+          auto_process?: boolean | null
+          check_interval?: number | null
+          created_at?: string | null
+          delete_after_process?: boolean | null
+          folder_name?: string | null
+          host?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          last_check?: string | null
+          name?: string | null
+          password_encrypted?: boolean | null
+          port?: number | null
+          server_type?: string | null
+          updated_at?: string | null
+          use_ssl?: boolean | null
+          use_tls?: boolean | null
+          username?: string | null
+        }
+        Update: {
+          auto_assign_department?: string | null
+          auto_create_tickets?: boolean | null
+          auto_process?: boolean | null
+          check_interval?: number | null
+          created_at?: string | null
+          delete_after_process?: boolean | null
+          folder_name?: string | null
+          host?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          last_check?: string | null
+          name?: string | null
+          password_encrypted?: boolean | null
+          port?: number | null
+          server_type?: string | null
+          updated_at?: string | null
+          use_ssl?: boolean | null
+          use_tls?: boolean | null
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incoming_mail_servers_auto_assign_department_fkey"
+            columns: ["auto_assign_department"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       current_user_has_role: {
         Args: { _role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
+      }
+      decrypt_server_password: {
+        Args: { encrypted_password: string }
+        Returns: string
+      }
+      encrypt_server_password: {
+        Args: { plain_password: string }
+        Returns: string
       }
       generate_ticket_number: {
         Args: Record<PropertyKey, never>
