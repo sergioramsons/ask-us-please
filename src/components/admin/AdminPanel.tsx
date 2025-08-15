@@ -2,6 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserRoleManager } from "@/components/admin/UserRoleManager";
 import { ReportsDashboard } from "@/components/reports/ReportsDashboard";
 import { EmailServerConfig } from "@/components/helpdesk/EmailServerConfig";
+import IncomingEmailManager from "@/components/admin/IncomingEmailManager";
 import { EnhancedTicketForm } from "@/components/helpdesk/EnhancedTicketForm";
 import { WorkflowBuilder } from "@/components/workflow/WorkflowBuilder";
 import { BusinessHoursConfig } from "@/components/admin/BusinessHoursConfig";
@@ -76,6 +77,7 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
         
         <TabsContent value="email" className="space-y-4">
           <EmailServerConfig />
+          <IncomingEmailManager />
         </TabsContent>
         
         <TabsContent value="users" className="space-y-4">
