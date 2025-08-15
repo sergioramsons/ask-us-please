@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { DashboardStats } from "@/components/helpdesk/dashboard-stats";
@@ -27,6 +27,20 @@ const Index = () => {
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+
+  // Auto-launch helpdesk when coming from Yeastar
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('popup') === 'helpdesk') {
+      setCurrentView('create-ticket');
+      const phone = params.get('phone');
+      if (phone) {
+        toast({ title: 'Helpdesk launched', description: `Caller: ${phone}` });
+      } else {
+        toast({ title: 'Helpdesk launched', description: 'Launched from Yeastar PBX' });
+      }
+    }
+  }, []);
 
   // Redirect to auth if not authenticated
   if (!loading && !user) {

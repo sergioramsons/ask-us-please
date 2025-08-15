@@ -29,6 +29,7 @@ const YeastarIntegration = () => {
         <Parameter Father="CustomFieldList" Name="client_id" Editor="password" Title="Client ID" Key="client_id" />
         <Parameter Father="CustomFieldList" Name="client_secret" Editor="password" Title="Client Secret" Key="client_secret" />
         <Parameter Father="CustomFieldList" Name="callback_url" Editor="string" Title="Callback URL" Key="callback_url" />
+        <Parameter Father="CustomFieldList" Name="app_url" Editor="string" Title="App URL" Key="app_url" />
         <Parameter Father="PopulateTemplateString" Name="Content-Type" Type="Header" Value="application/json" />
         <Parameter Father="PopulateTemplateString" Name="Accept" Type="Header" Value="application/json" />
       </Parameters>
@@ -39,7 +40,7 @@ const YeastarIntegration = () => {
       <Presets />
       <Parameters>
         <Parameter Name="ContactUrlType" Value="specify_url_format" />
-        <Parameter Name="URLFormat" Value="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-tickets/{{.ContactId}}" />
+        <Parameter Name="URLFormat" Value="{{.app_url}}/yeastar?popup=helpdesk" />
         <Parameter Name="ContactFieldForUri" />
         <Parameter Name="ContactsIdEnable" Value="1" />
         <Parameter Name="FirstNameEnable" Value="1" />
