@@ -62,31 +62,61 @@ export function TicketResponseForm({
     if (!isInternal && customerEmail) {
       setIsSendingEmail(true);
       try {
-        const { data, error } = await supabase.functions.invoke('send-ticket-email', {
-          body: {
-            ticketId,
-            customerName,
-            customerEmail,
-            subject: ticketSubject,
-            message: response,
-            agentName: 'Support Agent', // This would come from auth context in real app
-            ticketStatus,
-            priority,
-            isResolution: ticketStatus === 'resolved'
-          }
-        });
+        // Check if there's an active custom email server
+        const { data: activeServer } = await supabase
+          .from('email_servers')
+          .select('*')
+          .eq('is_active', true)
+          .limit(1)
+          .single();
 
-        if (error) {
-          console.error('Email sending error:', error);
+        let emailResponse;
+        
+        if (activeServer) {
+          // Use custom email server
+          emailResponse = await supabase.functions.invoke('send-custom-email', {
+            body: {
+              ticketId,
+              customerName,
+              customerEmail,
+              subject: ticketSubject,
+              message: response,
+              agentName: 'Support Agent', // This would come from auth context in real app
+              ticketStatus,
+              priority,
+              isResolution: ticketStatus === 'resolved',
+              emailServerId: activeServer.id
+            }
+          });
+        } else {
+          // Fallback to Resend
+          emailResponse = await supabase.functions.invoke('send-ticket-email', {
+            body: {
+              ticketId,
+              customerName,
+              customerEmail,
+              subject: ticketSubject,
+              message: response,
+              agentName: 'Support Agent', // This would come from auth context in real app
+              ticketStatus,
+              priority,
+              isResolution: ticketStatus === 'resolved'
+            }
+          });
+        }
+
+        if (emailResponse.error) {
+          console.error('Email sending error:', emailResponse.error);
           toast({
             title: "Warning",
             description: "Response saved but email could not be sent. Please check email configuration.",
             variant: "destructive",
           });
         } else {
+          const serverType = activeServer ? 'custom SMTP server' : 'Resend';
           toast({
             title: "Response sent",
-            description: `Your response has been sent to ${customerEmail}`,
+            description: `Your response has been sent to ${customerEmail} via ${serverType}`,
           });
         }
       } catch (error) {

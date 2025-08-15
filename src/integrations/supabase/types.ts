@@ -41,6 +41,54 @@ export type Database = {
         }
         Relationships: []
       }
+      email_servers: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          reply_to: string | null
+          sender_email: string
+          sender_name: string
+          smtp_host: string
+          smtp_password: string
+          smtp_port: number
+          smtp_username: string
+          updated_at: string
+          use_tls: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          reply_to?: string | null
+          sender_email: string
+          sender_name?: string
+          smtp_host: string
+          smtp_password: string
+          smtp_port?: number
+          smtp_username: string
+          updated_at?: string
+          use_tls?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          reply_to?: string | null
+          sender_email?: string
+          sender_name?: string
+          smtp_host?: string
+          smtp_password?: string
+          smtp_port?: number
+          smtp_username?: string
+          updated_at?: string
+          use_tls?: boolean
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
