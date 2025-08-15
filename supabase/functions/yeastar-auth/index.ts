@@ -32,20 +32,37 @@ const handler = async (req: Request): Promise<Response> => {
     
     // Handle OAuth authorization endpoint
     if (url.pathname.includes('/oauth/authorizations/new')) {
-      const clientId = url.searchParams.get('client_id');
-      const clientSecret = url.searchParams.get('client_secret');
-      const redirectUri = url.searchParams.get('redirect_uri');
-      const incomingState = url.searchParams.get('state');
+      // Support both GET query params and POST body (form or JSON)
+      let payload: Record<string, string> = {};
+      let formParams = new URLSearchParams();
+      try {
+        const contentType = req.headers.get('content-type') || '';
+        if (req.method !== 'GET' && contentType) {
+          if (contentType.includes('application/x-www-form-urlencoded')) {
+            const text = await req.text();
+            formParams = new URLSearchParams(text);
+          } else if (contentType.includes('application/json')) {
+            payload = await req.json();
+          }
+        }
+      } catch (e) {
+        console.warn('Auth endpoint: failed to parse body', e);
+      }
 
+      const clientId = url.searchParams.get('client_id') || (payload.client_id as string) || formParams.get('client_id');
+      const clientSecret = url.searchParams.get('client_secret') || (payload.client_secret as string) || formParams.get('client_secret');
+      const redirectUri = url.searchParams.get('redirect_uri') || (payload.redirect_uri as string) || formParams.get('redirect_uri');
+      const incomingState = url.searchParams.get('state') || (payload.state as string) || formParams.get('state');
+      
       // Always ensure a non-empty state to satisfy clients expecting it
       const state = incomingState && incomingState.trim() !== ''
         ? incomingState
         : `state_${Date.now()}`;
       
-      console.log('OAuth authorization request:', { clientId, redirectUri, state });
+      console.log('OAuth authorization request:', { clientId, hasRedirect: !!redirectUri, hasState: !!incomingState, finalState: state });
       
       // Generate authorization code (includes provided creds for later recovery)
-      const authCode = btoa(`${clientId}:${clientSecret}:${Date.now()}`);
+      const authCode = btoa(`${clientId || ''}:${clientSecret || ''}:${Date.now()}`);
       
       // Redirect back to Yeastar with authorization code
       if (redirectUri) {
