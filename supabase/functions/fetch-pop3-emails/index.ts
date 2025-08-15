@@ -158,11 +158,12 @@ async function connectAndFetchEmails(config: any) {
   
   try {
     const useTlsTransport = useSSL || useTLS || port === 995;
-    const conn = await Deno.connect({
-      hostname: host,
-      port: port,
-      transport: useTlsTransport ? "tls" : "tcp",
-    });
+    let conn: Deno.Conn;
+    if (useTlsTransport) {
+      conn = await Deno.connectTls({ hostname: host, port });
+    } else {
+      conn = await Deno.connect({ hostname: host, port });
+    }
 
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
