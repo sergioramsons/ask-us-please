@@ -31,14 +31,17 @@ const Index = () => {
   // Auto-launch helpdesk when coming from Yeastar
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('popup') === 'helpdesk') {
+    const fromQuery = params.get('popup') === 'helpdesk';
+    const fromSession = sessionStorage.getItem('yeastarLaunch') === '1';
+
+    if (fromQuery || fromSession) {
       setCurrentView('create-ticket');
-      const phone = params.get('phone');
-      if (phone) {
-        toast({ title: 'Helpdesk launched', description: `Caller: ${phone}` });
-      } else {
-        toast({ title: 'Helpdesk launched', description: 'Launched from Yeastar PBX' });
-      }
+      const phone = params.get('phone') || sessionStorage.getItem('yeastarPhone') || '';
+      toast({ title: 'Helpdesk launched', description: phone ? `Caller: ${phone}` : 'Launched from Yeastar PBX' });
+
+      // cleanup session flags to avoid re-trigger
+      sessionStorage.removeItem('yeastarLaunch');
+      sessionStorage.removeItem('yeastarPhone');
     }
   }, []);
 
