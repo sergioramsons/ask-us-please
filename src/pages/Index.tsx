@@ -14,15 +14,13 @@ import { mockTickets } from "@/data/mock-tickets";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useFreshdeskSync } from "@/hooks/useFreshdeskSync";
-import { Plus, Headphones, LogOut, User, RefreshCw, Settings } from "lucide-react";
+import { Plus, Headphones, LogOut, User, Settings } from "lucide-react";
 
 type View = 'dashboard' | 'create-ticket' | 'enhanced-ticket' | 'ticket-detail' | 'admin-panel';
 
 const Index = () => {
   const { user, loading } = useAuth();
   const { toast } = useToast();
-  const { isLoading: isSyncing, syncTickets, createTicketInFreshdesk, updateTicketInFreshdesk } = useFreshdeskSync();
   const { isAdmin } = useUserRoles();
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
@@ -54,22 +52,32 @@ const Index = () => {
   };
 
   const handleCreateTicket = async (ticketData: any) => {
-    // Create ticket in Freshdesk
-    const freshdeskTicket = await createTicketInFreshdesk({
+    const newTicket: Ticket = {
+      id: Date.now().toString(),
       title: ticketData.title,
       description: ticketData.description,
       status: 'open',
       priority: ticketData.priority,
+      severity: 'minor',
       category: ticketData.category,
-      customerName: ticketData.customerName,
-      customerEmail: ticketData.customerEmail,
+      source: 'portal',
+      customer: {
+        name: ticketData.customerName,
+        email: ticketData.customerEmail,
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
       tags: [],
-    });
+      watchers: [],
+      attachments: [],
+      comments: [],
+      slaBreached: false,
+      escalationLevel: 0,
+      customFields: {},
+    };
 
-    if (freshdeskTicket) {
-      setTickets(prev => [freshdeskTicket, ...prev]);
-      setCurrentView('dashboard');
-    }
+    setTickets(prev => [newTicket, ...prev]);
+    setCurrentView('dashboard');
   };
 
   const handleViewTicket = (ticket: Ticket) => {
@@ -78,15 +86,6 @@ const Index = () => {
   };
 
   const handleStatusChange = async (ticketId: string, status: TicketStatus) => {
-    const ticket = tickets.find(t => t.id === ticketId);
-    if (!ticket) return;
-
-    // Update in Freshdesk if it's a Freshdesk ticket
-    if (ticket.id.startsWith('fd-') && (ticket as any).freshdeskId) {
-      const success = await updateTicketInFreshdesk((ticket as any).freshdeskId, { status });
-      if (!success) return;
-    }
-
     setTickets(prev => prev.map(t =>
       t.id === ticketId
         ? { ...t, status, updatedAt: new Date() }
@@ -99,16 +98,6 @@ const Index = () => {
     }
   };
 
-  const handleSyncWithFreshdesk = async () => {
-    const syncedTickets = await syncTickets();
-    if (syncedTickets.length > 0) {
-      setTickets(prev => {
-        // Merge synced tickets with existing ones, avoiding duplicates
-        const existing = prev.filter(t => !t.id.startsWith('fd-'));
-        return [...syncedTickets, ...existing];
-      });
-    }
-  };
 
   const handleSignOut = async () => {
     try {
@@ -150,15 +139,6 @@ const Index = () => {
               
               {currentView === 'dashboard' && (
                 <>
-                  <Button 
-                    onClick={handleSyncWithFreshdesk}
-                    variant="outline"
-                    disabled={isSyncing}
-                    className="border-white/20 text-white hover:bg-white/10"
-                  >
-                    <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-                    Sync Freshdesk
-                  </Button>
                   <Button 
                     onClick={() => setCurrentView('create-ticket')}
                     className="bg-white text-primary hover:bg-blue-50"
