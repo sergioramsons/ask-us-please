@@ -72,13 +72,19 @@ export function EmailManager() {
   // Load data
   const loadServers = async () => {
     try {
+      // Use secure view that hides password data
       const { data, error } = await supabase
-        .from('email_servers')
+        .from('email_servers_secure')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setServers(data || []);
+      // Map secure view data to expected format
+      const serverData = data?.map(server => ({
+        ...server,
+        smtp_password: '***encrypted***' // Hide password in UI
+      })) || [];
+      setServers(serverData);
     } catch (error: any) {
       toast({
         title: "Error loading email servers",

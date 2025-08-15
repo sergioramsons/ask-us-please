@@ -59,17 +59,21 @@ const IncomingMailServerConfig = () => {
 
   const queryClient = useQueryClient();
 
-  // Fetch incoming mail servers
+  // Fetch incoming mail servers using secure view
   const { data: servers, isLoading } = useQuery({
     queryKey: ['incoming-mail-servers'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('incoming_mail_servers')
+        .from('incoming_mail_servers_secure')
         .select('*')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as IncomingMailServer[];
+      // Map secure view data to expected format
+      return data?.map(server => ({
+        ...server,
+        password: '***encrypted***' // Hide password in UI
+      })) as IncomingMailServer[];
     },
   });
 

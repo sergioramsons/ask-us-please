@@ -539,6 +539,7 @@ export type Database = {
           is_active: boolean | null
           name: string | null
           password_encrypted: boolean | null
+          password_status: string | null
           reply_to: string | null
           sender_email: string | null
           sender_name: string | null
@@ -554,6 +555,7 @@ export type Database = {
           is_active?: boolean | null
           name?: string | null
           password_encrypted?: boolean | null
+          password_status?: never
           reply_to?: string | null
           sender_email?: string | null
           sender_name?: string | null
@@ -569,6 +571,7 @@ export type Database = {
           is_active?: boolean | null
           name?: string | null
           password_encrypted?: boolean | null
+          password_status?: never
           reply_to?: string | null
           sender_email?: string | null
           sender_name?: string | null
@@ -595,6 +598,7 @@ export type Database = {
           last_check: string | null
           name: string | null
           password_encrypted: boolean | null
+          password_status: string | null
           port: number | null
           server_type: string | null
           updated_at: string | null
@@ -616,6 +620,7 @@ export type Database = {
           last_check?: string | null
           name?: string | null
           password_encrypted?: boolean | null
+          password_status?: never
           port?: number | null
           server_type?: string | null
           updated_at?: string | null
@@ -637,6 +642,7 @@ export type Database = {
           last_check?: string | null
           name?: string | null
           password_encrypted?: boolean | null
+          password_status?: never
           port?: number | null
           server_type?: string | null
           updated_at?: string | null
