@@ -20,16 +20,26 @@ interface CustomEmailRequest {
   emailServerId?: string;
 }
 
-// Password decryption function (mirrors the frontend encryption)
+// Secure password decryption using proper encryption key
 async function decryptPassword(encryptedPassword: string): Promise<string> {
   try {
     const ALGORITHM = 'AES-GCM';
     const KEY_LENGTH = 256;
-
-    // Get or generate encryption key (same as frontend)
-    const keyMaterial = new TextEncoder().encode('helpdesk-email-encryption-key-2024');
     
-    // Import the key material
+    // Get the encryption key from environment (matches frontend secureEncryption.ts)
+    const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
+    if (!encryptionKey) {
+      throw new Error('ENCRYPTION_KEY environment variable not set');
+    }
+
+    // Remove prefix if present
+    const cleanEncrypted = encryptedPassword.startsWith('enc:') 
+      ? encryptedPassword.slice(4) 
+      : encryptedPassword;
+
+    // Use the same key derivation as the frontend
+    const keyMaterial = new TextEncoder().encode(encryptionKey);
+    
     const importedKey = await crypto.subtle.importKey(
       'raw',
       keyMaterial,
@@ -38,12 +48,12 @@ async function decryptPassword(encryptedPassword: string): Promise<string> {
       ['deriveKey']
     );
 
-    // Derive the actual encryption key
+    // Use same salt and iterations as frontend for consistency
     const key = await crypto.subtle.deriveKey(
       {
         name: 'PBKDF2',
-        salt: new TextEncoder().encode('helpdesk-salt'),
-        iterations: 100000,
+        salt: new TextEncoder().encode('helpdesk-dev-salt-2024'),
+        iterations: 600000, // Match frontend iterations
         hash: 'SHA-256'
       },
       importedKey,
@@ -57,10 +67,15 @@ async function decryptPassword(encryptedPassword: string): Promise<string> {
     
     // Convert from base64
     const combined = new Uint8Array(
-      atob(encryptedPassword)
+      atob(cleanEncrypted)
         .split('')
         .map(char => char.charCodeAt(0))
     );
+
+    // Validate minimum length
+    if (combined.length < 13) {
+      throw new Error('Invalid encrypted data format');
+    }
 
     // Extract IV and encrypted data
     const iv = combined.slice(0, 12);

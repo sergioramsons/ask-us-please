@@ -26,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { encryptPassword, decryptPassword } from '@/lib/secureEncryption';
 import { SecurityDashboard } from './SecurityDashboard';
+import { EmailPasswordMigration } from '../admin/EmailPasswordMigration';
 
 interface EmailServer {
   id: string;
@@ -768,7 +769,10 @@ export function EmailServerConfig() {
           )}
 
           {currentView === 'security' && (
-            <SecurityDashboard />
+            <div className="space-y-6">
+              <EmailPasswordMigration />
+              <SecurityDashboard />
+            </div>
           )}
         </div>
       </div>

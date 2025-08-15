@@ -11,9 +11,14 @@ const DEV_SALT = 'helpdesk-dev-salt-2024';
 // Get encryption key from environment or derive from secure materials
 async function getEncryptionKey(): Promise<CryptoKey> {
   try {
-    // In production with Supabase, we'll use the ENCRYPTION_KEY secret
-    // For now, we'll use a more secure derivation method
-    const keyMaterial = new TextEncoder().encode(DEV_KEY_MATERIAL);
+    // Try to get the secure encryption key from environment
+    // This would be set in Supabase Edge Functions or production environment
+    const envKey = typeof window === 'undefined' 
+      ? (globalThis as any).Deno?.env?.get?.('ENCRYPTION_KEY')
+      : null;
+    
+    // Use environment key if available, otherwise fall back to development key
+    const keyMaterial = new TextEncoder().encode(envKey || DEV_KEY_MATERIAL);
     
     // Import the key material
     const importedKey = await crypto.subtle.importKey(

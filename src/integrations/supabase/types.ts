@@ -286,6 +286,14 @@ export type Database = {
         Args: { server_id: string }
         Returns: boolean
       }
+      migrate_email_server_passwords: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      password_appears_encrypted: {
+        Args: { password_text: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
