@@ -9,7 +9,7 @@ const YeastarIntegration = () => {
   const [copied, setCopied] = useState(false);
 
   const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
-<Information Provider="helpdesk" Name="Custom Helpdesk" Key="custom_helpdesk" Logo="helpdesk.png" Remark="" Version="1.0.0" AuthType="oauth2" MaxConcurrentRequest="10" UserAssociation="1" CallJournal="1" CreateNewContact="1" CreateNewTicket="1">
+<Information Provider="helpdesk" Name="Lovable Helpdesk" Key="lovable_helpdesk" Logo="helpdesk.png" Remark="Lovable Helpdesk Integration" Version="1.0.0" AuthType="oauth2" MaxConcurrentRequest="10" UserAssociation="1" CallJournal="1" CreateNewContact="1" CreateNewTicket="1">
   <Parameters />
   <Scenarios>
     <Scenario Id="AuthMethod" Type="AUTH">
@@ -17,17 +17,17 @@ const YeastarIntegration = () => {
       <Parameters>
         <Parameter Name="AuthMethod" Value="oauth2" />
         <Parameter Name="TokenType" Value="Bearer" />
-        <Parameter Name="AuthEndPoint" Value="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-auth/oauth/authorizations/new?client_id={{.client_id}}&client_secret={{.client_secret}}" />
-        <Parameter Name="TokenEndPoint" Value="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-auth/oauth/tokens?client_id={{.client_id}}&client_secret={{.client_secret}}" />
+        <Parameter Name="AuthEndPoint" Value="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-auth/oauth/authorizations/new?client_id={{.client_id}}&amp;client_secret={{.client_secret}}" />
+        <Parameter Name="TokenEndPoint" Value="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-auth/oauth/tokens" />
         <Parameter Name="AdditionalQueryString" />
         <Parameter Name="Scope" Value="read write" />
         <Parameter Father="AuthOption" Name="NoNeedRefreshAccessToken" Value="1" />
         <Parameter Father="TokenErrorMap" Type="TokenInvalid" Name="TokenInvalid" Value="invalid_token" />
         <Parameter Name="CredentialType" />
         <Parameter Name="Base64EncodedCredential" />
+        <Parameter Father="CustomFieldList" Name="helpdesk_domain" Editor="string" Title="Helpdesk Domain" Key="helpdesk_domain" />
         <Parameter Father="CustomFieldList" Name="client_id" Editor="password" Title="Client ID" Key="client_id" />
         <Parameter Father="CustomFieldList" Name="client_secret" Editor="password" Title="Client Secret" Key="client_secret" />
-        <Parameter Father="CustomFieldList" Name="helpdesk_domain" Editor="string" Title="Helpdesk Domain (your-project-id)" Key="helpdesk_domain" />
         <Parameter Father="PopulateTemplateString" Name="Content-Type" Type="Header" Value="application/json" />
         <Parameter Father="PopulateTemplateString" Name="Accept" Type="Header" Value="application/json" />
       </Parameters>
@@ -59,7 +59,7 @@ const YeastarIntegration = () => {
       <Requests>
         <Request Name="contacts" Method="GET" ResponseType="application/json" URLFormat="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-contacts?phone={{UrlEncode .Phone}}">
           <Parameters />
-          <Outputs>
+          <Outputs Next="GetIdentities">
             <Output Name="ContactsId" Path="users.#.id" />
             <Output Name="FirstName" Path="users.#.name" />
             <Output Name="BusinessNumber" Path="users.#.phone" />
@@ -84,7 +84,7 @@ const YeastarIntegration = () => {
       <Requests>
         <Request Name="SearchContact_contacts" Method="GET" ResponseType="application/json" URLFormat="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-contacts?query={{UrlEncode .SearchValue}}">
           <Parameters />
-          <Outputs>
+          <Outputs Next="GetIdentities">
             <Output Name="ContactsId" Path="users.#.id" />
             <Output Name="FirstName" Path="users.#.name" />
             <Output Name="BusinessNumber" Path="users.#.phone" />
@@ -123,7 +123,7 @@ const YeastarIntegration = () => {
       <Requests>
         <Request Name="contacts" Method="POST" ResponseType="application/json" URLFormat="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-contacts">
           <Parameters>
-            <Parameter Name="Data" Type="Body" Value="{&#xA;"user":{&#xA;"name": "{{.DisplayName}}","phone": "{{.BusinessNumber}}"&#xA;}&#xA;}" />
+            <Parameter Name="Data" Type="Body" Value="{&#xA;&quot;user&quot;:{&#xA;&quot;name&quot;: &quot;{{.DisplayName}}&quot;,&quot;phone&quot;: &quot;{{.BusinessNumber}}&quot;&#xA;}&#xA;}" />
           </Parameters>
           <Outputs>
             <Output Name="ContactId" Path="user.id" />
@@ -144,7 +144,7 @@ const YeastarIntegration = () => {
       <Requests>
         <Request Name="CreateNewTicket" Method="POST" ResponseType="application/json" URLFormat="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-tickets">
           <Parameters>
-            <Parameter Name="Data" Type="Body" Value="{&#xA;"ticket":{&#xA;"status":"new","subject":"{{.Subject}}",&#xA;"description":"{{.Description}}",&#xA;"tags":["auto-ticket-created-by-pbx","{{.Communication_Type}}","{{.Call_Status}}"],&#xA;"comment":{&#xA;"body":"{{.Description}}"&#xA;},&#xA;"requester_id":"{{.ContactId}}"&#xA;}&#xA;}" />
+            <Parameter Name="Data" Type="Body" Value="{&#xA;&quot;ticket&quot;:{&#xA;&quot;status&quot;:&quot;new&quot;,&quot;subject&quot;:&quot;{{.Subject}}&quot;,&#xA;&quot;description&quot;:&quot;{{.Description}}&quot;,&#xA;&quot;tags&quot;:[&quot;auto-ticket-created-by-pbx&quot;,&quot;{{.Communication_Type}}&quot;,&quot;{{.Call_Status}}&quot;],&#xA;&quot;comment&quot;:{&#xA;&quot;body&quot;:&quot;{{.Description}}&quot;&#xA;},&#xA;&quot;requester_id&quot;:&quot;{{.ContactId}}&quot;&#xA;}&#xA;}" />
           </Parameters>
           <Outputs>
             <Output Name="TicketId" Path="ticket.id" />
@@ -152,7 +152,7 @@ const YeastarIntegration = () => {
         </Request>
         <Request Name="UpdateTicket" Method="PATCH" ResponseType="application/json" URLFormat="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-tickets/{{.TicketId}}.json">
           <Parameters>
-            <Parameter Name="Data" Type="Body" Value="{&#xA;"ticket":{&#xA;"comment":{&#xA;"body":"{{.Description}}",&#xA;"public":true,&#xA;"author_id":"{{.ContactId}}"&#xA;}&#xA;}&#xA;}" />
+            <Parameter Name="Data" Type="Body" Value="{&#xA;&quot;ticket&quot;:{&#xA;&quot;comment&quot;:{&#xA;&quot;body&quot;:&quot;{{.Description}}&quot;,&#xA;&quot;public&quot;:true,&#xA;&quot;author_id&quot;:&quot;{{.ContactId}}&quot;&#xA;}&#xA;}&#xA;}" />
           </Parameters>
           <Outputs />
         </Request>
@@ -171,9 +171,28 @@ const YeastarIntegration = () => {
       <Requests>
         <Request Name="CallJournal" Method="PUT" ResponseType="application/json" URLFormat="{{if .RecordPath}}https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-tickets/{{.TicketId}}.json{{end}}">
           <Parameters>
-            <Parameter Name="Data" Type="Body" Value="{&#xA;"ticket":{&#xA;"voice_comment":{&#xA;"from": "{{.CallerNumber}}",&#xA;"to": "{{.CalleeNumber}}",&#xA;"recording_url":"{{.RecordPath}}",&#xA;"started_at": "{{ TimeFormat .StartTimeUnix "yyyy-MM-dd HH:mm:ss +0000" "1"}}",&#xA;"call_duration":{{.Talk_Duration_Sec}}&#xA;}&#xA;}&#xA;}" />
+            <Parameter Name="Data" Type="Body" Value="{&#xA;&quot;ticket&quot;:{&#xA;&quot;voice_comment&quot;:{&#xA;&quot;from&quot;: &quot;{{.CallerNumber}}&quot;,&#xA;&quot;to&quot;: &quot;{{.CalleeNumber}}&quot;,&#xA;&quot;recording_url&quot;:&quot;{{.RecordPath}}&quot;,&#xA;&quot;started_at&quot;: &quot;{{ TimeFormat .StartTimeUnix &quot;yyyy-MM-dd HH:mm:ss +0000&quot; &quot;1&quot;}}&quot;,&#xA;&quot;call_duration&quot;:{{.Talk_Duration_Sec}}&#xA;}&#xA;}&#xA;}" />
           </Parameters>
           <Outputs />
+        </Request>
+      </Requests>
+    </Scenario>
+    <Scenario Id="Common" Type="REST">
+      <Presets />
+      <Parameters />
+      <Requests>
+        <Request Name="GetIdentities" Method="GET" URLFormat="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-contacts/{{.ContactsId}}/identities" ResponseType="application/json">
+          <Parameters />
+          <Outputs>
+            <Output Name="BusinessNumber2" Path="identities.#(type==&quot;phone_number&quot;)#|1.value" />
+            <Output Name="MobileNumber" Path="identities.#(type==&quot;phone_number&quot;)#|2.value" />
+            <Output Name="MobileNumber2" Path="identities.#(type==&quot;phone_number&quot;)#|3.value" />
+            <Output Name="HomeNumber" Path="identities.#(type==&quot;phone_number&quot;)#|4.value" />
+            <Output Name="HomeNumber2" Path="identities.#(type==&quot;phone_number&quot;)#|5.value" />
+            <Output Name="BusinessFaxNumber" Path="identities.#(type==&quot;phone_number&quot;)#|6.value" />
+            <Output Name="HomeFaxNumber" Path="identities.#(type==&quot;phone_number&quot;)#|7.value" />
+            <Output Name="OtherNumber" Path="identities.#(type==&quot;phone_number&quot;)#|8.value" />
+          </Outputs>
         </Request>
       </Requests>
     </Scenario>

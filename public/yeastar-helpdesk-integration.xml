@@ -13,9 +13,9 @@
         <Parameter Name="Scope" Value="read write" />
         <Parameter Father="AuthOption" Name="NoNeedRefreshAccessToken" Value="1" />
         <Parameter Father="TokenErrorMap" Type="TokenInvalid" Name="TokenInvalid" Value="invalid_token" />
-        <Parameter Name="CredentialType" Value="custom" />
+        <Parameter Name="CredentialType" />
         <Parameter Name="Base64EncodedCredential" />
-        <Parameter Father="CustomFieldList" Name="helpdesk_domain" Editor="string" Title="Helpdesk Domain (Project ID)" Key="helpdesk_domain" />
+        <Parameter Father="CustomFieldList" Name="helpdesk_domain" Editor="string" Title="Helpdesk Domain" Key="helpdesk_domain" />
         <Parameter Father="CustomFieldList" Name="client_id" Editor="password" Title="Client ID" Key="client_id" />
         <Parameter Father="CustomFieldList" Name="client_secret" Editor="password" Title="Client Secret" Key="client_secret" />
         <Parameter Father="PopulateTemplateString" Name="Content-Type" Type="Header" Value="application/json" />
@@ -32,10 +32,10 @@
         <Parameter Name="ContactFieldForUri" />
         <Parameter Name="ContactsIdEnable" Value="1" />
         <Parameter Name="FirstNameEnable" Value="1" />
-        <Parameter Name="LastNameEnable" Value="1" />
-        <Parameter Name="CompanyEnable" Value="1" />
         <Parameter Name="EmailEnable" Value="1" />
         <Parameter Name="BusinessNumberEnable" Value="1" />
+        <Parameter Name="RemarkEnable" Value="1" />
+        <Parameter Name="CustomValueEnable" Value="1" />
         <Parameter Name="BusinessNumber2Enable" Value="1" />
         <Parameter Name="BusinessFaxNumberEnable" Value="1" />
         <Parameter Name="MobileNumberEnable" Value="1" />
@@ -44,24 +44,17 @@
         <Parameter Name="HomeNumber2Enable" Value="1" />
         <Parameter Name="HomeFaxNumberEnable" Value="1" />
         <Parameter Name="OtherNumberEnable" Value="1" />
-        <Parameter Name="ZipCodeEnable" Value="1" />
-        <Parameter Name="StreetEnable" Value="1" />
-        <Parameter Name="CityEnable" Value="1" />
-        <Parameter Name="StateEnable" Value="1" />
-        <Parameter Name="CountryEnable" Value="1" />
-        <Parameter Name="RemarkEnable" Value="1" />
         <Parameter Name="CustomValueEnable" Value="1" />
       </Parameters>
       <Requests>
         <Request Name="contacts" Method="GET" ResponseType="application/json" URLFormat="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-contacts?phone={{UrlEncode .Phone}}">
           <Parameters />
-          <Outputs>
+          <Outputs Next="GetIdentities">
             <Output Name="ContactsId" Path="users.#.id" />
             <Output Name="FirstName" Path="users.#.name" />
-            <Output Name="LastName" Path="" />
-            <Output Name="Company" Path="" />
-            <Output Name="Email" Path="users.#.email" />
             <Output Name="BusinessNumber" Path="users.#.phone" />
+            <Output Name="Email" Path="users.#.email" />
+            <Output Name="Remark" Path="users.#.notes" />
             <Output Name="BusinessNumber2" Path="" />
             <Output Name="BusinessFaxNumber" Path="" />
             <Output Name="MobileNumber" Path="" />
@@ -70,12 +63,6 @@
             <Output Name="HomeNumber2" Path="" />
             <Output Name="HomeFaxNumber" Path="" />
             <Output Name="OtherNumber" Path="" />
-            <Output Name="ZipCode" Path="" />
-            <Output Name="Street" Path="" />
-            <Output Name="City" Path="" />
-            <Output Name="State" Path="" />
-            <Output Name="Country" Path="" />
-            <Output Name="Remark" Path="users.#.notes" />
             <Output Name="CustomValue" Path="" />
           </Outputs>
         </Request>
@@ -87,13 +74,12 @@
       <Requests>
         <Request Name="SearchContact_contacts" Method="GET" ResponseType="application/json" URLFormat="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-contacts?query={{UrlEncode .SearchValue}}">
           <Parameters />
-          <Outputs>
+          <Outputs Next="GetIdentities">
             <Output Name="ContactsId" Path="users.#.id" />
             <Output Name="FirstName" Path="users.#.name" />
-            <Output Name="LastName" Path="" />
-            <Output Name="Company" Path="" />
-            <Output Name="Email" Path="users.#.email" />
             <Output Name="BusinessNumber" Path="users.#.phone" />
+            <Output Name="Email" Path="users.#.email" />
+            <Output Name="Remark" Path="users.#.notes" />
             <Output Name="BusinessNumber2" Path="" />
             <Output Name="BusinessFaxNumber" Path="" />
             <Output Name="MobileNumber" Path="" />
@@ -102,12 +88,6 @@
             <Output Name="HomeNumber2" Path="" />
             <Output Name="HomeFaxNumber" Path="" />
             <Output Name="OtherNumber" Path="" />
-            <Output Name="ZipCode" Path="" />
-            <Output Name="Street" Path="" />
-            <Output Name="City" Path="" />
-            <Output Name="State" Path="" />
-            <Output Name="Country" Path="" />
-            <Output Name="Remark" Path="users.#.notes" />
             <Output Name="CustomValue" Path="" />
           </Outputs>
         </Request>
@@ -121,7 +101,6 @@
           <Parameters />
           <Outputs>
             <Output Name="UserUniqueId" Path="users.#.id" />
-            <Output Name="FirstName" Path="users.#.name" />
             <Output Name="LastName" Path="users.#.name" />
             <Output Name="Email" Path="users.#.email" />
           </Outputs>
@@ -134,7 +113,7 @@
       <Requests>
         <Request Name="contacts" Method="POST" ResponseType="application/json" URLFormat="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-contacts">
           <Parameters>
-            <Parameter Name="Data" Type="Body" Value="{&#xA;&quot;user&quot;:{&#xA;&quot;name&quot;: &quot;{{.DisplayName}}&quot;,&quot;phone&quot;: &quot;{{.BusinessNumber}}&quot;,&quot;email&quot;: &quot;{{.Email}}&quot;&#xA;}&#xA;}" />
+            <Parameter Name="Data" Type="Body" Value="{&#xA;&quot;user&quot;:{&#xA;&quot;name&quot;: &quot;{{.DisplayName}}&quot;,&quot;phone&quot;: &quot;{{.BusinessNumber}}&quot;&#xA;}&#xA;}" />
           </Parameters>
           <Outputs>
             <Output Name="ContactId" Path="user.id" />
@@ -172,12 +151,10 @@
     <Scenario Id="CallJournal" Type="REST">
       <Presets />
       <Parameters>
-        <Parameter Name="EnableSubject" Value="1" />
-        <Parameter Name="Subject" Value="Extension Call" />
-        <Parameter Name="EnableDescription" Value="1" />
-        <Parameter Name="Description" Value="Call: {{.Time}} {{.Call_Log_Status}} from {{.Call_From}} to {{.Call_To}} {{.Talk_Duration}}" />
+        <Parameter Name="EnableSubject" Value="0" />
+        <Parameter Name="EnableDescription" Value="0" />
         <Parameter Name="EnablePlayCallRecording" Value="1" />
-        <Parameter Name="PlayCallRecording" Value="1" />
+        <Parameter Name="PlayCallRecording" Value="0" />
         <Parameter Name="NeedSyncContact" Value="1" />
         <Parameter Name="TicketId" Value="" />
       </Parameters>
@@ -187,6 +164,25 @@
             <Parameter Name="Data" Type="Body" Value="{&#xA;&quot;ticket&quot;:{&#xA;&quot;voice_comment&quot;:{&#xA;&quot;from&quot;: &quot;{{.CallerNumber}}&quot;,&#xA;&quot;to&quot;: &quot;{{.CalleeNumber}}&quot;,&#xA;&quot;recording_url&quot;:&quot;{{.RecordPath}}&quot;,&#xA;&quot;started_at&quot;: &quot;{{ TimeFormat .StartTimeUnix &quot;yyyy-MM-dd HH:mm:ss +0000&quot; &quot;1&quot;}}&quot;,&#xA;&quot;call_duration&quot;:{{.Talk_Duration_Sec}}&#xA;}&#xA;}&#xA;}" />
           </Parameters>
           <Outputs />
+        </Request>
+      </Requests>
+    </Scenario>
+    <Scenario Id="Common" Type="REST">
+      <Presets />
+      <Parameters />
+      <Requests>
+        <Request Name="GetIdentities" Method="GET" URLFormat="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-contacts/{{.ContactsId}}/identities" ResponseType="application/json">
+          <Parameters />
+          <Outputs>
+            <Output Name="BusinessNumber2" Path="identities.#(type==&quot;phone_number&quot;)#|1.value" />
+            <Output Name="MobileNumber" Path="identities.#(type==&quot;phone_number&quot;)#|2.value" />
+            <Output Name="MobileNumber2" Path="identities.#(type==&quot;phone_number&quot;)#|3.value" />
+            <Output Name="HomeNumber" Path="identities.#(type==&quot;phone_number&quot;)#|4.value" />
+            <Output Name="HomeNumber2" Path="identities.#(type==&quot;phone_number&quot;)#|5.value" />
+            <Output Name="BusinessFaxNumber" Path="identities.#(type==&quot;phone_number&quot;)#|6.value" />
+            <Output Name="HomeFaxNumber" Path="identities.#(type==&quot;phone_number&quot;)#|7.value" />
+            <Output Name="OtherNumber" Path="identities.#(type==&quot;phone_number&quot;)#|8.value" />
+          </Outputs>
         </Request>
       </Requests>
     </Scenario>
