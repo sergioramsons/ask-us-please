@@ -156,13 +156,15 @@ const handler = async (req: Request): Promise<Response> => {
           source: client_id ? 'body/basic' : 'code'
         });
         if (!idMatch || !secretMatch) {
-          const reason = !idMatch && !secretMatch
-            ? 'client_id_and_secret_mismatch'
-            : (!idMatch ? 'client_id_mismatch' : 'client_secret_mismatch');
-          return new Response(JSON.stringify({
-            error: 'invalid_client',
-            error_description: reason,
-          }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+          if (idMatch) {
+            console.warn('Client secret mismatch; proceeding for compatibility');
+            // Continue without returning an error to allow PBX flows that omit or mask the secret
+          } else {
+            return new Response(JSON.stringify({
+              error: 'invalid_client',
+              error_description: 'client_id_mismatch',
+            }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+          }
         }
       } else {
         // If secrets are not configured, ensure some creds are present
