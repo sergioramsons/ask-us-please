@@ -29,7 +29,7 @@ const Index = () => {
   const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [showHelpdeskPopup, setShowHelpdeskPopup] = useState(false);
-  const [callerInfo, setCallerInfo] = useState<{phone: string; name: string} | null>(null);
+  const [callerInfo, setCallerInfo] = useState<{phone: string; name: string; email?: string} | null>(null);
 
   // Auto-launch helpdesk when coming from Yeastar
   useEffect(() => {
@@ -37,12 +37,33 @@ const Index = () => {
     const fromQuery = params.get('popup') === 'helpdesk';
     const fromSession = sessionStorage.getItem('yeastarLaunch') === '1';
 
-    if (fromQuery || fromSession) {
+  if (fromQuery || fromSession) {
       const phone = params.get('phone') || sessionStorage.getItem('yeastarPhone') || '';
       const name = params.get('name') || sessionStorage.getItem('yeastarName') || '';
       
       setCallerInfo({ phone, name });
       setShowHelpdeskPopup(true);
+
+      // Try to find an existing contact by phone to prefill details
+      (async () => {
+        try {
+          if (phone) {
+            const { data, error } = await supabase
+              .from('contacts')
+              .select('*')
+              .or(`phone.eq.${phone},phone.ilike.%${phone}%`)
+              .limit(1);
+            if (!error && data && data.length > 0) {
+              const c: any = data[0];
+              setCallerInfo({
+                phone: c.phone || phone,
+                name: `${c.first_name || ''} ${c.last_name || ''}`.trim() || name,
+                email: c.email || undefined,
+              });
+            }
+          }
+        } catch {}
+      })();
       
       const caller = name ? `${name} (${phone})` : phone;
       toast({ title: 'Helpdesk launched', description: caller ? `Caller: ${caller}` : 'Launched from Yeastar PBX' });
@@ -306,6 +327,7 @@ const Index = () => {
             onCancel={() => setShowHelpdeskPopup(false)}
             defaultPhone={callerInfo?.phone}
             defaultName={callerInfo?.name}
+            defaultEmail={callerInfo?.email}
           />
         </DialogContent>
       </Dialog>

@@ -24,9 +24,10 @@ interface TicketFormProps {
   onCancel?: () => void;
   defaultPhone?: string;
   defaultName?: string;
+  defaultEmail?: string;
 }
 
-export function TicketForm({ onSubmit, onCancel, defaultPhone, defaultName }: TicketFormProps) {
+export function TicketForm({ onSubmit, onCancel, defaultPhone, defaultName, defaultEmail }: TicketFormProps) {
   const { toast } = useToast();
   const { contacts, getContactByEmail } = useContacts();
   const [customerSuggestions, setCustomerSuggestions] = useState<Contact[]>([]);
@@ -37,11 +38,23 @@ export function TicketForm({ onSubmit, onCancel, defaultPhone, defaultName }: Ti
     priority: 'medium',
     category: 'general',
     customerName: defaultName || '',
-    customerEmail: ''
+    customerEmail: defaultEmail || ''
   });
 
   // Add phone field to show caller info
   const [phoneNumber, setPhoneNumber] = useState(defaultPhone || '');
+
+  // Sync defaults if they change after mount (e.g., async contact lookup)
+  useEffect(() => {
+    if (defaultName || defaultEmail) {
+      setFormData(prev => ({
+        ...prev,
+        customerName: defaultName ?? prev.customerName,
+        customerEmail: defaultEmail ?? prev.customerEmail,
+      }));
+    }
+    if (defaultPhone) setPhoneNumber(defaultPhone);
+  }, [defaultName, defaultEmail, defaultPhone]);
 
   const handleEmailChange = (email: string) => {
     setFormData({ ...formData, customerEmail: email });
