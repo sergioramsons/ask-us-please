@@ -12,11 +12,15 @@ const corsHeaders = {
 };
 
 interface AuthRequest {
-  client_id: string;
-  client_secret: string;
-  grant_type: string;
+  client_id?: string;
+  client_secret?: string;
+  grant_type?: string;
   code?: string;
+  redirect_uri?: string;
 }
+
+const EXPECTED_CLIENT_ID = Deno.env.get('YEASTAR_CLIENT_ID') || '';
+const EXPECTED_CLIENT_SECRET = Deno.env.get('YEASTAR_CLIENT_SECRET') || '';
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -69,30 +73,91 @@ const handler = async (req: Request): Promise<Response> => {
     
     // Handle token endpoint
     if (url.pathname.includes('/oauth/tokens')) {
-      const body: AuthRequest = await req.json();
-      
-      // Validate client credentials (in production, store these securely)
-      if (body.client_id && body.client_secret) {
-        // Generate access token
-        const accessToken = btoa(`${body.client_id}:${Date.now()}`);
-        
-        return new Response(JSON.stringify({
-          access_token: accessToken,
-          token_type: "Bearer",
-          expires_in: 3600,
-          scope: "read write"
-        }), {
-          status: 200,
-          headers: { "Content-Type": "application/json", ...corsHeaders }
-        });
+      const contentType = req.headers.get('content-type') || '';
+      const authHeader = req.headers.get('authorization') || '';
+
+      let basicClientId = '';
+      let basicClientSecret = '';
+      if (authHeader.startsWith('Basic ')) {
+        try {
+          const decoded = atob(authHeader.replace('Basic ', ''));
+          const [id, secret] = decoded.split(':');
+          basicClientId = id || '';
+          basicClientSecret = secret || '';
+        } catch (_) {
+          // ignore malformed basic auth
+        }
       }
-      
+
+      let payload: Record<string, string> = {};
+      let formParams = new URLSearchParams();
+
+      try {
+        if (contentType.includes('application/x-www-form-urlencoded')) {
+          const text = await req.text();
+          formParams = new URLSearchParams(text);
+        } else if (contentType.includes('application/json')) {
+          payload = await req.json();
+        } else {
+          // Try to parse as form as a fallback
+          const text = await req.text();
+          formParams = new URLSearchParams(text);
+        }
+      } catch (e) {
+        console.error('Failed to parse token request body:', e);
+      }
+
+      const client_id = (payload.client_id as string) || formParams.get('client_id') || basicClientId;
+      const client_secret = (payload.client_secret as string) || formParams.get('client_secret') || basicClientSecret;
+      const grant_type = (payload.grant_type as string) || formParams.get('grant_type') || 'authorization_code';
+      const code = (payload.code as string) || formParams.get('code') || '';
+      const redirect_uri = (payload.redirect_uri as string) || formParams.get('redirect_uri') || '';
+
+      console.log('Token request received', {
+        hasClientId: !!client_id,
+        hasClientSecret: !!client_secret,
+        grant_type,
+        hasCode: !!code,
+        hasRedirect: !!redirect_uri,
+      });
+
+      // Strictly validate client credentials against stored secrets if provided
+      if (EXPECTED_CLIENT_ID && EXPECTED_CLIENT_SECRET) {
+        if (client_id !== EXPECTED_CLIENT_ID || client_secret !== EXPECTED_CLIENT_SECRET) {
+          return new Response(JSON.stringify({
+            error: 'invalid_client',
+            error_description: 'Invalid client credentials',
+          }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        }
+      } else {
+        // If secrets are not configured, ensure some creds are present
+        if (!client_id || !client_secret) {
+          return new Response(JSON.stringify({
+            error: 'invalid_client',
+            error_description: 'Client credentials missing',
+          }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        }
+      }
+
+      if (grant_type !== 'authorization_code' || !code) {
+        return new Response(JSON.stringify({
+          error: 'invalid_grant',
+          error_description: 'Unsupported grant_type or missing code',
+        }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+
+      const accessToken = btoa(`${client_id}:${Date.now()}`);
+      const refreshToken = btoa(`${accessToken}:refresh`);
+
       return new Response(JSON.stringify({
-        error: "invalid_client",
-        error_description: "Invalid client credentials"
+        access_token: accessToken,
+        token_type: 'Bearer',
+        expires_in: 3600,
+        scope: 'read write',
+        refresh_token: refreshToken,
       }), {
-        status: 401,
-        headers: { "Content-Type": "application/json", ...corsHeaders }
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
     }
 
