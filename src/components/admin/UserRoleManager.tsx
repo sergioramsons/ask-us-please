@@ -123,7 +123,7 @@ export function UserRoleManager() {
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Department</SelectItem>
+                  <SelectItem value="none">No Department</SelectItem>
                   {departments.map((dept) => (
                     <SelectItem key={dept.id} value={dept.id}>
                       {dept.name}
@@ -185,16 +185,29 @@ export function UserRoleManager() {
                       Add {selectedRole}
                     </Button>
                     
-                    {selectedDepartment && (
+                    {selectedDepartment && selectedDepartment !== 'none' && (
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleAssignDepartment(user.id, selectedDepartment)}
+                        onClick={() => handleAssignDepartment(user.id, selectedDepartment === 'none' ? null : selectedDepartment)}
                         disabled={isDepartmentsLoading || user.department_id === selectedDepartment}
                         title="Assign to department"
                       >
                         <Building2 className="h-4 w-4 mr-1" />
-                        Assign Dept
+                        {selectedDepartment === 'none' ? 'Remove Dept' : 'Assign Dept'}
+                      </Button>
+                    )}
+                    
+                    {selectedDepartment === 'none' && user.department_id && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleAssignDepartment(user.id, null)}
+                        disabled={isDepartmentsLoading}
+                        title="Remove from department"
+                      >
+                        <Building2 className="h-4 w-4 mr-1" />
+                        Remove Dept
                       </Button>
                     )}
                   </div>
