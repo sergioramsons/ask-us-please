@@ -4,8 +4,9 @@ import { ReportsDashboard } from "@/components/reports/ReportsDashboard";
 import { EmailServerConfig } from "@/components/helpdesk/EmailServerConfig";
 import { EnhancedTicketForm } from "@/components/helpdesk/EnhancedTicketForm";
 import { WorkflowBuilder } from "@/components/workflow/WorkflowBuilder";
+import { BusinessHoursConfig } from "@/components/admin/BusinessHoursConfig";
 import { Ticket } from "@/types/ticket";
-import { Mail, Shield, BarChart3, Settings, Workflow } from "lucide-react";
+import { Mail, Shield, BarChart3, Settings, Workflow, Clock } from "lucide-react";
 
 interface AdminPanelProps {
   tickets: Ticket[];
@@ -26,7 +27,7 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
       </div>
       
       <Tabs defaultValue="email" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="email" className="flex items-center gap-2">
             <Mail className="h-4 w-4" />
             Email Settings
@@ -42,6 +43,10 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
           <TabsTrigger value="workflow" className="flex items-center gap-2">
             <Workflow className="h-4 w-4" />
             Workflows
+          </TabsTrigger>
+          <TabsTrigger value="business-hours" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Business Hours
           </TabsTrigger>
           <TabsTrigger value="enhanced-ticket" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
@@ -63,6 +68,10 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
         
         <TabsContent value="workflow" className="space-y-4">
           <WorkflowBuilder />
+        </TabsContent>
+        
+        <TabsContent value="business-hours" className="space-y-4">
+          <BusinessHoursConfig />
         </TabsContent>
         
         <TabsContent value="enhanced-ticket" className="space-y-4">
