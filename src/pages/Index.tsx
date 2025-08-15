@@ -208,7 +208,7 @@ const Index = () => {
         )}
 
         {currentView === 'admin-panel' && (
-          <AdminPanel tickets={tickets} />
+          <AdminPanel tickets={tickets} onCreateTicket={handleCreateTicket} />
         )}
 
         {currentView === 'ticket-detail' && selectedTicket && (
