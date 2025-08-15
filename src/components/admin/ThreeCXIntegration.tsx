@@ -26,6 +26,7 @@ const ThreeCXIntegration = () => {
       </Request>
       <Rules>
         <Rule Type="Any">users</Rule>
+        <Rule Type="Number">users.phone</Rule>
       </Rules>
       <Variables>
         <Variable Name="ContactID" Path="users.0.id" />
