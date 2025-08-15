@@ -40,7 +40,7 @@ const YeastarIntegration = () => {
       <Presets />
       <Parameters>
         <Parameter Name="ContactUrlType" Value="specify_url_format" />
-        <Parameter Name="URLFormat" Value="{{.app_url}}/yeastar?popup=helpdesk&phone={{.CallerNumber}}&name={{.CallerDisplayName}}" />
+        <Parameter Name="URLFormat" Value="{{.app_url}}/yeastar?popup=helpdesk&amp;phone={{.CallerNumber}}&amp;name={{.CallerDisplayName}}" />
         <Parameter Name="ContactFieldForUri" />
         <Parameter Name="ContactsIdEnable" Value="1" />
         <Parameter Name="FirstNameEnable" Value="1" />
@@ -125,7 +125,7 @@ const YeastarIntegration = () => {
       <Requests>
         <Request Name="contacts" Method="POST" ResponseType="application/json" URLFormat="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-contacts">
           <Parameters>
-            <Parameter Name="Data" Type="Body" Value="{&#xA;&quot;user&quot;:{&#xA;&quot;name&quot;: &quot;{{.DisplayName}}&quot;,&quot;phone&quot;: &quot;{{.BusinessNumber}}&quot;&#xA;}&#xA;}" />
+            <Parameter Name="Data" Type="Body" Value="{&quot;user&quot;:{&quot;name&quot;: &quot;{{.DisplayName}}&quot;,&quot;phone&quot;: &quot;{{.BusinessNumber}}&quot;}}" />
           </Parameters>
           <Outputs>
             <Output Name="ContactId" Path="user.id" />
@@ -146,7 +146,7 @@ const YeastarIntegration = () => {
       <Requests>
         <Request Name="CreateNewTicket" Method="POST" ResponseType="application/json" URLFormat="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-tickets">
           <Parameters>
-            <Parameter Name="Data" Type="Body" Value="{&#xA;&quot;ticket&quot;:{&#xA;&quot;status&quot;:&quot;new&quot;,&quot;subject&quot;:&quot;{{.Subject}}&quot;,&#xA;&quot;description&quot;:&quot;{{.Description}}&quot;,&#xA;&quot;tags&quot;:[&quot;auto-ticket-created-by-pbx&quot;,&quot;{{.Communication_Type}}&quot;,&quot;{{.Call_Status}}&quot;],&#xA;&quot;comment&quot;:{&#xA;&quot;body&quot;:&quot;{{.Description}}&quot;&#xA;},&#xA;&quot;requester_id&quot;:&quot;{{.ContactId}}&quot;&#xA;}&#xA;}" />
+            <Parameter Name="Data" Type="Body" Value="{&quot;ticket&quot;:{&quot;status&quot;:&quot;new&quot;,&quot;subject&quot;:&quot;{{.Subject}}&quot;,&quot;description&quot;:&quot;{{.Description}}&quot;,&quot;tags&quot;:[&quot;auto-ticket-created-by-pbx&quot;,&quot;{{.Communication_Type}}&quot;,&quot;{{.Call_Status}}&quot;],&quot;comment&quot;:{&quot;body&quot;:&quot;{{.Description}}&quot;},&quot;requester_id&quot;:&quot;{{.ContactId}}&quot;}}" />
           </Parameters>
           <Outputs>
             <Output Name="TicketId" Path="ticket.id" />
@@ -154,7 +154,7 @@ const YeastarIntegration = () => {
         </Request>
         <Request Name="UpdateTicket" Method="PATCH" ResponseType="application/json" URLFormat="https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-tickets/{{.TicketId}}.json">
           <Parameters>
-            <Parameter Name="Data" Type="Body" Value="{&#xA;&quot;ticket&quot;:{&#xA;&quot;comment&quot;:{&#xA;&quot;body&quot;:&quot;{{.Description}}&quot;,&#xA;&quot;public&quot;:true,&#xA;&quot;author_id&quot;:&quot;{{.ContactId}}&quot;&#xA;}&#xA;}&#xA;}" />
+            <Parameter Name="Data" Type="Body" Value="{&quot;ticket&quot;:{&quot;comment&quot;:{&quot;body&quot;:&quot;{{.Description}}&quot;,&quot;public&quot;:true,&quot;author_id&quot;:&quot;{{.ContactId}}&quot;}}}" />
           </Parameters>
           <Outputs />
         </Request>
@@ -173,7 +173,7 @@ const YeastarIntegration = () => {
       <Requests>
         <Request Name="CallJournal" Method="PUT" ResponseType="application/json" URLFormat="{{if .RecordPath}}https://{{.helpdesk_domain}}.supabase.co/functions/v1/yeastar-tickets/{{.TicketId}}.json{{end}}">
           <Parameters>
-            <Parameter Name="Data" Type="Body" Value="{&#xA;&quot;ticket&quot;:{&#xA;&quot;voice_comment&quot;:{&#xA;&quot;from&quot;: &quot;{{.CallerNumber}}&quot;,&#xA;&quot;to&quot;: &quot;{{.CalleeNumber}}&quot;,&#xA;&quot;recording_url&quot;:&quot;{{.RecordPath}}&quot;,&#xA;&quot;started_at&quot;: &quot;{{ TimeFormat .StartTimeUnix &quot;yyyy-MM-dd HH:mm:ss +0000&quot; &quot;1&quot;}}&quot;,&#xA;&quot;call_duration&quot;:{{.Talk_Duration_Sec}}&#xA;}&#xA;}&#xA;}" />
+            <Parameter Name="Data" Type="Body" Value="{&quot;ticket&quot;:{&quot;voice_comment&quot;:{&quot;from&quot;: &quot;{{.CallerNumber}}&quot;,&quot;to&quot;: &quot;{{.CalleeNumber}}&quot;,&quot;recording_url&quot;:&quot;{{.RecordPath}}&quot;,&quot;started_at&quot;: &quot;{{ TimeFormat .StartTimeUnix &quot;yyyy-MM-dd HH:mm:ss +0000&quot; &quot;1&quot;}}&quot;,&quot;call_duration&quot;:{{.Talk_Duration_Sec}}}}}" />
           </Parameters>
           <Outputs />
         </Request>
