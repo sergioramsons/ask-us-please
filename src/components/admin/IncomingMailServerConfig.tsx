@@ -213,26 +213,49 @@ const IncomingMailServerConfig = () => {
     },
   });
 
-  // Fetch emails mutation
-  const fetchEmailsMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('fetch-pop3-emails');
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      if (data.success) {
-        toast.success(data.message || 'Emails fetched successfully!');
-        queryClient.invalidateQueries({ queryKey: ['incoming-emails'] });
-      } else {
-        toast.error(data.message || 'Failed to fetch emails');
-      }
-    },
-    onError: (error: any) => {
-      toast.error(`Failed to fetch emails: ${error.message}`);
-    },
-  });
+// Process pending emails mutation
+const processPendingMutation = useMutation({
+  mutationFn: async () => {
+    const { data, error } = await supabase.functions.invoke('process-pending-emails');
+    if (error) throw error;
+    return data;
+  },
+  onSuccess: (data) => {
+    if (data.success) {
+      toast.success(data.message || 'Processed pending emails');
+      queryClient.invalidateQueries({ queryKey: ['incoming-emails'] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+    } else {
+      toast.error(data.message || 'Failed to process pending emails');
+    }
+  },
+  onError: (error: any) => {
+    toast.error(`Failed to process pending: ${error.message}`);
+  },
+});
+
+// Fetch emails mutation
+const fetchEmailsMutation = useMutation({
+  mutationFn: async () => {
+    const { data, error } = await supabase.functions.invoke('fetch-pop3-emails');
+    
+    if (error) throw error;
+    return data;
+  },
+  onSuccess: (data) => {
+    if (data.success) {
+      toast.success(data.message || 'Emails fetched successfully!');
+      queryClient.invalidateQueries({ queryKey: ['incoming-emails'] });
+      // Immediately process any pending emails into tickets
+      processPendingMutation.mutate();
+    } else {
+      toast.error(data.message || 'Failed to fetch emails');
+    }
+  },
+  onError: (error: any) => {
+    toast.error(`Failed to fetch emails: ${error.message}`);
+  },
+});
 
   const handleEditServer = async (server: IncomingMailServer) => {
     let decryptedPassword = server.password;
@@ -292,15 +315,23 @@ const IncomingMailServerConfig = () => {
             Incoming Mail Servers
           </CardTitle>
           <div className="flex gap-2">
-            <Button 
-              onClick={() => fetchEmailsMutation.mutate()}
-              disabled={fetchEmailsMutation.isPending}
-              variant="outline"
-              className="gap-2"
-            >
-              {fetchEmailsMutation.isPending ? 'Fetching...' : 'Fetch Emails'}
-            </Button>
-            <Dialog open={showForm} onOpenChange={setShowForm}>
+<Button 
+  onClick={() => fetchEmailsMutation.mutate()}
+  disabled={fetchEmailsMutation.isPending}
+  variant="outline"
+  className="gap-2"
+>
+  {fetchEmailsMutation.isPending ? 'Fetching...' : 'Fetch Emails'}
+</Button>
+<Button 
+  onClick={() => processPendingMutation.mutate()}
+  disabled={processPendingMutation.isPending}
+  variant="outline"
+  className="gap-2"
+>
+  {processPendingMutation.isPending ? 'Processing...' : 'Process Pending'}
+</Button>
+<Dialog open={showForm} onOpenChange={setShowForm}>
               <DialogTrigger asChild>
                 <Button 
                   type="button"
