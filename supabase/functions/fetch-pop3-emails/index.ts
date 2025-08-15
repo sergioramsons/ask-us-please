@@ -419,39 +419,63 @@ async function createTicketFromEmail(emailRecord: any, emailData: any, server: a
 }
 
 async function decryptPassword(encryptedPassword: string): Promise<string> {
-  // Remove 'enc:' prefix and decrypt
-  const encrypted = encryptedPassword.substring(4);
-  
   try {
-    // Import encryption key
-    const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
-    if (!encryptionKey) {
-      throw new Error('ENCRYPTION_KEY not found');
-    }
+    // Remove prefix if present
+    const cleanEncrypted = encryptedPassword.startsWith('enc:') 
+      ? encryptedPassword.slice(4) 
+      : encryptedPassword;
 
-    const keyData = new TextEncoder().encode(encryptionKey.padEnd(32, '0').substring(0, 32));
-    const key = await crypto.subtle.importKey(
+    // Get encryption key from environment, fallback to dev key
+    const encryptionKey = Deno.env.get('ENCRYPTION_KEY') || 'helpdesk-dev-encryption-key-2024-secure';
+    
+    // Use the same key derivation as frontend
+    const keyMaterial = await crypto.subtle.importKey(
       'raw',
-      keyData,
-      { name: 'AES-GCM' },
+      new TextEncoder().encode(encryptionKey),
+      { name: 'PBKDF2' },
+      false,
+      ['deriveKey']
+    );
+
+    const key = await crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: new TextEncoder().encode('helpdesk-dev-salt-2024'),
+        iterations: 600000, // Match frontend iterations
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      {
+        name: 'AES-GCM',
+        length: 256,
+      },
       false,
       ['decrypt']
     );
-
-    // Decode encrypted data
-    const encryptedData = new Uint8Array(
-      atob(encrypted).split('').map(c => c.charCodeAt(0))
+    
+    // Convert from base64
+    const combined = new Uint8Array(
+      atob(cleanEncrypted)
+        .split('')
+        .map(char => char.charCodeAt(0))
     );
 
-    // Extract IV (first 12 bytes) and ciphertext
-    const iv = encryptedData.slice(0, 12);
-    const ciphertext = encryptedData.slice(12);
+    // Validate minimum length (IV + some encrypted data)
+    if (combined.length < 13) {
+      throw new Error('Invalid encrypted data format');
+    }
 
-    // Decrypt
+    // Extract IV and encrypted data
+    const iv = combined.slice(0, 12);
+    const encrypted = combined.slice(12);
+
     const decrypted = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv },
+      {
+        name: 'AES-GCM',
+        iv: iv,
+      },
       key,
-      ciphertext
+      encrypted
     );
 
     return new TextDecoder().decode(decrypted);
