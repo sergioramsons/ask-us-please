@@ -7,15 +7,16 @@ import { TicketList } from "@/components/helpdesk/ticket-list";
 import { TicketDetail } from "@/components/helpdesk/ticket-detail";
 import { Ticket, TicketStats, TicketStatus } from "@/types/ticket";
 import { UserRoleManager } from "@/components/admin/UserRoleManager";
+import { ReportsDashboard } from "@/components/reports/ReportsDashboard";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { mockTickets } from "@/data/mock-tickets";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useFreshdeskSync } from "@/hooks/useFreshdeskSync";
-import { Plus, Headphones, LogOut, User, RefreshCw, Shield } from "lucide-react";
+import { Plus, Headphones, LogOut, User, RefreshCw, Shield, BarChart3 } from "lucide-react";
 
-type View = 'dashboard' | 'create-ticket' | 'ticket-detail' | 'user-management';
+type View = 'dashboard' | 'create-ticket' | 'ticket-detail' | 'user-management' | 'reports';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -165,14 +166,24 @@ const Index = () => {
                     New Ticket
                   </Button>
                   {isAdmin() && (
-                    <Button 
-                      onClick={() => setCurrentView('user-management')}
-                      variant="outline"
-                      className="border-white/20 text-white hover:bg-white/10"
-                    >
-                      <Shield className="h-4 w-4 mr-2" />
-                      User Management
-                    </Button>
+                    <>
+                      <Button 
+                        onClick={() => setCurrentView('user-management')}
+                        variant="outline"
+                        className="border-white/20 text-white hover:bg-white/10"
+                      >
+                        <Shield className="h-4 w-4 mr-2" />
+                        User Management
+                      </Button>
+                      <Button 
+                        onClick={() => setCurrentView('reports')}
+                        variant="outline"
+                        className="border-white/20 text-white hover:bg-white/10"
+                      >
+                        <BarChart3 className="h-4 w-4 mr-2" />
+                        Reports
+                      </Button>
+                    </>
                   )}
                 </>
               )}
@@ -212,6 +223,10 @@ const Index = () => {
           <div className="max-w-4xl mx-auto">
             <UserRoleManager />
           </div>
+        )}
+
+        {currentView === 'reports' && (
+          <ReportsDashboard tickets={tickets} />
         )}
 
         {currentView === 'ticket-detail' && selectedTicket && (
