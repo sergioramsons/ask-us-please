@@ -26,10 +26,66 @@ const Index = () => {
   const { toast } = useToast();
   const { isAdmin } = useUserRoles();
   const [currentView, setCurrentView] = useState<View>('dashboard');
-  const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [showHelpdeskPopup, setShowHelpdeskPopup] = useState(false);
   const [callerInfo, setCallerInfo] = useState<{phone: string; name: string; email?: string} | null>(null);
+  const [ticketsLoading, setTicketsLoading] = useState(true);
+
+  // Load tickets from database
+  const loadTickets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tickets')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Transform database tickets to match the UI format
+      const transformedTickets: Ticket[] = (data || []).map(ticket => ({
+        id: ticket.id,
+        title: ticket.subject,
+        description: ticket.description || '',
+        status: ticket.status as any,
+        priority: ticket.priority as any,
+        severity: 'minor' as any,
+        category: 'general',
+        source: 'portal' as any,
+        customer: {
+          name: 'Customer',
+          email: '',
+        },
+        createdAt: new Date(ticket.created_at),
+        updatedAt: new Date(ticket.updated_at),
+        tags: [],
+        watchers: [],
+        attachments: [],
+        comments: [],
+        slaBreached: false,
+        escalationLevel: 0,
+        customFields: {},
+      }));
+
+      setTickets(transformedTickets);
+    } catch (error: any) {
+      console.error('Error loading tickets:', error);
+      toast({
+        title: "Error loading tickets",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setTicketsLoading(false);
+    }
+  };
+
+  // Load tickets on component mount
+  useEffect(() => {
+    if (user) {
+      loadTickets();
+    }
+  }, [user]);
 
   // Auto-launch helpdesk when coming from Yeastar
   useEffect(() => {
@@ -101,49 +157,88 @@ const Index = () => {
   };
 
   const handleCreateTicket = async (ticketData: any) => {
-    const newTicket: Ticket = {
-      id: Date.now().toString(),
-      title: ticketData.title,
-      description: ticketData.description,
-      status: 'open',
-      priority: ticketData.priority,
-      severity: 'minor',
-      category: ticketData.category,
-      source: 'portal',
-      customer: {
-        name: ticketData.customerName,
-        email: ticketData.customerEmail,
-      },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      tags: [],
-      watchers: [],
-      attachments: [],
-      comments: [],
-      slaBreached: false,
-      escalationLevel: 0,
-      customFields: {},
-    };
+    try {
+      // First, try to find or create a contact
+      let contactId = null;
+      if (ticketData.customerEmail) {
+        const { data: existingContact } = await supabase
+          .from('contacts')
+          .select('id')
+          .eq('email', ticketData.customerEmail)
+          .maybeSingle();
 
-    setTickets(prev => [newTicket, ...prev]);
-    setCurrentView('dashboard');
-    setShowHelpdeskPopup(false); // Close popup after ticket creation
+        if (existingContact) {
+          contactId = existingContact.id;
+        } else {
+          // Create new contact
+          const { data: newContact, error: contactError } = await supabase
+            .from('contacts')
+            .insert({
+              first_name: ticketData.customerName?.split(' ')[0] || '',
+              last_name: ticketData.customerName?.split(' ').slice(1).join(' ') || '',
+              email: ticketData.customerEmail,
+              phone: ticketData.phone || callerInfo?.phone,
+              created_by: user?.id
+            })
+            .select('id')
+            .single();
 
-    // Send notification for new ticket
-    if (ticketData.customerEmail) {
-      await NotificationService.notifyTicketCreated(
-        newTicket.id,
-        newTicket.title,
-        newTicket.priority,
-        ticketData.customerEmail,
-        ticketData.customerName
-      );
+          if (contactError) {
+            console.warn('Could not create contact:', contactError);
+          } else {
+            contactId = newContact.id;
+          }
+        }
+      }
+
+      // Create the ticket in the database
+      const { data: newTicket, error } = await supabase
+        .from('tickets')
+        .insert({
+          ticket_number: `TKT-${Date.now()}`,
+          subject: ticketData.title,
+          description: ticketData.description,
+          status: 'open',
+          priority: ticketData.priority,
+          contact_id: contactId,
+          created_by: user?.id
+        })
+        .select('*')
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      // Refresh tickets list from database
+      await loadTickets();
+      
+      setCurrentView('dashboard');
+      setShowHelpdeskPopup(false);
+
+      // Send notification for new ticket
+      if (ticketData.customerEmail) {
+        await NotificationService.notifyTicketCreated(
+          newTicket.ticket_number || newTicket.id,
+          newTicket.subject,
+          newTicket.priority,
+          ticketData.customerEmail,
+          ticketData.customerName
+        );
+      }
+
+      toast({
+        title: "Ticket created",
+        description: `Ticket #${newTicket.ticket_number || newTicket.id} has been created and customer has been notified.`
+      });
+    } catch (error: any) {
+      console.error('Error creating ticket:', error);
+      toast({
+        title: "Error creating ticket",
+        description: error.message || "Please try again.",
+        variant: "destructive"
+      });
     }
-
-    toast({
-      title: "Ticket created",
-      description: `Ticket #${newTicket.id} has been created and customer has been notified.`
-    });
   };
 
   const handleViewTicket = (ticket: Ticket) => {
@@ -152,35 +247,57 @@ const Index = () => {
   };
 
   const handleStatusChange = async (ticketId: string, status: TicketStatus) => {
-    const ticket = tickets.find(t => t.id === ticketId);
-    
-    setTickets(prev => prev.map(t =>
-      t.id === ticketId
-        ? { ...t, status, updatedAt: new Date() }
-        : t
-    ));
-    
-    // Update selected ticket if it's the one being changed
-    if (selectedTicket?.id === ticketId) {
-      setSelectedTicket(prev => prev ? { ...prev, status, updatedAt: new Date() } : null);
-    }
+    try {
+      const ticket = tickets.find(t => t.id === ticketId);
+      
+      // Update in database
+      const { error } = await supabase
+        .from('tickets')
+        .update({ 
+          status,
+          updated_at: new Date().toISOString(),
+          ...(status === 'resolved' && { resolved_at: new Date().toISOString() })
+        })
+        .eq('id', ticketId);
 
-    // Send notification for status change
-    if (ticket?.customer.email) {
-      await NotificationService.notifyTicketUpdated(
-        ticketId,
-        ticket.title,
-        status,
-        ticket.customer.email,
-        user?.email || 'Support Team',
-        `Ticket status changed to ${status}`
-      );
-    }
+      if (error) throw error;
 
-    toast({
-      title: "Status updated",
-      description: `Ticket #${ticketId} status changed to ${status}. Customer has been notified.`
-    });
+      // Update local state
+      setTickets(prev => prev.map(t =>
+        t.id === ticketId
+          ? { ...t, status, updatedAt: new Date() }
+          : t
+      ));
+      
+      // Update selected ticket if it's the one being changed
+      if (selectedTicket?.id === ticketId) {
+        setSelectedTicket(prev => prev ? { ...prev, status, updatedAt: new Date() } : null);
+      }
+
+      // Send notification for status change
+      if (ticket?.customer.email) {
+        await NotificationService.notifyTicketUpdated(
+          ticketId,
+          ticket.title,
+          status,
+          ticket.customer.email,
+          user?.email || 'Support Team',
+          `Ticket status changed to ${status}`
+        );
+      }
+
+      toast({
+        title: "Status updated",
+        description: `Ticket #${ticketId} status changed to ${status}. Customer has been notified.`
+      });
+    } catch (error: any) {
+      console.error('Error updating ticket status:', error);
+      toast({
+        title: "Error updating status",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
 
@@ -278,7 +395,14 @@ const Index = () => {
         {currentView === 'dashboard' && (
           <div className="space-y-8">
             <DashboardStats stats={stats} />
-            <TicketList tickets={tickets} onViewTicket={handleViewTicket} />
+            {ticketsLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading tickets...</p>
+              </div>
+            ) : (
+              <TicketList tickets={tickets} onViewTicket={handleViewTicket} />
+            )}
           </div>
         )}
 
