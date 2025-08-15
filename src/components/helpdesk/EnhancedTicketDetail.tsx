@@ -5,6 +5,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Ticket, TicketComment, TicketAttachment } from '@/types/ticket';
+import { TicketResponseForm } from './TicketResponseForm';
 import { 
   ArrowLeft, 
   Calendar, 
@@ -280,6 +281,14 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
               </CardContent>
             </Card>
           )}
+
+          {/* Response Form */}
+          <TicketResponseForm 
+            ticketId={ticket.id}
+            onSubmit={(response, isInternal) => {
+              console.log('New response:', { response, isInternal, ticketId: ticket.id });
+            }}
+          />
         </div>
 
         {/* Sidebar */}
