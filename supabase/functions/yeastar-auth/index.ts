@@ -51,7 +51,12 @@ const handler = async (req: Request): Promise<Response> => {
 
       const clientId = url.searchParams.get('client_id') || (payload.client_id as string) || formParams.get('client_id');
       const clientSecret = url.searchParams.get('client_secret') || (payload.client_secret as string) || formParams.get('client_secret');
-      const redirectUri = url.searchParams.get('redirect_uri') || (payload.redirect_uri as string) || formParams.get('redirect_uri');
+      let redirectUri = url.searchParams.get('redirect_uri') || (payload.redirect_uri as string) || formParams.get('redirect_uri');
+      
+      // Clean up redirect URI if it has extra text
+      if (redirectUri && redirectUri.includes('Callback URL:')) {
+        redirectUri = redirectUri.replace(/.*Callback URL:\s*/, '').trim();
+      }
       const incomingState = url.searchParams.get('state') || (payload.state as string) || formParams.get('state');
       
       // Always ensure a non-empty state to satisfy clients expecting it
