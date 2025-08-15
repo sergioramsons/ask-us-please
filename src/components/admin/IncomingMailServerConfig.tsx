@@ -272,7 +272,15 @@ const IncomingMailServerConfig = () => {
           </CardTitle>
           <Dialog open={showForm} onOpenChange={setShowForm}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button 
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowForm(true);
+                }}
+                className="gap-2"
+              >
                 <Plus className="h-4 w-4" />
                 Add Mail Server
               </Button>
