@@ -20,6 +20,68 @@ interface CustomEmailRequest {
   emailServerId?: string;
 }
 
+// Password decryption function (mirrors the frontend encryption)
+async function decryptPassword(encryptedPassword: string): Promise<string> {
+  try {
+    const ALGORITHM = 'AES-GCM';
+    const KEY_LENGTH = 256;
+
+    // Get or generate encryption key (same as frontend)
+    const keyMaterial = new TextEncoder().encode('helpdesk-email-encryption-key-2024');
+    
+    // Import the key material
+    const importedKey = await crypto.subtle.importKey(
+      'raw',
+      keyMaterial,
+      { name: 'PBKDF2' },
+      false,
+      ['deriveKey']
+    );
+
+    // Derive the actual encryption key
+    const key = await crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: new TextEncoder().encode('helpdesk-salt'),
+        iterations: 100000,
+        hash: 'SHA-256'
+      },
+      importedKey,
+      {
+        name: ALGORITHM,
+        length: KEY_LENGTH,
+      },
+      false,
+      ['encrypt', 'decrypt']
+    );
+    
+    // Convert from base64
+    const combined = new Uint8Array(
+      atob(encryptedPassword)
+        .split('')
+        .map(char => char.charCodeAt(0))
+    );
+
+    // Extract IV and encrypted data
+    const iv = combined.slice(0, 12);
+    const encrypted = combined.slice(12);
+
+    const decrypted = await crypto.subtle.decrypt(
+      {
+        name: ALGORITHM,
+        iv: iv,
+      },
+      key,
+      encrypted
+    );
+
+    return new TextDecoder().decode(decrypted);
+  } catch (error) {
+    console.error('Decryption failed:', error);
+    throw new Error('Failed to decrypt password');
+  }
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -47,7 +109,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Initialize Supabase client
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '' // Use service role for backend operations
     );
 
     // Get email server configuration
@@ -86,6 +148,20 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log("Using email server:", emailServer.name);
+
+    // Decrypt the password if it's encrypted
+    let smtpPassword = emailServer.smtp_password;
+    if (emailServer.password_encrypted) {
+      try {
+        smtpPassword = await decryptPassword(emailServer.smtp_password);
+        console.log("Password decrypted successfully");
+      } catch (error) {
+        console.error("Failed to decrypt password:", error);
+        throw new Error("Failed to decrypt email server password");
+      }
+    } else {
+      console.warn("WARNING: Email server password is not encrypted!");
+    }
 
     // Generate email HTML template
     const emailHtml = `
@@ -159,7 +235,7 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    // Initialize SMTP client
+    // Initialize SMTP client with decrypted password
     const client = new SMTPClient({
       connection: {
         hostname: emailServer.smtp_host,
@@ -167,7 +243,7 @@ const handler = async (req: Request): Promise<Response> => {
         tls: emailServer.use_tls,
         auth: {
           username: emailServer.smtp_username,
-          password: emailServer.smtp_password,
+          password: smtpPassword, // Use decrypted password
         },
       },
     });
@@ -189,8 +265,9 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Email sent successfully via custom SMTP server",
-        server: emailServer.name
+        message: "Email sent successfully via encrypted custom SMTP server",
+        server: emailServer.name,
+        encrypted: emailServer.password_encrypted
       }), 
       {
         status: 200,
@@ -208,7 +285,7 @@ const handler = async (req: Request): Promise<Response> => {
       JSON.stringify({ 
         success: false,
         error: error.message,
-        details: "Failed to send email via custom SMTP server. Please check your email server configuration." 
+        details: "Failed to send email via custom SMTP server. Please check your email server configuration and encryption." 
       }),
       {
         status: 500,

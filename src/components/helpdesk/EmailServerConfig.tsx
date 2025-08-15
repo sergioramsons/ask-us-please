@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { encryptPassword, decryptPassword } from '@/lib/encryption';
 
 interface EmailServer {
   id: string;
@@ -117,30 +118,39 @@ export function EmailServerConfig() {
 
   const handleSaveServer = async () => {
     try {
+      // Encrypt the password before saving
+      const encryptedPassword = await encryptPassword(newServer.smtp_password);
+      
+      const serverData = {
+        ...newServer,
+        smtp_password: encryptedPassword,
+        password_encrypted: true
+      };
+
       if (editingServer) {
         // Update existing server
         const { error } = await supabase
           .from('email_servers')
-          .update(newServer)
+          .update(serverData)
           .eq('id', editingServer.id);
 
         if (error) throw error;
 
         toast({
           title: "Server updated",
-          description: "Email server configuration has been updated successfully.",
+          description: "Email server configuration has been updated securely.",
         });
       } else {
         // Create new server
         const { error } = await supabase
           .from('email_servers')
-          .insert([newServer]);
+          .insert([serverData]);
 
         if (error) throw error;
 
         toast({
           title: "Server added",
-          description: "New email server has been added successfully.",
+          description: "New email server has been added with encrypted credentials.",
         });
       }
 
@@ -162,7 +172,7 @@ export function EmailServerConfig() {
       console.error('Error saving email server:', error);
       toast({
         title: "Error",
-        description: "Failed to save email server configuration.",
+        description: "Failed to save email server configuration. Please try again.",
         variant: "destructive",
       });
     }
@@ -336,6 +346,15 @@ export function EmailServerConfig() {
 
         <TabsContent value="settings">
           <div className="space-y-6">
+            {/* Security Alert */}
+            <Alert className="border-amber-200 bg-amber-50">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-800">
+                <strong>Security Notice:</strong> All email server passwords are now encrypted using AES-256-GCM encryption. 
+                Existing servers may need to be updated to use encrypted passwords for enhanced security.
+              </AlertDescription>
+            </Alert>
+
             {/* Email Servers List */}
             <Card>
               <CardHeader>

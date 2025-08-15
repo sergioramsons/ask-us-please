@@ -47,6 +47,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          password_encrypted: boolean
           reply_to: string | null
           sender_email: string
           sender_name: string
@@ -62,6 +63,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          password_encrypted?: boolean
           reply_to?: string | null
           sender_email: string
           sender_name?: string
@@ -77,6 +79,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          password_encrypted?: boolean
           reply_to?: string | null
           sender_email?: string
           sender_name?: string
@@ -176,6 +179,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_password_encrypted: {
+        Args: { server_id: string }
         Returns: boolean
       }
     }
