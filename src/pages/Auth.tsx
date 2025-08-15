@@ -152,18 +152,18 @@ export default function Auth() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin" className="flex flex-row gap-4" orientation="vertical">
-              <TabsList className="!flex !flex-col !h-auto !w-32 p-1 bg-muted">
+            <Tabs defaultValue="signin" className="flex gap-4">
+              <TabsList className="flex flex-col h-auto w-32 p-1 bg-muted">
                 <TabsTrigger 
                   value="signin" 
-                  className="!w-full !justify-start !h-auto py-2 px-3 data-[state=active]:bg-background data-[state=active]:text-foreground"
+                  className="w-full justify-start h-auto py-2 px-3 data-[state=active]:bg-background data-[state=active]:text-foreground"
                 >
                   <Lock className="h-4 w-4 mr-2" />
                   Sign In
                 </TabsTrigger>
                 <TabsTrigger 
                   value="signup" 
-                  className="!w-full !justify-start !h-auto py-2 px-3 data-[state=active]:bg-background data-[state=active]:text-foreground"
+                  className="w-full justify-start h-auto py-2 px-3 data-[state=active]:bg-background data-[state=active]:text-foreground"
                 >
                   <User className="h-4 w-4 mr-2" />
                   Sign Up
