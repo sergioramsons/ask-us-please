@@ -425,54 +425,61 @@ async function createTicketFromEmail(emailRecord: any, emailData: any, server: a
 }
 
 async function decryptPassword(encryptedPassword: string): Promise<string> {
-  // Try decrypting with ENV key first, then fallback to dev key (matches frontend behavior)
-  const cleanEncrypted = encryptedPassword.startsWith('enc:') 
-    ? encryptedPassword.slice(4) 
-    : encryptedPassword;
+  const clean = encryptedPassword.startsWith('enc:') ? encryptedPassword.slice(4) : encryptedPassword;
+  const combined = new Uint8Array(atob(clean).split('').map(c => c.charCodeAt(0)));
+  if (combined.length < 13) throw new Error('Invalid encrypted data format');
+  const iv = combined.slice(0, 12);
+  const ciphertext = combined.slice(12);
 
-  async function tryWithKey(keyString: string): Promise<string> {
-    // Derive key exactly like frontend (PBKDF2 + static dev salt + 600k iterations)
-    const keyMaterial = await crypto.subtle.importKey(
-      'raw',
-      new TextEncoder().encode(keyString),
-      { name: 'PBKDF2' },
-      false,
-      ['deriveKey']
-    );
+  const baseKeys = [Deno.env.get('ENCRYPTION_KEY'), 'helpdesk-dev-encryption-key-2024-secure'].filter(Boolean) as string[];
 
-    const key = await crypto.subtle.deriveKey(
-      {
-        name: 'PBKDF2',
-        salt: new TextEncoder().encode('helpdesk-dev-salt-2024'),
-        iterations: 600000,
-        hash: 'SHA-256'
-      },
-      keyMaterial,
-      { name: 'AES-GCM', length: 256 },
-      false,
-      ['decrypt']
-    );
+  // Build strategies list
+  const strategies: Array<{ name: string; derive: (base: string) => Promise<CryptoKey> }> = [
+    {
+      name: 'pbkdf2-600k-dev-salt',
+      derive: async (base: string) => {
+        const material = await crypto.subtle.importKey('raw', new TextEncoder().encode(base), { name: 'PBKDF2' }, false, ['deriveKey']);
+        return crypto.subtle.deriveKey(
+          { name: 'PBKDF2', salt: new TextEncoder().encode('helpdesk-dev-salt-2024'), iterations: 600000, hash: 'SHA-256' },
+          material,
+          { name: 'AES-GCM', length: 256 },
+          false,
+          ['decrypt']
+        );
+      }
+    },
+    {
+      name: 'pbkdf2-100k-compat-salt',
+      derive: async (base: string) => {
+        const material = await crypto.subtle.importKey('raw', new TextEncoder().encode(base), { name: 'PBKDF2' }, false, ['deriveKey']);
+        return crypto.subtle.deriveKey(
+          { name: 'PBKDF2', salt: new TextEncoder().encode('static-salt-for-compatibility'), iterations: 100000, hash: 'SHA-256' },
+          material,
+          { name: 'AES-GCM', length: 256 },
+          false,
+          ['decrypt']
+        );
+      }
+    },
+    {
+      name: 'raw-32-aes-gcm',
+      derive: async (base: string) => {
+        const keyData = new TextEncoder().encode(base.padEnd(32, '0').substring(0, 32));
+        return crypto.subtle.importKey('raw', keyData, { name: 'AES-GCM' }, false, ['decrypt']);
+      }
+    }
+  ];
 
-    const combined = new Uint8Array(atob(cleanEncrypted).split('').map(c => c.charCodeAt(0)));
-    if (combined.length < 13) throw new Error('Invalid encrypted data format');
-
-    const iv = combined.slice(0, 12);
-    const encrypted = combined.slice(12);
-
-    const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, encrypted);
-    return new TextDecoder().decode(decrypted);
-  }
-
-  const candidates = [
-    Deno.env.get('ENCRYPTION_KEY'),
-    'helpdesk-dev-encryption-key-2024-secure'
-  ].filter(Boolean) as string[];
-
-  for (const candidate of candidates) {
-    try {
-      return await tryWithKey(candidate);
-    } catch (_) {
-      // try next
+  for (const base of baseKeys) {
+    for (const strat of strategies) {
+      try {
+        const key = await strat.derive(base);
+        const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+        console.log(`Password decryption succeeded using strategy: ${strat.name}`);
+        return new TextDecoder().decode(decrypted);
+      } catch (_) {
+        // continue
+      }
     }
   }
 
