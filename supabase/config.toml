@@ -40,3 +40,15 @@ verify_jwt = false
 
 [functions.process-pending-emails]
 verify_jwt = false
+
+[functions.yeastar-auth]
+verify_jwt = false
+
+[functions.yeastar-contacts]
+verify_jwt = false
+
+[functions.yeastar-users]
+verify_jwt = false
+
+[functions.yeastar-tickets]
+verify_jwt = false
