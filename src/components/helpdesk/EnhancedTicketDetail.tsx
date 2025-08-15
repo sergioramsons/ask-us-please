@@ -40,7 +40,8 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
   // Load comments from database
   const loadComments = async () => {
     try {
-      const { data, error } = await supabase
+      // First get comments
+      const { data: comments, error } = await supabase
         .from('ticket_comments')
         .select('*')
         .eq('ticket_id', ticket.id)
@@ -48,22 +49,35 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
 
       if (error) throw error;
 
-      // Get user profiles for the comments
-      const userIds = [...new Set(data?.map(comment => comment.created_by).filter(Boolean))];
+      if (!comments || comments.length === 0) {
+        setComments([]);
+        return;
+      }
+
+      // Get unique user IDs
+      const userIds = [...new Set(comments.map(comment => comment.created_by).filter(Boolean))];
+      
+      if (userIds.length === 0) {
+        setComments(comments.map(comment => ({ ...comment, profile: null })));
+        return;
+      }
+
+      // Get profiles for those users
       const { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, display_name')
         .in('user_id', userIds);
 
       // Merge profiles with comments
-      const commentsWithProfiles = data?.map(comment => ({
+      const commentsWithProfiles = comments.map(comment => ({
         ...comment,
-        profile: profiles?.find(p => p.user_id === comment.created_by)
-      })) || [];
+        profile: profiles?.find(p => p.user_id === comment.created_by) || null
+      }));
 
       setComments(commentsWithProfiles);
     } catch (error) {
       console.error('Error loading comments:', error);
+      setComments([]);
     } finally {
       setCommentsLoading(false);
     }

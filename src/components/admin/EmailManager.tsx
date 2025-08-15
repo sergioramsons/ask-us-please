@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Mail, Send, Edit, Trash2, TestTube, Check, X } from 'lucide-react';
@@ -307,6 +307,9 @@ export function EmailManager() {
                   <DialogTitle>
                     {editingServer ? 'Edit Email Server' : 'Add Email Server'}
                   </DialogTitle>
+                  <DialogDescription>
+                    {editingServer ? 'Update the SMTP server configuration below.' : 'Configure a new SMTP server for sending emails.'}
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
