@@ -42,19 +42,26 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
     try {
       const { data, error } = await supabase
         .from('ticket_comments')
-        .select(`
-          *,
-          profiles:created_by (
-            display_name,
-            user_id
-          )
-        `)
+        .select('*')
         .eq('ticket_id', ticket.id)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
 
-      setComments(data || []);
+      // Get user profiles for the comments
+      const userIds = [...new Set(data?.map(comment => comment.created_by).filter(Boolean))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, display_name')
+        .in('user_id', userIds);
+
+      // Merge profiles with comments
+      const commentsWithProfiles = data?.map(comment => ({
+        ...comment,
+        profile: profiles?.find(p => p.user_id === comment.created_by)
+      })) || [];
+
+      setComments(commentsWithProfiles);
     } catch (error) {
       console.error('Error loading comments:', error);
     } finally {
@@ -269,19 +276,19 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
                     {comments.map((comment) => (
                       <div key={comment.id} className="border rounded-lg p-4">
                         <div className="flex items-center gap-3 mb-2">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback>
-                              {comment.profiles?.display_name ? 
-                                comment.profiles.display_name.split(' ').map((n: string) => n[0]).join('') : 
-                                'U'
-                              }
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">
-                                {comment.profiles?.display_name || 'User'}
-                              </span>
+                           <Avatar className="h-8 w-8">
+                             <AvatarFallback>
+                               {comment.profile?.display_name ? 
+                                 comment.profile.display_name.split(' ').map((n: string) => n[0]).join('') : 
+                                 'U'
+                               }
+                             </AvatarFallback>
+                           </Avatar>
+                           <div className="flex-1">
+                             <div className="flex items-center gap-2">
+                               <span className="font-medium">
+                                 {comment.profile?.display_name || 'User'}
+                               </span>
                               {comment.is_internal && (
                                 <Badge variant="secondary" className="text-xs">Internal</Badge>
                               )}

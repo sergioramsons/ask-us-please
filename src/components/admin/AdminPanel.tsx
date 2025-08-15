@@ -1,7 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserRoleManager } from "@/components/admin/UserRoleManager";
 import { ReportsDashboard } from "@/components/reports/ReportsDashboard";
-import { EmailServerConfig } from "@/components/helpdesk/EmailServerConfig";
+import { EmailManager } from "@/components/admin/EmailManager";
 import IncomingEmailManager from "@/components/admin/IncomingEmailManager";
 import IncomingMailServerConfig from "@/components/admin/IncomingMailServerConfig";
 import { EnhancedTicketForm } from "@/components/helpdesk/EnhancedTicketForm";
@@ -82,9 +82,7 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
         </TabsList>
         
         <TabsContent value="email" className="space-y-4">
-          <EmailServerConfig />
-          <IncomingMailServerConfig />
-          <IncomingEmailManager />
+          <EmailManager />
         </TabsContent>
         
         <TabsContent value="users" className="space-y-4">
