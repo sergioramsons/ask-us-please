@@ -393,14 +393,14 @@ const IncomingMailServerConfig = () => {
                   <div>
                     <Label htmlFor="auto_assign_department">Auto-assign Department</Label>
                     <Select 
-                      value={formData.auto_assign_department || ''} 
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, auto_assign_department: value || undefined }))}
+                      value={formData.auto_assign_department || 'none'} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, auto_assign_department: value === 'none' ? undefined : value }))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select department" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {departments?.map((dept) => (
                           <SelectItem key={dept.id} value={dept.id}>
                             {dept.name}
