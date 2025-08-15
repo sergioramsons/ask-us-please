@@ -6,20 +6,18 @@ import { TicketForm } from "@/components/helpdesk/ticket-form";
 import { TicketList } from "@/components/helpdesk/ticket-list";
 import { TicketDetail } from "@/components/helpdesk/ticket-detail";
 import { Ticket, TicketStats, TicketStatus } from "@/types/ticket";
-import { UserRoleManager } from "@/components/admin/UserRoleManager";
-import { ReportsDashboard } from "@/components/reports/ReportsDashboard";
+import { AdminPanel } from "@/components/admin/AdminPanel";
 import { EnhancedTicketForm } from "@/components/helpdesk/EnhancedTicketForm";
 import { EnhancedTicketDetail } from "@/components/helpdesk/EnhancedTicketDetail";
-import { EmailServerConfig } from "@/components/helpdesk/EmailServerConfig";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { mockTickets } from "@/data/mock-tickets";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useFreshdeskSync } from "@/hooks/useFreshdeskSync";
-import { Plus, Headphones, LogOut, User, RefreshCw, Shield, BarChart3, Settings, Mail } from "lucide-react";
+import { Plus, Headphones, LogOut, User, RefreshCw, Settings } from "lucide-react";
 
-type View = 'dashboard' | 'create-ticket' | 'enhanced-ticket' | 'ticket-detail' | 'user-management' | 'reports' | 'email-config';
+type View = 'dashboard' | 'create-ticket' | 'enhanced-ticket' | 'ticket-detail' | 'admin-panel';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -153,14 +151,6 @@ const Index = () => {
               {currentView === 'dashboard' && (
                 <>
                   <Button 
-                    variant="outline" 
-                    onClick={() => setCurrentView('email-config')}
-                    className="border-white/20 text-white hover:bg-white/10"
-                  >
-                    <Mail className="h-4 w-4 mr-2" />
-                    Email Settings
-                  </Button>
-                  <Button 
                     onClick={handleSyncWithFreshdesk}
                     variant="outline"
                     disabled={isSyncing}
@@ -185,24 +175,14 @@ const Index = () => {
                     Enhanced Ticket
                   </Button>
                   {isAdmin() && (
-                    <>
-                      <Button 
-                        onClick={() => setCurrentView('user-management')}
-                        variant="outline"
-                        className="border-white/20 text-white hover:bg-white/10"
-                      >
-                        <Shield className="h-4 w-4 mr-2" />
-                        User Management
-                      </Button>
-                      <Button 
-                        onClick={() => setCurrentView('reports')}
-                        variant="outline"
-                        className="border-white/20 text-white hover:bg-white/10"
-                      >
-                        <BarChart3 className="h-4 w-4 mr-2" />
-                        Reports
-                      </Button>
-                    </>
+                    <Button 
+                      onClick={() => setCurrentView('admin-panel')}
+                      variant="outline"
+                      className="border-white/20 text-white hover:bg-white/10"
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      Admin Panel
+                    </Button>
                   )}
                 </>
               )}
@@ -247,14 +227,8 @@ const Index = () => {
           </div>
         )}
 
-        {currentView === 'user-management' && (
-          <div className="max-w-4xl mx-auto">
-            <UserRoleManager />
-          </div>
-        )}
-
-        {currentView === 'reports' && (
-          <ReportsDashboard tickets={tickets} />
+        {currentView === 'admin-panel' && (
+          <AdminPanel tickets={tickets} />
         )}
 
         {currentView === 'ticket-detail' && selectedTicket && (
@@ -263,10 +237,6 @@ const Index = () => {
             onBack={() => setCurrentView('dashboard')}
             onStatusChange={handleStatusChange}
           />
-        )}
-
-        {currentView === 'email-config' && (
-          <EmailServerConfig />
         )}
       </main>
     </div>
