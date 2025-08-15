@@ -434,6 +434,58 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
             </CardContent>
           </Card>
 
+          {/* Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {ticket.status === 'open' && (
+                <Button 
+                  onClick={() => onStatusChange(ticket.id, 'in-progress')}
+                  className="w-full"
+                  variant="outline"
+                >
+                  <Timer className="h-4 w-4 mr-2" />
+                  Start Working
+                </Button>
+              )}
+              
+              {ticket.status === 'in-progress' && (
+                <Button 
+                  onClick={() => onStatusChange(ticket.id, 'resolved')}
+                  className="w-full"
+                  variant="outline"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Mark Resolved
+                </Button>
+              )}
+              
+              {ticket.status === 'resolved' && (
+                <Button 
+                  onClick={() => onStatusChange(ticket.id, 'closed')}
+                  className="w-full"
+                  variant="default"
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Close Ticket
+                </Button>
+              )}
+              
+              {ticket.status !== 'closed' && (
+                <Button 
+                  onClick={() => onStatusChange(ticket.id, 'closed')}
+                  className="w-full"
+                  variant="destructive"
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Force Close
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Watchers */}
           {ticket.watchers && ticket.watchers.length > 0 && (
             <Card>
