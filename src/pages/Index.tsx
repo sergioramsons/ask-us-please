@@ -2,30 +2,27 @@ import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DashboardStats } from "@/components/helpdesk/dashboard-stats";
 import { TicketForm } from "@/components/helpdesk/ticket-form";
-import { TicketList } from "@/components/helpdesk/ticket-list";
 import { TicketDetail } from "@/components/helpdesk/ticket-detail";
 import { Ticket, TicketStats, TicketStatus } from "@/types/ticket";
 import { AdminPanel } from "@/components/admin/AdminPanel";
 import { ReportsDashboard } from "@/components/reports/ReportsDashboard";
-import { EnhancedTicketForm } from "@/components/helpdesk/EnhancedTicketForm";
 import { EnhancedTicketDetail } from "@/components/helpdesk/EnhancedTicketDetail";
+import { UnifiedInbox } from "@/components/channels/UnifiedInbox";
 import { useUserRoles } from "@/hooks/useUserRoles";
-import { mockTickets } from "@/data/mock-tickets";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationService } from "@/services/NotificationService";
-import { Plus, Headphones, LogOut, User, Settings, BarChart3 } from "lucide-react";
+import { Plus, Headphones, LogOut, User, Settings, BarChart3, Inbox } from "lucide-react";
 
-type View = 'dashboard' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports';
+type View = 'inbox' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports';
 
 const Index = () => {
   const { user, loading } = useAuth();
   const { toast } = useToast();
   const { isAdmin } = useUserRoles();
-  const [currentView, setCurrentView] = useState<View>('dashboard');
+  const [currentView, setCurrentView] = useState<View>('inbox');
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [showHelpdeskPopup, setShowHelpdeskPopup] = useState(false);
@@ -213,7 +210,7 @@ const Index = () => {
       // Refresh tickets list from database
       await loadTickets();
       
-      setCurrentView('dashboard');
+      setCurrentView('inbox');
       setShowHelpdeskPopup(false);
 
       // Send notification for new ticket
@@ -329,7 +326,7 @@ const Index = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold">BS-HelpDesk</h1>
-                <p className="text-blue-100">Support Ticket Management</p>
+                <p className="text-blue-100">Unified Inbox & Support Management</p>
               </div>
             </div>
             
@@ -339,17 +336,18 @@ const Index = () => {
                 <span className="text-sm">{user?.email}</span>
               </div>
               
-              {currentView !== 'dashboard' && (
+              {currentView !== 'inbox' && (
                 <Button 
-                  onClick={() => setCurrentView('dashboard')}
+                  onClick={() => setCurrentView('inbox')}
                   variant="outline"
                   className="border-white/20 text-white hover:bg-white/10"
                 >
-                  ← Back to Dashboard
+                  <Inbox className="h-4 w-4 mr-2" />
+                  Back to Inbox
                 </Button>
               )}
               
-              {currentView === 'dashboard' && (
+              {currentView === 'inbox' && (
                 <>
                   <Button 
                     onClick={() => setCurrentView('create-ticket')}
@@ -402,25 +400,15 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        {currentView === 'dashboard' && (
-          <div className="space-y-8">
-            <DashboardStats stats={stats} />
-            {ticketsLoading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading tickets...</p>
-              </div>
-            ) : (
-              <TicketList tickets={tickets} onViewTicket={handleViewTicket} />
-            )}
-          </div>
+        {currentView === 'inbox' && (
+          <UnifiedInbox />
         )}
 
         {currentView === 'create-ticket' && (
           <div className="max-w-2xl mx-auto">
             <TicketForm 
               onSubmit={handleCreateTicket}
-              onCancel={() => setCurrentView('dashboard')}
+              onCancel={() => setCurrentView('inbox')}
             />
           </div>
         )}
@@ -436,7 +424,7 @@ const Index = () => {
         {currentView === 'ticket-detail' && selectedTicket && (
           <EnhancedTicketDetail
             ticket={selectedTicket}
-            onBack={() => setCurrentView('dashboard')}
+            onBack={() => setCurrentView('inbox')}
             onStatusChange={handleStatusChange}
           />
         )}
