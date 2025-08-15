@@ -512,12 +512,13 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
             <CardHeader>
               <CardTitle>Actions</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-3">
+              {/* Status progression buttons */}
               {ticket.status === 'open' && (
                 <Button 
                   onClick={() => onStatusChange(ticket.id, 'in-progress')}
                   className="w-full"
-                  variant="outline"
+                  variant="default"
                 >
                   <Timer className="h-4 w-4 mr-2" />
                   Start Working
@@ -528,7 +529,7 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
                 <Button 
                   onClick={() => onStatusChange(ticket.id, 'resolved')}
                   className="w-full"
-                  variant="outline"
+                  variant="default"
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Mark Resolved
@@ -545,16 +546,62 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
                   Close Ticket
                 </Button>
               )}
-              
+
+              {/* Additional status options */}
               {ticket.status !== 'closed' && (
-                <Button 
-                  onClick={() => onStatusChange(ticket.id, 'closed')}
-                  className="w-full"
-                  variant="destructive"
-                >
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Force Close
-                </Button>
+                <>
+                  <div className="border-t pt-3">
+                    <p className="text-xs text-muted-foreground mb-2">Quick Actions:</p>
+                    <div className="space-y-2">
+                      {ticket.status !== 'open' && (
+                        <Button 
+                          onClick={() => onStatusChange(ticket.id, 'open')}
+                          className="w-full"
+                          variant="outline"
+                          size="sm"
+                        >
+                          ↩️ Reopen Ticket
+                        </Button>
+                      )}
+                      
+                      {ticket.status !== 'in-progress' && (
+                        <Button 
+                          onClick={() => onStatusChange(ticket.id, 'in-progress')}
+                          className="w-full"
+                          variant="outline"
+                          size="sm"
+                        >
+                          🔄 Move to In Progress
+                        </Button>
+                      )}
+                      
+                      <Button 
+                        onClick={() => onStatusChange(ticket.id, 'closed')}
+                        className="w-full"
+                        variant="destructive"
+                        size="sm"
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        Force Close
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {ticket.status === 'closed' && (
+                <div className="text-center py-4">
+                  <XCircle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Ticket is closed</p>
+                  <Button 
+                    onClick={() => onStatusChange(ticket.id, 'open')}
+                    className="mt-2"
+                    variant="outline"
+                    size="sm"
+                  >
+                    Reopen Ticket
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
