@@ -59,6 +59,7 @@ export function EmailServerConfig() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingServer, setEditingServer] = useState<EmailServer | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentView, setCurrentView] = useState<'settings' | 'templates' | 'webhooks' | 'test' | 'security'>('settings');
   
   const [newServer, setNewServer] = useState({
     name: '',
@@ -323,430 +324,454 @@ export function EmailServerConfig() {
         </CardHeader>
       </Card>
 
-      <Tabs defaultValue="settings" className="flex flex-row gap-6" orientation="vertical">
-        <TabsList className="!flex !flex-col !h-auto !w-48 p-1 bg-muted">
-          <TabsTrigger 
-            value="settings" 
-            className="!w-full !justify-start !h-auto py-2 px-3 data-[state=active]:bg-background data-[state=active]:text-foreground"
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            Email Settings
-          </TabsTrigger>
-          <TabsTrigger 
-            value="templates" 
-            className="!w-full !justify-start !h-auto py-2 px-3 data-[state=active]:bg-background data-[state=active]:text-foreground"
-          >
-            <Mail className="h-4 w-4 mr-2" />
-            Templates
-          </TabsTrigger>
-          <TabsTrigger 
-            value="webhooks" 
-            className="!w-full !justify-start !h-auto py-2 px-3 data-[state=active]:bg-background data-[state=active]:text-foreground"
-          >
-            <Server className="h-4 w-4 mr-2" />
-            Webhooks
-          </TabsTrigger>
-          <TabsTrigger 
-            value="test" 
-            className="!w-full !justify-start !h-auto py-2 px-3 data-[state=active]:bg-background data-[state=active]:text-foreground"
-          >
-            <Send className="h-4 w-4 mr-2" />
-            Test & Debug
-          </TabsTrigger>
-          <TabsTrigger 
-            value="security" 
-            className="!w-full !justify-start !h-auto py-2 px-3 data-[state=active]:bg-background data-[state=active]:text-foreground"
-          >
-            <AlertCircle className="h-4 w-4 mr-2" />
-            Security
-          </TabsTrigger>
-        </TabsList>
+      <div className="flex gap-6">
+        {/* Custom Vertical Tab Navigation */}
+        <div className="w-48 bg-muted rounded-lg p-1">
+          <div className="space-y-1">
+            <button 
+              onClick={() => setCurrentView('settings')}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-left rounded-md transition-colors ${
+                currentView === 'settings' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:bg-background/50'
+              }`}
+            >
+              <Settings className="h-4 w-4" />
+              Email Settings
+            </button>
+            <button 
+              onClick={() => setCurrentView('templates')}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-left rounded-md transition-colors ${
+                currentView === 'templates' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:bg-background/50'
+              }`}
+            >
+              <Mail className="h-4 w-4" />
+              Templates
+            </button>
+            <button 
+              onClick={() => setCurrentView('webhooks')}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-left rounded-md transition-colors ${
+                currentView === 'webhooks' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:bg-background/50'
+              }`}
+            >
+              <Server className="h-4 w-4" />
+              Webhooks
+            </button>
+            <button 
+              onClick={() => setCurrentView('test')}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-left rounded-md transition-colors ${
+                currentView === 'test' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:bg-background/50'
+              }`}
+            >
+              <Send className="h-4 w-4" />
+              Test & Debug
+            </button>
+            <button 
+              onClick={() => setCurrentView('security')}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-left rounded-md transition-colors ${
+                currentView === 'security' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:bg-background/50'
+              }`}
+            >
+              <AlertCircle className="h-4 w-4" />
+              Security
+            </button>
+          </div>
+        </div>
 
-        <div className="flex-1 min-w-0">{/* This will contain all TabsContent */}
+        {/* Content Area */}
+        <div className="flex-1 min-w-0">
+          {/* Content based on currentView */}
+          {currentView === 'settings' && (
+            <div className="space-y-6">
+              {/* Security Alert */}
+              <Alert className="border-amber-200 bg-amber-50">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800">
+                  <strong>Security Notice:</strong> All email server passwords are now encrypted using AES-256-GCM encryption. 
+                  Existing servers may need to be updated to use encrypted passwords for enhanced security.
+                </AlertDescription>
+              </Alert>
 
-        <TabsContent value="settings">
-          <div className="space-y-6">
-            {/* Security Alert */}
-            <Alert className="border-amber-200 bg-amber-50">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-amber-800">
-                <strong>Security Notice:</strong> All email server passwords are now encrypted using AES-256-GCM encryption. 
-                Existing servers may need to be updated to use encrypted passwords for enhanced security.
-              </AlertDescription>
-            </Alert>
-
-            {/* Email Servers List */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <Server className="h-5 w-5" />
-                    Custom Email Servers
-                  </CardTitle>
-                  <Button 
-                    onClick={() => setShowAddForm(true)}
-                    className="flex items-center gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add Server
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="text-center py-8">Loading email servers...</div>
-                ) : emailServers.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No email servers configured. Add your first custom SMTP server to get started.
+              {/* Email Servers List */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Server className="h-5 w-5" />
+                      Custom Email Servers
+                    </CardTitle>
+                    <Button 
+                      onClick={() => setShowAddForm(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Server
+                    </Button>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {emailServers.map((server) => (
-                      <div 
-                        key={server.id} 
-                        className="border rounded-lg p-4 flex items-center justify-between"
-                      >
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-semibold">{server.name}</h4>
-                            {server.is_active && (
-                              <Badge variant="default" className="text-xs">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Active
-                              </Badge>
-                            )}
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="text-center py-8">Loading email servers...</div>
+                  ) : emailServers.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No email servers configured. Add your first custom SMTP server to get started.
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {emailServers.map((server) => (
+                        <div 
+                          key={server.id} 
+                          className="border rounded-lg p-4 flex items-center justify-between"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-semibold">{server.name}</h4>
+                              {server.is_active && (
+                                <Badge variant="default" className="text-xs">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Active
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {server.smtp_host}:{server.smtp_port} • {server.sender_email}
+                            </p>
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            {server.smtp_host}:{server.smtp_port} • {server.sender_email}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {!server.is_active && (
+                          <div className="flex items-center gap-2">
+                            {!server.is_active && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleActivateServer(server.id)}
+                              >
+                                Activate
+                              </Button>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleActivateServer(server.id)}
+                              onClick={() => handleEditServer(server)}
                             >
-                              Activate
+                              <Edit className="h-4 w-4" />
                             </Button>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditServer(server)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteServer(server.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteServer(server.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-            {/* Add/Edit Server Form */}
-            {showAddForm && (
+              {/* Add/Edit Server Form */}
+              {showAddForm && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>
+                      {editingServer ? 'Edit Email Server' : 'Add New Email Server'}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="serverName">Server Name</Label>
+                        <Input
+                          id="serverName"
+                          value={newServer.name}
+                          onChange={(e) => setNewServer(prev => ({ ...prev, name: e.target.value }))}
+                          placeholder="Gmail SMTP"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="senderName">Sender Name</Label>
+                        <Input
+                          id="senderName"
+                          value={newServer.sender_name}
+                          onChange={(e) => setNewServer(prev => ({ ...prev, sender_name: e.target.value }))}
+                          placeholder="Support Team"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="smtpHost">SMTP Host</Label>
+                        <Input
+                          id="smtpHost"
+                          value={newServer.smtp_host}
+                          onChange={(e) => setNewServer(prev => ({ ...prev, smtp_host: e.target.value }))}
+                          placeholder="smtp.gmail.com"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="smtpPort">SMTP Port</Label>
+                        <Input
+                          id="smtpPort"
+                          type="number"
+                          value={newServer.smtp_port}
+                          onChange={(e) => setNewServer(prev => ({ ...prev, smtp_port: parseInt(e.target.value) }))}
+                          placeholder="587"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="smtpUsername">SMTP Username</Label>
+                        <Input
+                          id="smtpUsername"
+                          value={newServer.smtp_username}
+                          onChange={(e) => setNewServer(prev => ({ ...prev, smtp_username: e.target.value }))}
+                          placeholder="your-email@gmail.com"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="smtpPassword">SMTP Password</Label>
+                        <Input
+                          id="smtpPassword"
+                          type="password"
+                          value={newServer.smtp_password}
+                          onChange={(e) => setNewServer(prev => ({ ...prev, smtp_password: e.target.value }))}
+                          placeholder="App Password"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="senderEmail">Sender Email</Label>
+                        <Input
+                          id="senderEmail"
+                          type="email"
+                          value={newServer.sender_email}
+                          onChange={(e) => setNewServer(prev => ({ ...prev, sender_email: e.target.value }))}
+                          placeholder="support@yourcompany.com"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="replyTo">Reply-To Email (Optional)</Label>
+                        <Input
+                          id="replyTo"
+                          type="email"
+                          value={newServer.reply_to}
+                          onChange={(e) => setNewServer(prev => ({ ...prev, reply_to: e.target.value }))}
+                          placeholder="noreply@yourcompany.com"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="useTls"
+                        checked={newServer.use_tls}
+                        onCheckedChange={(checked) => setNewServer(prev => ({ ...prev, use_tls: checked }))}
+                      />
+                      <Label htmlFor="useTls">Use TLS/SSL encryption</Label>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button onClick={handleSaveServer} className="flex-1">
+                        <Settings className="h-4 w-4 mr-2" />
+                        {editingServer ? 'Update Server' : 'Add Server'}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setShowAddForm(false);
+                          setEditingServer(null);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Resend Integration */}
               <Card>
                 <CardHeader>
-                  <CardTitle>
-                    {editingServer ? 'Edit Email Server' : 'Add New Email Server'}
+                  <CardTitle className="flex items-center gap-2">
+                    <Mail className="h-5 w-5" />
+                    Resend Integration
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="serverName">Server Name</Label>
-                      <Input
-                        id="serverName"
-                        value={newServer.name}
-                        onChange={(e) => setNewServer(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="Gmail SMTP"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="senderName">Sender Name</Label>
-                      <Input
-                        id="senderName"
-                        value={newServer.sender_name}
-                        onChange={(e) => setNewServer(prev => ({ ...prev, sender_name: e.target.value }))}
-                        placeholder="Support Team"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="smtpHost">SMTP Host</Label>
-                      <Input
-                        id="smtpHost"
-                        value={newServer.smtp_host}
-                        onChange={(e) => setNewServer(prev => ({ ...prev, smtp_host: e.target.value }))}
-                        placeholder="smtp.gmail.com"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="smtpPort">SMTP Port</Label>
-                      <Input
-                        id="smtpPort"
-                        type="number"
-                        value={newServer.smtp_port}
-                        onChange={(e) => setNewServer(prev => ({ ...prev, smtp_port: parseInt(e.target.value) }))}
-                        placeholder="587"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="smtpUsername">SMTP Username</Label>
-                      <Input
-                        id="smtpUsername"
-                        value={newServer.smtp_username}
-                        onChange={(e) => setNewServer(prev => ({ ...prev, smtp_username: e.target.value }))}
-                        placeholder="your-email@gmail.com"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="smtpPassword">SMTP Password</Label>
-                      <Input
-                        id="smtpPassword"
-                        type="password"
-                        value={newServer.smtp_password}
-                        onChange={(e) => setNewServer(prev => ({ ...prev, smtp_password: e.target.value }))}
-                        placeholder="App Password"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="senderEmail">Sender Email</Label>
-                      <Input
-                        id="senderEmail"
-                        type="email"
-                        value={newServer.sender_email}
-                        onChange={(e) => setNewServer(prev => ({ ...prev, sender_email: e.target.value }))}
-                        placeholder="support@yourcompany.com"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="replyTo">Reply-To Email (Optional)</Label>
-                      <Input
-                        id="replyTo"
-                        type="email"
-                        value={newServer.reply_to}
-                        onChange={(e) => setNewServer(prev => ({ ...prev, reply_to: e.target.value }))}
-                        placeholder="noreply@yourcompany.com"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="useTls"
-                      checked={newServer.use_tls}
-                      onCheckedChange={(checked) => setNewServer(prev => ({ ...prev, use_tls: checked }))}
-                    />
-                    <Label htmlFor="useTls">Use TLS/SSL encryption</Label>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button onClick={handleSaveServer} className="flex-1">
-                      <Settings className="h-4 w-4 mr-2" />
-                      {editingServer ? 'Update Server' : 'Add Server'}
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        setShowAddForm(false);
-                        setEditingServer(null);
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Resend is also available as a fallback option. Make sure you have configured your Resend API key in the server settings.
+                    </AlertDescription>
+                  </Alert>
+                  <Button variant="outline" className="w-full">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Configure Resend Settings
+                  </Button>
                 </CardContent>
               </Card>
-            )}
+            </div>
+          )}
 
-            {/* Resend Integration */}
+          {currentView === 'templates' && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Mail className="h-5 w-5" />
-                  Resend Integration
+                  Email Templates
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Resend is also available as a fallback option. Make sure you have configured your Resend API key in the server settings.
+                    Email templates are automatically generated based on ticket information and agent responses. You can customize the appearance using the email signature above.
                   </AlertDescription>
                 </Alert>
-                <Button variant="outline" className="w-full">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Configure Resend Settings
-                </Button>
+
+                <div className="space-y-4">
+                  <div className="p-4 border rounded-lg">
+                    <h4 className="font-semibold mb-2">Available Template Variables</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <code>{'{{customerName}}'}</code>
+                      <code>{'{{ticketId}}'}</code>
+                      <code>{'{{ticketSubject}}'}</code>
+                      <code>{'{{ticketStatus}}'}</code>
+                      <code>{'{{agentName}}'}</code>
+                      <code>{'{{priority}}'}</code>
+                      <code>{'{{message}}'}</code>
+                      <code>{'{{signature}}'}</code>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h4 className="font-semibold">Template Types</h4>
+                    <div className="space-y-2">
+                      <Badge variant="outline">Ticket Created</Badge>
+                      <Badge variant="outline">Ticket Updated</Badge>
+                      <Badge variant="outline">Ticket Resolved</Badge>
+                      <Badge variant="outline">Ticket Closed</Badge>
+                      <Badge variant="outline">Agent Response</Badge>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
-          </div>
-        </TabsContent>
+          )}
 
-        <TabsContent value="templates">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />
-                Email Templates
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Email templates are automatically generated based on ticket information and agent responses. You can customize the appearance using the email signature above.
-                </AlertDescription>
-              </Alert>
+          {currentView === 'webhooks' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Server className="h-5 w-5" />
+                  Email Webhooks
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Configure webhooks to receive incoming emails and convert them to tickets automatically.
+                  </AlertDescription>
+                </Alert>
 
-              <div className="space-y-4">
-                <div className="p-4 border rounded-lg">
-                  <h4 className="font-semibold mb-2">Available Template Variables</h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <code>{'{{customerName}}'}</code>
-                    <code>{'{{ticketId}}'}</code>
-                    <code>{'{{ticketSubject}}'}</code>
-                    <code>{'{{ticketStatus}}'}</code>
-                    <code>{'{{agentName}}'}</code>
-                    <code>{'{{priority}}'}</code>
-                    <code>{'{{message}}'}</code>
-                    <code>{'{{signature}}'}</code>
+                <div className="space-y-2">
+                  <Label>Webhook URL</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={`${window.location.origin}/api/webhook/email`}
+                      readOnly
+                      className="font-mono text-sm"
+                    />
+                    <Button variant="outline" size="sm" onClick={copyWebhookUrl}>
+                      <Copy className="h-4 w-4" />
+                    </Button>
                   </div>
+                  <p className="text-sm text-muted-foreground">
+                    Use this URL in your email provider's webhook configuration to automatically create tickets from incoming emails.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
-                  <h4 className="font-semibold">Template Types</h4>
-                  <div className="space-y-2">
-                    <Badge variant="outline">Ticket Created</Badge>
-                    <Badge variant="outline">Ticket Updated</Badge>
-                    <Badge variant="outline">Ticket Resolved</Badge>
-                    <Badge variant="outline">Ticket Closed</Badge>
-                    <Badge variant="outline">Agent Response</Badge>
+                  <h4 className="font-semibold">Supported Email Providers</h4>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary">Gmail</Badge>
+                    <Badge variant="secondary">Outlook</Badge>
+                    <Badge variant="secondary">SendGrid</Badge>
+                    <Badge variant="secondary">Mailgun</Badge>
+                    <Badge variant="secondary">Postmark</Badge>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              </CardContent>
+            </Card>
+          )}
 
-        <TabsContent value="webhooks">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Server className="h-5 w-5" />
-                Email Webhooks
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Configure webhooks to receive incoming emails and convert them to tickets automatically.
-                </AlertDescription>
-              </Alert>
-
-              <div className="space-y-2">
-                <Label>Webhook URL</Label>
-                <div className="flex gap-2">
+          {currentView === 'test' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Send className="h-5 w-5" />
+                  Test Email Delivery
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="testEmail">Test Email Address</Label>
                   <Input
-                    value={`${window.location.origin}/api/webhook/email`}
-                    readOnly
-                    className="font-mono text-sm"
+                    id="testEmail"
+                    type="email"
+                    value={testEmail}
+                    onChange={(e) => setTestEmail(e.target.value)}
+                    placeholder="Enter email to send test message"
                   />
-                  <Button variant="outline" size="sm" onClick={copyWebhookUrl}>
-                    <Copy className="h-4 w-4" />
-                  </Button>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Use this URL in your email provider's webhook configuration to automatically create tickets from incoming emails.
-                </p>
-              </div>
 
-              <div className="space-y-2">
-                <h4 className="font-semibold">Supported Email Providers</h4>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">Gmail</Badge>
-                  <Badge variant="secondary">Outlook</Badge>
-                  <Badge variant="secondary">SendGrid</Badge>
-                  <Badge variant="secondary">Mailgun</Badge>
-                  <Badge variant="secondary">Postmark</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                <Button 
+                  onClick={handleTestConnection} 
+                  disabled={isTesting}
+                  className="w-full"
+                >
+                  {isTesting ? (
+                    <>
+                      <Settings className="h-4 w-4 mr-2 animate-spin" />
+                      Sending Test Email...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Send Test Email
+                    </>
+                  )}
+                </Button>
 
-        <TabsContent value="test">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Send className="h-5 w-5" />
-                Test Email Delivery
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="testEmail">Test Email Address</Label>
-                <Input
-                  id="testEmail"
-                  type="email"
-                  value={testEmail}
-                  onChange={(e) => setTestEmail(e.target.value)}
-                  placeholder="Enter email to send test message"
-                />
-              </div>
+                <Alert>
+                  <Eye className="h-4 w-4" />
+                  <AlertDescription>
+                    The test email will use the current configuration and include sample ticket data to verify your email setup is working correctly.
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+          )}
 
-              <Button 
-                onClick={handleTestConnection} 
-                disabled={isTesting}
-                className="w-full"
-              >
-                {isTesting ? (
-                  <>
-                    <Settings className="h-4 w-4 mr-2 animate-spin" />
-                    Sending Test Email...
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-4 w-4 mr-2" />
-                    Send Test Email
-                  </>
-                )}
-              </Button>
-
-              <Alert>
-                <Eye className="h-4 w-4" />
-                <AlertDescription>
-                  The test email will use the current configuration and include sample ticket data to verify your email setup is working correctly.
-                </AlertDescription>
-              </Alert>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="security">
-          <SecurityDashboard />
-        </TabsContent>
+          {currentView === 'security' && (
+            <SecurityDashboard />
+          )}
         </div>
-      </Tabs>
+      </div>
     </div>
   );
 }
