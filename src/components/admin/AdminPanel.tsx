@@ -5,8 +5,9 @@ import { EmailServerConfig } from "@/components/helpdesk/EmailServerConfig";
 import { EnhancedTicketForm } from "@/components/helpdesk/EnhancedTicketForm";
 import { WorkflowBuilder } from "@/components/workflow/WorkflowBuilder";
 import { BusinessHoursConfig } from "@/components/admin/BusinessHoursConfig";
+import { AccountDashboard } from "@/components/account/AccountDashboard";
 import { Ticket } from "@/types/ticket";
-import { Mail, Shield, BarChart3, Settings, Workflow, Clock } from "lucide-react";
+import { Mail, Shield, BarChart3, Settings, Workflow, Clock, User } from "lucide-react";
 
 interface AdminPanelProps {
   tickets: Ticket[];
@@ -27,7 +28,7 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
       </div>
       
       <Tabs defaultValue="email" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="email" className="flex items-center gap-2">
             <Mail className="h-4 w-4" />
             Email Settings
@@ -47,6 +48,10 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
           <TabsTrigger value="business-hours" className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
             Business Hours
+          </TabsTrigger>
+          <TabsTrigger value="account" className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Account
           </TabsTrigger>
           <TabsTrigger value="enhanced-ticket" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
@@ -72,6 +77,10 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
         
         <TabsContent value="business-hours" className="space-y-4">
           <BusinessHoursConfig />
+        </TabsContent>
+        
+        <TabsContent value="account" className="space-y-4">
+          <AccountDashboard />
         </TabsContent>
         
         <TabsContent value="enhanced-ticket" className="space-y-4">
