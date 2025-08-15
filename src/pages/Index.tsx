@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { DashboardStats } from "@/components/helpdesk/dashboard-stats";
 import { TicketForm } from "@/components/helpdesk/ticket-form";
@@ -6,14 +7,35 @@ import { TicketList } from "@/components/helpdesk/ticket-list";
 import { TicketDetail } from "@/components/helpdesk/ticket-detail";
 import { Ticket, TicketStats, TicketStatus } from "@/types/ticket";
 import { mockTickets } from "@/data/mock-tickets";
-import { Plus, Headphones } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Plus, Headphones, LogOut, User } from "lucide-react";
 
 type View = 'dashboard' | 'create-ticket' | 'ticket-detail';
 
 const Index = () => {
+  const { user, loading } = useAuth();
+  const { toast } = useToast();
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+
+  // Redirect to auth if not authenticated
+  if (!loading && !user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Calculate stats
   const stats: TicketStats = {
@@ -62,6 +84,22 @@ const Index = () => {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Signed out",
+        description: "You have been successfully signed out."
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -78,15 +116,31 @@ const Index = () => {
               </div>
             </div>
             
-            {currentView === 'dashboard' && (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-blue-100">
+                <User className="h-4 w-4" />
+                <span className="text-sm">{user?.email}</span>
+              </div>
+              
+              {currentView === 'dashboard' && (
+                <Button 
+                  onClick={() => setCurrentView('create-ticket')}
+                  className="bg-white text-primary hover:bg-blue-50"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Ticket
+                </Button>
+              )}
+              
               <Button 
-                onClick={() => setCurrentView('create-ticket')}
-                className="bg-white text-primary hover:bg-blue-50"
+                onClick={handleSignOut}
+                variant="outline"
+                className="border-white/20 text-white hover:bg-white/10"
               >
-                <Plus className="h-4 w-4 mr-2" />
-                New Ticket
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
               </Button>
-            )}
+            </div>
           </div>
         </div>
       </header>
