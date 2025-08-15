@@ -12,6 +12,12 @@ export interface NotificationRequest {
   message?: string;
 }
 
+export interface SMSRequest {
+  destination: string;
+  message: string;
+  source?: string;
+}
+
 export class NotificationService {
   static async sendNotification(notification: NotificationRequest): Promise<boolean> {
     try {
@@ -101,6 +107,45 @@ export class NotificationService {
       ticketTitle,
       ticketPriority,
       recipientEmail
+    });
+  }
+
+  // SMS functionality
+  static async sendSMS(smsRequest: SMSRequest): Promise<boolean> {
+    try {
+      console.log('Sending SMS:', smsRequest);
+      
+      const { data, error } = await supabase.functions.invoke('send-sms', {
+        body: smsRequest
+      });
+
+      if (error) {
+        console.error('Error invoking SMS function:', error);
+        return false;
+      }
+
+      console.log('SMS sent successfully:', data);
+      return true;
+    } catch (error) {
+      console.error('Failed to send SMS:', error);
+      return false;
+    }
+  }
+
+  // Helper methods for common SMS types
+  static async sendTicketSMS(
+    destination: string,
+    ticketId: string,
+    ticketTitle: string,
+    status?: string
+  ): Promise<boolean> {
+    const message = status 
+      ? `Ticket #${ticketId} "${ticketTitle}" status updated to: ${status}`
+      : `New ticket #${ticketId} created: "${ticketTitle}"`;
+    
+    return this.sendSMS({
+      destination,
+      message
     });
   }
 }

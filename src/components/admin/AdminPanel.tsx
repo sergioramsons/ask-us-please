@@ -7,9 +7,10 @@ import { WorkflowBuilder } from "@/components/workflow/WorkflowBuilder";
 import { BusinessHoursConfig } from "@/components/admin/BusinessHoursConfig";
 import { AccountDashboard } from "@/components/account/AccountDashboard";
 import { EmailNotificationTester } from "@/components/admin/EmailNotificationTester";
+import { SMSTester } from "@/components/admin/SMSTester";
 import { ContactsManager } from "@/components/admin/ContactsManager";
 import { Ticket } from "@/types/ticket";
-import { Mail, Shield, BarChart3, Settings, Workflow, Clock, User, Bell, Users } from "lucide-react";
+import { Mail, Shield, BarChart3, Settings, Workflow, Clock, User, Bell, Users, MessageSquare } from "lucide-react";
 
 interface AdminPanelProps {
   tickets: Ticket[];
@@ -30,7 +31,7 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
       </div>
       
       <Tabs defaultValue="email" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-9">
+        <TabsList className="grid w-full grid-cols-10">
           <TabsTrigger value="email" className="flex items-center gap-2">
             <Mail className="h-4 w-4" />
             Email Settings
@@ -57,7 +58,11 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
           </TabsTrigger>
           <TabsTrigger value="notifications" className="flex items-center gap-2">
             <Bell className="h-4 w-4" />
-            Notifications
+            Email Test
+          </TabsTrigger>
+          <TabsTrigger value="sms" className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" />
+            SMS Test
           </TabsTrigger>
           <TabsTrigger value="account" className="flex items-center gap-2">
             <User className="h-4 w-4" />
@@ -95,6 +100,10 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
         
         <TabsContent value="notifications" className="space-y-4">
           <EmailNotificationTester />
+        </TabsContent>
+
+        <TabsContent value="sms" className="space-y-4">
+          <SMSTester />
         </TabsContent>
         
         <TabsContent value="account" className="space-y-4">
