@@ -11,8 +11,9 @@ import { AccountDashboard } from "@/components/account/AccountDashboard";
 import { EmailNotificationTester } from "@/components/admin/EmailNotificationTester";
 import { SMSTester } from "@/components/admin/SMSTester";
 import { ContactsManager } from "@/components/admin/ContactsManager";
+import YeastarIntegration from "@/components/admin/YeastarIntegration";
 import { Ticket } from "@/types/ticket";
-import { Mail, Shield, BarChart3, Settings, Workflow, Clock, User, Bell, Users, MessageSquare } from "lucide-react";
+import { Mail, Shield, BarChart3, Settings, Workflow, Clock, User, Bell, Users, MessageSquare, Phone } from "lucide-react";
 
 interface AdminPanelProps {
   tickets: Ticket[];
@@ -33,7 +34,7 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
       </div>
       
       <Tabs defaultValue="email" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-10">
+<TabsList className="grid w-full grid-cols-11">
           <TabsTrigger value="email" className="flex items-center gap-2">
             <Mail className="h-4 w-4" />
             Email Settings
@@ -65,6 +66,10 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
           <TabsTrigger value="sms" className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />
             SMS Test
+          </TabsTrigger>
+          <TabsTrigger value="pbx" className="flex items-center gap-2">
+            <Phone className="h-4 w-4" />
+            PBX Integration
           </TabsTrigger>
           <TabsTrigger value="account" className="flex items-center gap-2">
             <User className="h-4 w-4" />
@@ -108,6 +113,10 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
 
         <TabsContent value="sms" className="space-y-4">
           <SMSTester />
+        </TabsContent>
+        
+        <TabsContent value="pbx" className="space-y-4">
+          <YeastarIntegration />
         </TabsContent>
         
         <TabsContent value="account" className="space-y-4">
