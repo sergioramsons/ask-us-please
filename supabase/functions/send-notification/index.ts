@@ -166,13 +166,18 @@ const handler = async (req: Request): Promise<Response> => {
     // Check if user has notifications enabled (in a real app, you'd check user preferences)
     // For now, we'll assume notifications are enabled
 
-    // Initialize Resend safely at request time
+    // Check if email service is configured
     const apiKey = Deno.env.get('RESEND_API_KEY');
     if (!apiKey) {
-      console.error('RESEND_API_KEY is not set');
+      console.log('RESEND_API_KEY not configured - skipping email notification');
       return new Response(
-        JSON.stringify({ error: 'Email service not configured', details: 'Missing RESEND_API_KEY' }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ 
+          success: true, 
+          message: 'Email notifications disabled - RESEND_API_KEY not configured',
+          notification_type: notification.type,
+          ticket_id: notification.ticketId
+        }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
     const resend = new Resend(apiKey);
