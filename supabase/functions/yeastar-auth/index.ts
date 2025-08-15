@@ -140,9 +140,21 @@ const handler = async (req: Request): Promise<Response> => {
 
       // Validate client credentials against stored secrets if provided
       if (EXPECTED_CLIENT_ID && EXPECTED_CLIENT_SECRET) {
-        const idMatch = effectiveClientId === EXPECTED_CLIENT_ID;
-        const secretMatch = effectiveClientSecret === EXPECTED_CLIENT_SECRET;
-        console.log('Client validation check', { idMatch, secretMatch, providedClientId: effectiveClientId, source: client_id ? 'body/basic' : 'code' });
+        const normExpId = (EXPECTED_CLIENT_ID || '').trim();
+        const normExpSec = (EXPECTED_CLIENT_SECRET || '').trim();
+        const normProvidedId = (effectiveClientId || '').trim();
+        const normProvidedSec = (effectiveClientSecret || '').trim();
+
+        const idMatch = normProvidedId === normExpId;
+        const secretMatch = normProvidedSec === normExpSec;
+        console.log('Client validation check', {
+          idMatch,
+          secretMatch,
+          providedClientId: normProvidedId,
+          providedSecretLength: normProvidedSec.length,
+          expectedSecretLength: normExpSec.length,
+          source: client_id ? 'body/basic' : 'code'
+        });
         if (!idMatch || !secretMatch) {
           const reason = !idMatch && !secretMatch
             ? 'client_id_and_secret_mismatch'
