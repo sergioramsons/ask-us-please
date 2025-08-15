@@ -71,20 +71,41 @@ const handler = async (req: Request): Promise<Response> => {
     const responseText = await response.text();
     console.log('SMS API Response:', { status: response.status, body: responseText });
 
-    // Check if response contains success indicators
+    // Parse RML Connect response codes
     const isSuccess = response.ok && (
-      responseText.includes('1701') || // Success code from RML Connect
-      responseText.includes('success') ||
-      responseText.toLowerCase().includes('submitted')
+      responseText.includes('1701') // Success code from RML Connect
     );
+    
+    // Common RML Connect error codes
+    const errorCodes: Record<string, string> = {
+      '1702': 'Invalid Message',
+      '1703': 'Invalid Username or Password',
+      '1704': 'Invalid Type',
+      '1705': 'Invalid Mobile',
+      '1706': 'Invalid Sender',
+      '1707': 'Insufficient Credit',
+      '1708': 'API Disabled'
+    };
 
-    if (!response.ok) {
-      throw new Error(`SMS API error: ${response.status} - ${responseText}`);
+    const responseCode = responseText.split('|')[0];
+    const errorMessage = errorCodes[responseCode] || 'Unknown error';
+
+    if (!response.ok || responseCode !== '1701') {
+      console.error(`SMS API error: ${responseCode} - ${errorMessage}`);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        message: `SMS failed: ${errorMessage}`,
+        response: responseText,
+        errorCode: responseCode
+      }), {
+        status: 200, // Don't return error status, let client handle it
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     return new Response(JSON.stringify({ 
-      success: isSuccess, 
-      message: isSuccess ? 'SMS sent successfully' : 'SMS submission failed',
+      success: true, 
+      message: 'SMS sent successfully',
       response: responseText,
       apiStatus: response.status
     }), {
