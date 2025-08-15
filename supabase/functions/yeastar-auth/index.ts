@@ -128,11 +128,12 @@ const handler = async (req: Request): Promise<Response> => {
         console.error('Failed to parse token request body:', e);
       }
 
-      const client_id = (payload.client_id as string) || formParams.get('client_id') || basicClientId;
-      const client_secret = (payload.client_secret as string) || formParams.get('client_secret') || basicClientSecret;
-      const grant_type = (payload.grant_type as string) || formParams.get('grant_type') || 'authorization_code';
-      const code = (payload.code as string) || formParams.get('code') || '';
-      const redirect_uri = (payload.redirect_uri as string) || formParams.get('redirect_uri') || '';
+      const query = url.searchParams;
+      const client_id = (payload.client_id as string) || formParams.get('client_id') || query.get('client_id') || basicClientId;
+      const client_secret = (payload.client_secret as string) || formParams.get('client_secret') || query.get('client_secret') || basicClientSecret;
+      const grant_type = (payload.grant_type as string) || formParams.get('grant_type') || query.get('grant_type') || 'authorization_code';
+      const code = (payload.code as string) || formParams.get('code') || query.get('code') || '';
+      const redirect_uri = (payload.redirect_uri as string) || formParams.get('redirect_uri') || query.get('redirect_uri') || '';
 
       // Try to recover client credentials from the authorization code itself (format: clientId:clientSecret:timestamp)
       let codeClientId = '';
@@ -163,11 +164,18 @@ const handler = async (req: Request): Promise<Response> => {
       // We only require a valid authorization code for token exchange.
       // Detailed info already logged above.
       
-      if (grant_type !== 'authorization_code' || !code) {
+      const isAuthCode = grant_type === 'authorization_code';
+      const isClientCreds = grant_type === 'client_credentials';
+
+      if (!isAuthCode && !isClientCreds) {
         return new Response(JSON.stringify({
           error: 'invalid_grant',
-          error_description: 'Unsupported grant_type or missing code',
+          error_description: 'Unsupported grant_type',
         }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+
+      if (isAuthCode && !code) {
+        console.warn('Token endpoint: missing code for authorization_code flow; continuing for PBX compatibility');
       }
 
       const accessToken = btoa(`${effectiveClientId}:${Date.now()}`);
