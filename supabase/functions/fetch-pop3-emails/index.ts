@@ -175,10 +175,31 @@ async function connectAndFetchEmails(config: any) {
       return decoder.decode(buffer.subarray(0, bytesRead || 0));
     }
 
-    // Helper function to send command and read response
+    // Read multi-line response terminated by "\r\n.\r\n"
+    async function readMultiline(): Promise<string> {
+      let chunks = '';
+      while (true) {
+        const part = await readResponse();
+        if (!part) break;
+        chunks += part;
+        if (chunks.includes("\r\n.\r\n") || chunks.endsWith("\n.\r\n") || chunks.endsWith("\n.\n")) {
+          break;
+        }
+        // Small delay to allow more data
+        await new Promise(r => setTimeout(r, 10));
+      }
+      return chunks;
+    }
+
+    // Helper function to send command and read single-line response
     async function sendCommand(command: string): Promise<string> {
       await conn.write(encoder.encode(command + "\r\n"));
       return await readResponse();
+    }
+
+    // Helper function to send command without reading
+    async function writeCommand(command: string): Promise<void> {
+      await conn.write(encoder.encode(command + "\r\n"));
     }
 
     // POP3 handshake - read server greeting without sending anything
@@ -209,7 +230,8 @@ async function connectAndFetchEmails(config: any) {
     const limit = Math.min(messageCount, 10);
     for (let i = 1; i <= limit; i++) {
       try {
-        const emailResponse = await sendCommand(`RETR ${i}`);
+        await writeCommand(`RETR ${i}`);
+        const emailResponse = await readMultiline();
         if (emailResponse.startsWith("+OK")) {
           const email = parseEmail(emailResponse);
           if (email) {
