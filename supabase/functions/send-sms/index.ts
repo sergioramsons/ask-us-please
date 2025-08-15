@@ -71,14 +71,22 @@ const handler = async (req: Request): Promise<Response> => {
     const responseText = await response.text();
     console.log('SMS API Response:', { status: response.status, body: responseText });
 
+    // Check if response contains success indicators
+    const isSuccess = response.ok && (
+      responseText.includes('1701') || // Success code from RML Connect
+      responseText.includes('success') ||
+      responseText.toLowerCase().includes('submitted')
+    );
+
     if (!response.ok) {
       throw new Error(`SMS API error: ${response.status} - ${responseText}`);
     }
 
     return new Response(JSON.stringify({ 
-      success: true, 
-      message: 'SMS sent successfully',
-      response: responseText 
+      success: isSuccess, 
+      message: isSuccess ? 'SMS sent successfully' : 'SMS submission failed',
+      response: responseText,
+      apiStatus: response.status
     }), {
       status: 200,
       headers: {
