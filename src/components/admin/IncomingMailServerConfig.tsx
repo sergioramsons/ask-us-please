@@ -213,6 +213,27 @@ const IncomingMailServerConfig = () => {
     },
   });
 
+  // Fetch emails mutation
+  const fetchEmailsMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('fetch-pop3-emails');
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(data.message || 'Emails fetched successfully!');
+        queryClient.invalidateQueries({ queryKey: ['incoming-emails'] });
+      } else {
+        toast.error(data.message || 'Failed to fetch emails');
+      }
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to fetch emails: ${error.message}`);
+    },
+  });
+
   const handleEditServer = async (server: IncomingMailServer) => {
     let decryptedPassword = server.password;
     
@@ -270,205 +291,215 @@ const IncomingMailServerConfig = () => {
             <Mail className="h-5 w-5" />
             Incoming Mail Servers
           </CardTitle>
-          <Dialog open={showForm} onOpenChange={setShowForm}>
-            <DialogTrigger asChild>
-              <Button 
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowForm(true);
-                }}
-                className="gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Add Mail Server
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>
-                  {selectedServer ? 'Edit' : 'Add'} Incoming Mail Server
-                </DialogTitle>
-              </DialogHeader>
-              
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="name">Server Name *</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="e.g., Gmail Support"
-                      required
-                    />
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => fetchEmailsMutation.mutate()}
+              disabled={fetchEmailsMutation.isPending}
+              variant="outline"
+              className="gap-2"
+            >
+              {fetchEmailsMutation.isPending ? 'Fetching...' : 'Fetch Emails'}
+            </Button>
+            <Dialog open={showForm} onOpenChange={setShowForm}>
+              <DialogTrigger asChild>
+                <Button 
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowForm(true);
+                  }}
+                  className="gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Mail Server
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>
+                    {selectedServer ? 'Edit' : 'Add'} Incoming Mail Server
+                  </DialogTitle>
+                </DialogHeader>
+                
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="name">Server Name *</Label>
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="e.g., Gmail Support"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="server_type">Server Type *</Label>
+                      <Select 
+                        value={formData.server_type} 
+                        onValueChange={(value: 'imap' | 'pop3') => handleServerTypeChange(value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="imap">IMAP</SelectItem>
+                          <SelectItem value="pop3">POP3</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="server_type">Server Type *</Label>
-                    <Select 
-                      value={formData.server_type} 
-                      onValueChange={(value: 'imap' | 'pop3') => handleServerTypeChange(value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="imap">IMAP</SelectItem>
-                        <SelectItem value="pop3">POP3</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="col-span-2">
-                    <Label htmlFor="host">Host *</Label>
-                    <Input
-                      id="host"
-                      value={formData.host}
-                      onChange={(e) => setFormData(prev => ({ ...prev, host: e.target.value }))}
-                      placeholder="e.g., imap.gmail.com"
-                      required
-                    />
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="col-span-2">
+                      <Label htmlFor="host">Host *</Label>
+                      <Input
+                        id="host"
+                        value={formData.host}
+                        onChange={(e) => setFormData(prev => ({ ...prev, host: e.target.value }))}
+                        placeholder="e.g., imap.gmail.com"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="port">Port *</Label>
+                      <Input
+                        id="port"
+                        type="number"
+                        value={formData.port}
+                        onChange={(e) => setFormData(prev => ({ ...prev, port: parseInt(e.target.value) }))}
+                        required
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="port">Port *</Label>
-                    <Input
-                      id="port"
-                      type="number"
-                      value={formData.port}
-                      onChange={(e) => setFormData(prev => ({ ...prev, port: parseInt(e.target.value) }))}
-                      required
-                    />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="username">Username/Email *</Label>
-                    <Input
-                      id="username"
-                      value={formData.username}
-                      onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                      placeholder="email@domain.com"
-                      required
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="username">Username/Email *</Label>
+                      <Input
+                        id="username"
+                        value={formData.username}
+                        onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+                        placeholder="email@domain.com"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="password">Password *</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={formData.password}
+                        onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                        required
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="password">Password *</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                      required
-                    />
-                  </div>
-                </div>
 
-                {formData.server_type === 'imap' && (
-                  <div>
-                    <Label htmlFor="folder_name">Folder Name</Label>
-                    <Input
-                      id="folder_name"
-                      value={formData.folder_name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, folder_name: e.target.value }))}
-                      placeholder="INBOX"
-                    />
-                  </div>
-                )}
+                  {formData.server_type === 'imap' && (
+                    <div>
+                      <Label htmlFor="folder_name">Folder Name</Label>
+                      <Input
+                        id="folder_name"
+                        value={formData.folder_name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, folder_name: e.target.value }))}
+                        placeholder="INBOX"
+                      />
+                    </div>
+                  )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="check_interval">Check Interval (minutes)</Label>
-                    <Input
-                      id="check_interval"
-                      type="number"
-                      min="1"
-                      value={formData.check_interval}
-                      onChange={(e) => setFormData(prev => ({ ...prev, check_interval: parseInt(e.target.value) }))}
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="check_interval">Check Interval (minutes)</Label>
+                      <Input
+                        id="check_interval"
+                        type="number"
+                        min="1"
+                        value={formData.check_interval}
+                        onChange={(e) => setFormData(prev => ({ ...prev, check_interval: parseInt(e.target.value) }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="auto_assign_department">Auto-assign Department</Label>
+                      <Select 
+                        value={formData.auto_assign_department || 'none'} 
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, auto_assign_department: value === 'none' ? undefined : value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select department" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {departments?.map((dept) => (
+                            <SelectItem key={dept.id} value={dept.id}>
+                              {dept.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="auto_assign_department">Auto-assign Department</Label>
-                    <Select 
-                      value={formData.auto_assign_department || 'none'} 
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, auto_assign_department: value === 'none' ? undefined : value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select department" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {departments?.map((dept) => (
-                          <SelectItem key={dept.id} value={dept.id}>
-                            {dept.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="use_ssl"
-                      checked={formData.use_ssl}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, use_ssl: checked }))}
-                    />
-                    <Label htmlFor="use_ssl">Use SSL</Label>
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="use_ssl"
+                        checked={formData.use_ssl}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, use_ssl: checked }))}
+                      />
+                      <Label htmlFor="use_ssl">Use SSL</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="use_tls"
+                        checked={formData.use_tls}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, use_tls: checked }))}
+                      />
+                      <Label htmlFor="use_tls">Use TLS</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="auto_process"
+                        checked={formData.auto_process}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, auto_process: checked }))}
+                      />
+                      <Label htmlFor="auto_process">Auto-process emails</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="auto_create_tickets"
+                        checked={formData.auto_create_tickets}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, auto_create_tickets: checked }))}
+                      />
+                      <Label htmlFor="auto_create_tickets">Auto-create tickets</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="delete_after_process"
+                        checked={formData.delete_after_process}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, delete_after_process: checked }))}
+                      />
+                      <Label htmlFor="delete_after_process">Delete emails after processing</Label>
+                    </div>
                   </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="use_tls"
-                      checked={formData.use_tls}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, use_tls: checked }))}
-                    />
-                    <Label htmlFor="use_tls">Use TLS</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="auto_process"
-                      checked={formData.auto_process}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, auto_process: checked }))}
-                    />
-                    <Label htmlFor="auto_process">Auto-process emails</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="auto_create_tickets"
-                      checked={formData.auto_create_tickets}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, auto_create_tickets: checked }))}
-                    />
-                    <Label htmlFor="auto_create_tickets">Auto-create tickets</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="delete_after_process"
-                      checked={formData.delete_after_process}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, delete_after_process: checked }))}
-                    />
-                    <Label htmlFor="delete_after_process">Delete emails after processing</Label>
-                  </div>
-                </div>
 
-                <div className="flex gap-2 pt-4">
-                  <Button type="submit" disabled={saveServerMutation.isPending}>
-                    {saveServerMutation.isPending ? 'Saving...' : 'Save Server'}
-                  </Button>
-                  <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  <div className="flex gap-2 pt-4">
+                    <Button type="submit" disabled={saveServerMutation.isPending}>
+                      {saveServerMutation.isPending ? 'Saving...' : 'Save Server'}
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </CardHeader>
       <CardContent>

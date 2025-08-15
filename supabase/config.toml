@@ -34,3 +34,6 @@ verify_jwt = false
 
 [functions.test-mail-connection]
 verify_jwt = false
+
+[functions.fetch-pop3-emails]
+verify_jwt = false
