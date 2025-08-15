@@ -8,86 +8,107 @@ import { Download, Copy, FileText } from 'lucide-react';
 const ThreeCXIntegration = () => {
   const [copied, setCopied] = useState(false);
 
-  const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
-<Crm Name="Lovable Helpdesk" Version="1" Country="US" SupportsEmojis="false">
-  <Number Prefix="AsIs" MaxLength="[MaxLength]"/>
-  <Connection MaxConcurrentRequests="5"/>
+  const xmlContent = `<?xml version="1.0"?>
+<Crm xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Country="US" Name="Lovable Helpdesk" Version="1" SupportsEmojis="false">
+  <Number Prefix="AsIs" MaxLength="[MaxLength]" />
+  <Connection MaxConcurrentRequests="5" />
   <Parameters>
-    <Parameter Name="ServerUrl" Type="String" Title="Helpdesk Server URL" Default="thzdazcmswmeolaiijml.supabase.co"/>
-    <Parameter Name="ApiToken" Type="Password" Title="API Token" Default=""/>
-    <Parameter Name="Protocol" Type="String" Title="Protocol" Default="https"/>
+    <Parameter Name="ServerUrl" Type="String" Parent="General Configuration" Editor="String" Title="Helpdesk Server URL" Default="https://thzdazcmswmeolaiijml.supabase.co" />
+    <Parameter Name="ApiKey" Type="String" Parent="General Configuration" Editor="String" Title="API Key" />
   </Parameters>
-  <Authentication Type="No"/>
+  <Authentication Type="No" />
   <Scenarios>
-    <Scenario Id="">
-      <Request Url="[Protocol]://[ServerUrl]/functions/v1/yeastar-contacts" Method="GET">
-        <Parameter Name="phone" Value="[Number]"/>
+    <Scenario Id="" Type="REST">
+      <Request Url="[ServerUrl]/functions/v1/yeastar-contacts" MessagePasses="0" RequestType="Get" ResponseType="Json">
+        <Query>
+          <Parameter Name="phone" Value="[Number]" />
+        </Query>
       </Request>
       <Rules>
         <Rule Type="Any">users</Rule>
       </Rules>
       <Variables>
-        <Variable Name="ContactID" Path="users.0.id"/>
-        <Variable Name="FirstName" Path="users.0.first_name"/>
-        <Variable Name="LastName" Path="users.0.last_name"/>
-        <Variable Name="Email" Path="users.0.email"/>
-        <Variable Name="Phone" Path="users.0.phone"/>
-        <Variable Name="Company" Path="users.0.company"/>
+        <Variable Name="ContactID" Path="users.0.id" />
+        <Variable Name="FirstName" Path="users.0.first_name" />
+        <Variable Name="LastName" Path="users.0.last_name" />
+        <Variable Name="Email" Path="users.0.email" />
+        <Variable Name="Phone" Path="users.0.phone" />
+        <Variable Name="CompanyName" Path="users.0.company" />
       </Variables>
       <Outputs>
-        <Output Type="ContactUrl" Value="https://helpdesk.bernsergsolutions.com/yeastar?popup=helpdesk&amp;phone=[Number]&amp;name=[FirstName] [LastName]"/>
-        <Output Type="FirstName" Value="[FirstName]"/>
-        <Output Type="LastName" Value="[LastName]"/>
-        <Output Type="Email" Value="[Email]"/>
-        <Output Type="Phone" Value="[Phone]"/>
-        <Output Type="Company" Value="[Company]"/>
-        <Output Type="EntityType" Value="Contacts"/>
-        <Output Type="EntityId" Value="[ContactID]"/>
+        <Output Type="ContactUrl" Value="https://helpdesk.bernsergsolutions.com/yeastar?popup=helpdesk&amp;phone=[Number]&amp;name=[FirstName] [LastName]" />
+        <Output Type="FirstName" Value="[FirstName]" />
+        <Output Type="LastName" Value="[LastName]" />
+        <Output Type="Email" Value="[Email]" />
+        <Output Type="CompanyName" Value="[CompanyName]" />
+        <Output Type="PhoneBusiness" Value="[Phone]" />
+        <Output Type="EntityType" Value="Contacts" />
+        <Output Type="EntityId" Value="[ContactID]" />
       </Outputs>
     </Scenario>
-    <Scenario Id="CreateContactRecordFromClient">
-      <Request Url="[Protocol]://[ServerUrl]/functions/v1/yeastar-contacts" Method="POST" 
-               RequestEncoding="JSON" RequestContentType="application/json">
-        <Parameter Name="" Value="{&quot;first_name&quot;: &quot;[CreateContactFirstName]&quot;, &quot;last_name&quot;: &quot;[CreateContactLastName]&quot;, &quot;phone&quot;: &quot;[CreateContactPhoneNumber]&quot;, &quot;email&quot;: &quot;[CreateContactEmail]&quot;, &quot;company&quot;: &quot;[CreateContactCompany]&quot;}"/>
+    <Scenario Id="CreateContactRecordFromClient" Type="REST">
+      <Request Url="[ServerUrl]/functions/v1/yeastar-contacts" MessagePasses="0" RequestType="Post" ResponseType="Json" RequestEncoding="Json">
+        <PostValues>
+          <Value Key="first_name" Type="String">[CreateContactFirstName]</Value>
+          <Value Key="last_name" Type="String">[CreateContactLastName]</Value>
+          <Value Key="phone" Type="String">[CreateContactPhoneNumber]</Value>
+          <Value Key="email" Type="String">[CreateContactEmail]</Value>
+          <Value Key="company" Type="String">[CreateContactCompany]</Value>
+        </PostValues>
       </Request>
       <Rules>
         <Rule Type="Any">id</Rule>
       </Rules>
       <Variables>
-        <Variable Name="ContactID" Path="id"/>
-        <Variable Name="FirstName" Path="first_name"/>
-        <Variable Name="LastName" Path="last_name"/>
-        <Variable Name="Email" Path="email"/>
-        <Variable Name="Phone" Path="phone"/>
-        <Variable Name="Company" Path="company"/>
+        <Variable Name="ContactID" Path="id" />
+        <Variable Name="FirstName" Path="first_name" />
+        <Variable Name="LastName" Path="last_name" />
+        <Variable Name="Email" Path="email" />
+        <Variable Name="Phone" Path="phone" />
+        <Variable Name="CompanyName" Path="company" />
       </Variables>
       <Outputs>
-        <Output Type="ContactUrl" Value="https://helpdesk.bernsergsolutions.com/yeastar?popup=helpdesk&amp;phone=[Phone]&amp;name=[FirstName] [LastName]"/>
-        <Output Type="FirstName" Value="[FirstName]"/>
-        <Output Type="LastName" Value="[LastName]"/>
-        <Output Type="Email" Value="[Email]"/>
-        <Output Type="Phone" Value="[Phone]"/>
-        <Output Type="Company" Value="[Company]"/>
-        <Output Type="EntityType" Value="Contacts"/>
-        <Output Type="EntityId" Value="[ContactID]"/>
+        <Output Type="ContactUrl" Value="https://helpdesk.bernsergsolutions.com/yeastar?popup=helpdesk&amp;phone=[Phone]&amp;name=[FirstName] [LastName]" />
+        <Output Type="FirstName" Value="[FirstName]" />
+        <Output Type="LastName" Value="[LastName]" />
+        <Output Type="Email" Value="[Email]" />
+        <Output Type="CompanyName" Value="[CompanyName]" />
+        <Output Type="PhoneBusiness" Value="[Phone]" />
+        <Output Type="EntityType" Value="Contacts" />
+        <Output Type="EntityId" Value="[ContactID]" />
       </Outputs>
     </Scenario>
-    <Scenario Id="ReportCall">
-      <Request Url="[Protocol]://[ServerUrl]/functions/v1/yeastar-tickets" Method="POST" 
-               RequestEncoding="JSON" RequestContentType="application/json">
-        <Parameter Name="" Value="{&quot;ticket&quot;: {&quot;subject&quot;: &quot;Call from [CallStartTime] - [CallerNumber] to [CalleeNumber]&quot;, &quot;description&quot;: &quot;Call Details:\\n- From: [CallerNumber]\\n- To: [CalleeNumber]\\n- Duration: [CallDuration]\\n- Date: [CallStartTime]\\n- Type: [CallType]&quot;, &quot;priority&quot;: &quot;normal&quot;, &quot;status&quot;: &quot;new&quot;, &quot;tags&quot;: [&quot;3cx-call&quot;, &quot;[CallType]&quot;]}}"/>
+    <Scenario Id="ReportCall" Type="REST">
+      <Request Url="[ServerUrl]/functions/v1/yeastar-tickets" MessagePasses="0" RequestType="Post" ResponseType="Json" RequestEncoding="Json">
+        <PostValues>
+          <Value Key="ticket" Type="Object">
+            <Value Key="subject" Type="String">Call from [CallStartTime] - [CallerNumber] to [CalleeNumber]</Value>
+            <Value Key="description" Type="String">Call Details:
+- From: [CallerNumber]
+- To: [CalleeNumber]  
+- Duration: [CallDuration]
+- Date: [CallStartTime]
+- Type: [CallType]</Value>
+            <Value Key="priority" Type="String">normal</Value>
+            <Value Key="status" Type="String">new</Value>
+            <Value Key="tags" Type="Array">
+              <Value Type="String">3cx-call</Value>
+              <Value Type="String">[CallType]</Value>
+            </Value>
+          </Value>
+        </PostValues>
       </Request>
       <Rules>
         <Rule Type="Any">ticket</Rule>
       </Rules>
       <Variables>
-        <Variable Name="TicketID" Path="ticket.id"/>
-        <Variable Name="TicketNumber" Path="ticket.ticket_number"/>
+        <Variable Name="TicketID" Path="ticket.id" />
+        <Variable Name="TicketNumber" Path="ticket.ticket_number" />
       </Variables>
       <Outputs>
-        <Output Type="EntityType" Value="Tickets"/>
-        <Output Type="EntityId" Value="[TicketID]"/>
-        <Output Type="ContactUrl" Value="https://helpdesk.bernsergsolutions.com/tickets/[TicketID]"/>
+        <Output Type="EntityType" Value="Tickets" />
+        <Output Type="EntityId" Value="[TicketID]" />
+        <Output Type="ContactUrl" Value="https://helpdesk.bernsergsolutions.com/tickets/[TicketID]" />
       </Outputs>
     </Scenario>
   </Scenarios>
@@ -123,16 +144,15 @@ const ThreeCXIntegration = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            3CX IP PBX Integration Configuration
+            3CX V20 IP PBX Integration Configuration
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="bg-muted p-4 rounded-lg">
             <h3 className="font-semibold mb-2">Configuration Values:</h3>
             <div className="text-sm space-y-1">
-              <p><strong>Server Address:</strong> thzdazcmswmeolaiijml.supabase.co</p>
-              <p><strong>Helpdesk Domain:</strong> thzdazcmswmeolaiijml</p>
-              <p><strong>API Token:</strong> You'll need to generate an API token from your helpdesk admin panel</p>
+              <p><strong>Server URL:</strong> https://thzdazcmswmeolaiijml.supabase.co</p>
+              <p><strong>API Key:</strong> Generate from Admin Panel → API Settings</p>
               <p><strong>CRM Link:</strong> https://helpdesk.bernsergsolutions.com</p>
             </div>
           </div>
@@ -149,7 +169,7 @@ const ThreeCXIntegration = () => {
           </div>
 
           <div>
-            <label className="text-sm font-medium">3CX CRM Template XML:</label>
+            <label className="text-sm font-medium">3CX V20 CRM Template XML:</label>
             <Textarea
               value={xmlContent}
               readOnly
@@ -159,17 +179,17 @@ const ThreeCXIntegration = () => {
           </div>
 
           <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-            <h4 className="font-semibold text-green-900 mb-2">3CX Setup Instructions:</h4>
+            <h4 className="font-semibold text-green-900 mb-2">3CX V20 Setup Instructions:</h4>
             <ol className="text-sm text-green-800 space-y-2 list-decimal list-inside">
               <li>Download the XML template using the button above</li>
-              <li>Log into your 3CX Management Console</li>
-              <li>Navigate to <strong>Settings → CRM → Add CRM</strong></li>
-              <li>Select "Generic CRM" and click "Add Template"</li>
+              <li>Log into your 3CX V20 Management Console</li>
+              <li>Navigate to <strong>Settings → CRM → Server side tab</strong></li>
+              <li>Click <strong>"Add"</strong> to upload a CRM template</li>
               <li>Upload the downloaded XML file</li>
-              <li>Configure the following parameters:
+              <li>Configure the parameters:
                 <ul className="ml-6 mt-1 list-disc space-y-1">
-                  <li><strong>API Token:</strong> Generate from Admin Panel → API Settings</li>
-                  <li><strong>Helpdesk Domain:</strong> thzdazcmswmeolaiijml</li>
+                  <li><strong>Helpdesk Server URL:</strong> https://thzdazcmswmeolaiijml.supabase.co</li>
+                  <li><strong>API Key:</strong> Generate from Admin Panel → API Settings</li>
                 </ul>
               </li>
               <li>Test the integration with a sample phone number</li>
@@ -182,20 +202,18 @@ const ThreeCXIntegration = () => {
             <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
               <li><strong>Contact Lookup:</strong> Automatic caller identification</li>
               <li><strong>Contact Creation:</strong> Add new contacts from calls</li>
-              <li><strong>Agent Lookup:</strong> Match 3CX users with helpdesk agents</li>
               <li><strong>Ticket Creation:</strong> Auto-create tickets from calls</li>
-              <li><strong>Call Logging:</strong> Add call details to existing tickets</li>
               <li><strong>Screen Pop:</strong> Open helpdesk interface on incoming calls</li>
             </ul>
           </div>
 
-          <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-            <h4 className="font-semibold text-yellow-900 mb-2">Important Notes:</h4>
-            <ul className="text-sm text-yellow-800 space-y-1 list-disc list-inside">
-              <li>Ensure your helpdesk API endpoints are accessible from your 3CX server</li>
-              <li>The API token needs appropriate permissions for contact and ticket management</li>
-              <li>Test with a few extensions first before rolling out company-wide</li>
-              <li>Monitor 3CX logs for any connection issues during setup</li>
+          <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+            <h4 className="font-semibold text-amber-900 mb-2">V20 Specific Notes:</h4>
+            <ul className="text-sm text-amber-800 space-y-1 list-disc list-inside">
+              <li>This template is specifically formatted for 3CX V20 with required XML namespaces</li>
+              <li>Uses proper RequestType and MessagePasses attributes required by V20</li>
+              <li>PostValues structure for JSON requests compatible with V20 validation</li>
+              <li>If migrating from V18, use this new template format</li>
             </ul>
           </div>
         </CardContent>

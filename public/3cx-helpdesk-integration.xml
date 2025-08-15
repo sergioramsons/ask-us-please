@@ -1,83 +1,104 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<Crm Name="Lovable Helpdesk" Version="1" Country="US" SupportsEmojis="false">
-  <Number Prefix="AsIs" MaxLength="[MaxLength]"/>
-  <Connection MaxConcurrentRequests="5"/>
+<?xml version="1.0"?>
+<Crm xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Country="US" Name="Lovable Helpdesk" Version="1" SupportsEmojis="false">
+  <Number Prefix="AsIs" MaxLength="[MaxLength]" />
+  <Connection MaxConcurrentRequests="5" />
   <Parameters>
-    <Parameter Name="ServerUrl" Type="String" Title="Helpdesk Server URL" Default="thzdazcmswmeolaiijml.supabase.co"/>
-    <Parameter Name="ApiToken" Type="Password" Title="API Token" Default=""/>
-    <Parameter Name="Protocol" Type="String" Title="Protocol" Default="https"/>
+    <Parameter Name="ServerUrl" Type="String" Parent="General Configuration" Editor="String" Title="Helpdesk Server URL" Default="https://thzdazcmswmeolaiijml.supabase.co" />
+    <Parameter Name="ApiKey" Type="String" Parent="General Configuration" Editor="String" Title="API Key" />
   </Parameters>
-  <Authentication Type="No"/>
+  <Authentication Type="No" />
   <Scenarios>
-    <Scenario Id="">
-      <Request Url="[Protocol]://[ServerUrl]/functions/v1/yeastar-contacts" Method="GET">
-        <Parameter Name="phone" Value="[Number]"/>
+    <Scenario Id="" Type="REST">
+      <Request Url="[ServerUrl]/functions/v1/yeastar-contacts" MessagePasses="0" RequestType="Get" ResponseType="Json">
+        <Query>
+          <Parameter Name="phone" Value="[Number]" />
+        </Query>
       </Request>
       <Rules>
         <Rule Type="Any">users</Rule>
       </Rules>
       <Variables>
-        <Variable Name="ContactID" Path="users.0.id"/>
-        <Variable Name="FirstName" Path="users.0.first_name"/>
-        <Variable Name="LastName" Path="users.0.last_name"/>
-        <Variable Name="Email" Path="users.0.email"/>
-        <Variable Name="Phone" Path="users.0.phone"/>
-        <Variable Name="Company" Path="users.0.company"/>
+        <Variable Name="ContactID" Path="users.0.id" />
+        <Variable Name="FirstName" Path="users.0.first_name" />
+        <Variable Name="LastName" Path="users.0.last_name" />
+        <Variable Name="Email" Path="users.0.email" />
+        <Variable Name="Phone" Path="users.0.phone" />
+        <Variable Name="CompanyName" Path="users.0.company" />
       </Variables>
       <Outputs>
-        <Output Type="ContactUrl" Value="https://helpdesk.bernsergsolutions.com/yeastar?popup=helpdesk&amp;phone=[Number]&amp;name=[FirstName] [LastName]"/>
-        <Output Type="FirstName" Value="[FirstName]"/>
-        <Output Type="LastName" Value="[LastName]"/>
-        <Output Type="Email" Value="[Email]"/>
-        <Output Type="Phone" Value="[Phone]"/>
-        <Output Type="Company" Value="[Company]"/>
-        <Output Type="EntityType" Value="Contacts"/>
-        <Output Type="EntityId" Value="[ContactID]"/>
+        <Output Type="ContactUrl" Value="https://helpdesk.bernsergsolutions.com/yeastar?popup=helpdesk&amp;phone=[Number]&amp;name=[FirstName] [LastName]" />
+        <Output Type="FirstName" Value="[FirstName]" />
+        <Output Type="LastName" Value="[LastName]" />
+        <Output Type="Email" Value="[Email]" />
+        <Output Type="CompanyName" Value="[CompanyName]" />
+        <Output Type="PhoneBusiness" Value="[Phone]" />
+        <Output Type="EntityType" Value="Contacts" />
+        <Output Type="EntityId" Value="[ContactID]" />
       </Outputs>
     </Scenario>
-    <Scenario Id="CreateContactRecordFromClient">
-      <Request Url="[Protocol]://[ServerUrl]/functions/v1/yeastar-contacts" Method="POST" 
-               RequestEncoding="JSON" RequestContentType="application/json">
-        <Parameter Name="" Value="{&quot;first_name&quot;: &quot;[CreateContactFirstName]&quot;, &quot;last_name&quot;: &quot;[CreateContactLastName]&quot;, &quot;phone&quot;: &quot;[CreateContactPhoneNumber]&quot;, &quot;email&quot;: &quot;[CreateContactEmail]&quot;, &quot;company&quot;: &quot;[CreateContactCompany]&quot;}"/>
+    <Scenario Id="CreateContactRecordFromClient" Type="REST">
+      <Request Url="[ServerUrl]/functions/v1/yeastar-contacts" MessagePasses="0" RequestType="Post" ResponseType="Json" RequestEncoding="Json">
+        <PostValues>
+          <Value Key="first_name" Type="String">[CreateContactFirstName]</Value>
+          <Value Key="last_name" Type="String">[CreateContactLastName]</Value>
+          <Value Key="phone" Type="String">[CreateContactPhoneNumber]</Value>
+          <Value Key="email" Type="String">[CreateContactEmail]</Value>
+          <Value Key="company" Type="String">[CreateContactCompany]</Value>
+        </PostValues>
       </Request>
       <Rules>
         <Rule Type="Any">id</Rule>
       </Rules>
       <Variables>
-        <Variable Name="ContactID" Path="id"/>
-        <Variable Name="FirstName" Path="first_name"/>
-        <Variable Name="LastName" Path="last_name"/>
-        <Variable Name="Email" Path="email"/>
-        <Variable Name="Phone" Path="phone"/>
-        <Variable Name="Company" Path="company"/>
+        <Variable Name="ContactID" Path="id" />
+        <Variable Name="FirstName" Path="first_name" />
+        <Variable Name="LastName" Path="last_name" />
+        <Variable Name="Email" Path="email" />
+        <Variable Name="Phone" Path="phone" />
+        <Variable Name="CompanyName" Path="company" />
       </Variables>
       <Outputs>
-        <Output Type="ContactUrl" Value="https://helpdesk.bernsergsolutions.com/yeastar?popup=helpdesk&amp;phone=[Phone]&amp;name=[FirstName] [LastName]"/>
-        <Output Type="FirstName" Value="[FirstName]"/>
-        <Output Type="LastName" Value="[LastName]"/>
-        <Output Type="Email" Value="[Email]"/>
-        <Output Type="Phone" Value="[Phone]"/>
-        <Output Type="Company" Value="[Company]"/>
-        <Output Type="EntityType" Value="Contacts"/>
-        <Output Type="EntityId" Value="[ContactID]"/>
+        <Output Type="ContactUrl" Value="https://helpdesk.bernsergsolutions.com/yeastar?popup=helpdesk&amp;phone=[Phone]&amp;name=[FirstName] [LastName]" />
+        <Output Type="FirstName" Value="[FirstName]" />
+        <Output Type="LastName" Value="[LastName]" />
+        <Output Type="Email" Value="[Email]" />
+        <Output Type="CompanyName" Value="[CompanyName]" />
+        <Output Type="PhoneBusiness" Value="[Phone]" />
+        <Output Type="EntityType" Value="Contacts" />
+        <Output Type="EntityId" Value="[ContactID]" />
       </Outputs>
     </Scenario>
-    <Scenario Id="ReportCall">
-      <Request Url="[Protocol]://[ServerUrl]/functions/v1/yeastar-tickets" Method="POST" 
-               RequestEncoding="JSON" RequestContentType="application/json">
-        <Parameter Name="" Value="{&quot;ticket&quot;: {&quot;subject&quot;: &quot;Call from [CallStartTime] - [CallerNumber] to [CalleeNumber]&quot;, &quot;description&quot;: &quot;Call Details:\\n- From: [CallerNumber]\\n- To: [CalleeNumber]\\n- Duration: [CallDuration]\\n- Date: [CallStartTime]\\n- Type: [CallType]&quot;, &quot;priority&quot;: &quot;normal&quot;, &quot;status&quot;: &quot;new&quot;, &quot;tags&quot;: [&quot;3cx-call&quot;, &quot;[CallType]&quot;]}}"/>
+    <Scenario Id="ReportCall" Type="REST">
+      <Request Url="[ServerUrl]/functions/v1/yeastar-tickets" MessagePasses="0" RequestType="Post" ResponseType="Json" RequestEncoding="Json">
+        <PostValues>
+          <Value Key="ticket" Type="Object">
+            <Value Key="subject" Type="String">Call from [CallStartTime] - [CallerNumber] to [CalleeNumber]</Value>
+            <Value Key="description" Type="String">Call Details:
+- From: [CallerNumber]
+- To: [CalleeNumber]  
+- Duration: [CallDuration]
+- Date: [CallStartTime]
+- Type: [CallType]</Value>
+            <Value Key="priority" Type="String">normal</Value>
+            <Value Key="status" Type="String">new</Value>
+            <Value Key="tags" Type="Array">
+              <Value Type="String">3cx-call</Value>
+              <Value Type="String">[CallType]</Value>
+            </Value>
+          </Value>
+        </PostValues>
       </Request>
       <Rules>
         <Rule Type="Any">ticket</Rule>
       </Rules>
       <Variables>
-        <Variable Name="TicketID" Path="ticket.id"/>
-        <Variable Name="TicketNumber" Path="ticket.ticket_number"/>
+        <Variable Name="TicketID" Path="ticket.id" />
+        <Variable Name="TicketNumber" Path="ticket.ticket_number" />
       </Variables>
       <Outputs>
-        <Output Type="EntityType" Value="Tickets"/>
-        <Output Type="EntityId" Value="[TicketID]"/>
-        <Output Type="ContactUrl" Value="https://helpdesk.bernsergsolutions.com/tickets/[TicketID]"/>
+        <Output Type="EntityType" Value="Tickets" />
+        <Output Type="EntityId" Value="[TicketID]" />
+        <Output Type="ContactUrl" Value="https://helpdesk.bernsergsolutions.com/tickets/[TicketID]" />
       </Outputs>
     </Scenario>
   </Scenarios>
