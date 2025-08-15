@@ -25,6 +25,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { encryptPassword, decryptPassword } from '@/lib/encryption';
+import { SecurityDashboard } from './SecurityDashboard';
 
 interface EmailServer {
   id: string;
@@ -339,6 +340,10 @@ export function EmailServerConfig() {
           <TabsTrigger value="test" className="w-full justify-start">
             <Send className="h-4 w-4 mr-2" />
             Test & Debug
+          </TabsTrigger>
+          <TabsTrigger value="security" className="w-full justify-start">
+            <AlertCircle className="h-4 w-4 mr-2" />
+            Security
           </TabsTrigger>
         </TabsList>
 
@@ -720,6 +725,10 @@ export function EmailServerConfig() {
               </Alert>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="security">
+          <SecurityDashboard />
         </TabsContent>
         </div>
       </Tabs>

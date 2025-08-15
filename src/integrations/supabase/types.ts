@@ -41,6 +41,44 @@ export type Database = {
         }
         Relationships: []
       }
+      email_server_audit: {
+        Row: {
+          action: string
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          performed_at: string | null
+          performed_by: string | null
+          server_id: string | null
+        }
+        Insert: {
+          action: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          performed_at?: string | null
+          performed_by?: string | null
+          server_id?: string | null
+        }
+        Update: {
+          action?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          performed_at?: string | null
+          performed_by?: string | null
+          server_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_server_audit_server_id_fkey"
+            columns: ["server_id"]
+            isOneToOne: false
+            referencedRelation: "email_servers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_servers: {
         Row: {
           created_at: string
