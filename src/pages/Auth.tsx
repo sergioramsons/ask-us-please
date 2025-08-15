@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,21 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+
+  // Capture Yeastar launch params so they survive auth redirects
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const popup = params.get('popup');
+      const phone = params.get('phone');
+      const name = params.get('name');
+      if (popup === 'helpdesk' || phone || name) {
+        sessionStorage.setItem('yeastarLaunch', '1');
+        if (phone) sessionStorage.setItem('yeastarPhone', phone);
+        if (name) sessionStorage.setItem('yeastarName', name);
+      }
+    } catch {}
+  }, []);
 
   // Redirect if already authenticated
   if (!loading && user) {
@@ -61,7 +76,17 @@ export default function Auth() {
           title: "Welcome back!",
           description: "You have been successfully signed in."
         });
-        window.location.href = '/';
+        const hasYeastar = !!(sessionStorage.getItem('yeastarLaunch') || sessionStorage.getItem('yeastarPhone') || sessionStorage.getItem('yeastarName'));
+        if (hasYeastar) {
+          const phone = sessionStorage.getItem('yeastarPhone') || '';
+          const name = sessionStorage.getItem('yeastarName') || '';
+          const qs = new URLSearchParams({ popup: 'helpdesk' });
+          if (phone) qs.set('phone', phone);
+          if (name) qs.set('name', name);
+          window.location.href = `/${qs.toString() ? '?' + qs.toString() : ''}`;
+        } else {
+          window.location.href = '/';
+        }
       }
     } catch (error: any) {
       toast({
