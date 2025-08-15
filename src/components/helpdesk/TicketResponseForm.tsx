@@ -5,18 +5,33 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { CannedResponseSelector } from './CannedResponseSelector';
-import { MessageSquare, Send, FileText } from 'lucide-react';
+import { MessageSquare, Send, FileText, Mail } from 'lucide-react';
 import { CannedResponse } from '@/types/cannedResponse';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TicketResponseFormProps {
   ticketId: string;
+  customerName?: string;
+  customerEmail?: string;
+  ticketSubject?: string;
+  ticketStatus?: string;
+  priority?: string;
   onSubmit?: (response: string, isInternal: boolean) => void;
 }
 
-export function TicketResponseForm({ ticketId, onSubmit }: TicketResponseFormProps) {
+export function TicketResponseForm({ 
+  ticketId, 
+  customerName = 'Customer',
+  customerEmail = '',
+  ticketSubject = 'Support Request',
+  ticketStatus = 'open',
+  priority = 'medium',
+  onSubmit 
+}: TicketResponseFormProps) {
   const [response, setResponse] = useState('');
   const [isInternal, setIsInternal] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const { toast } = useToast();
 
   const handleCannedResponseSelect = (cannedResponse: CannedResponse) => {
@@ -33,7 +48,7 @@ export function TicketResponseForm({ ticketId, onSubmit }: TicketResponseFormPro
     });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!response.trim()) {
       toast({
         title: "Error",
@@ -43,13 +58,58 @@ export function TicketResponseForm({ ticketId, onSubmit }: TicketResponseFormPro
       return;
     }
 
+    // Send email if not internal and customer email is provided
+    if (!isInternal && customerEmail) {
+      setIsSendingEmail(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('send-ticket-email', {
+          body: {
+            ticketId,
+            customerName,
+            customerEmail,
+            subject: ticketSubject,
+            message: response,
+            agentName: 'Support Agent', // This would come from auth context in real app
+            ticketStatus,
+            priority,
+            isResolution: ticketStatus === 'resolved'
+          }
+        });
+
+        if (error) {
+          console.error('Email sending error:', error);
+          toast({
+            title: "Warning",
+            description: "Response saved but email could not be sent. Please check email configuration.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Response sent",
+            description: `Your response has been sent to ${customerEmail}`,
+          });
+        }
+      } catch (error) {
+        console.error('Email error:', error);
+        toast({
+          title: "Warning", 
+          description: "Response saved but email delivery failed.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsSendingEmail(false);
+      }
+    }
+
     onSubmit?.(response, isInternal);
     setResponse('');
     
-    toast({
-      title: "Response sent",
-      description: `Your ${isInternal ? 'internal note' : 'response'} has been added to the ticket.`,
-    });
+    if (isInternal || !customerEmail) {
+      toast({
+        title: "Response saved",
+        description: `Your ${isInternal ? 'internal note' : 'response'} has been added to the ticket.`,
+      });
+    }
   };
 
   return (
@@ -91,11 +151,24 @@ export function TicketResponseForm({ ticketId, onSubmit }: TicketResponseFormPro
 
         <div className="flex justify-between items-center">
           <p className="text-sm text-muted-foreground">
-            {isInternal ? 'This note will only be visible to internal staff' : 'This response will be sent to the customer'}
+            {isInternal ? 'This note will only be visible to internal staff' : 
+             customerEmail ? `This response will be sent to ${customerEmail}` : 'This response will be saved to the ticket'}
           </p>
-          <Button onClick={handleSubmit} disabled={!response.trim()}>
-            <Send className="h-4 w-4 mr-2" />
-            {isInternal ? 'Add Note' : 'Send Response'}
+          <Button 
+            onClick={handleSubmit} 
+            disabled={!response.trim() || isSendingEmail}
+          >
+            {isSendingEmail ? (
+              <>
+                <Mail className="h-4 w-4 mr-2 animate-pulse" />
+                Sending...
+              </>
+            ) : (
+              <>
+                {isInternal ? <MessageSquare className="h-4 w-4 mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+                {isInternal ? 'Add Note' : 'Send Response'}
+              </>
+            )}
           </Button>
         </div>
       </CardContent>

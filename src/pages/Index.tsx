@@ -10,15 +10,16 @@ import { UserRoleManager } from "@/components/admin/UserRoleManager";
 import { ReportsDashboard } from "@/components/reports/ReportsDashboard";
 import { EnhancedTicketForm } from "@/components/helpdesk/EnhancedTicketForm";
 import { EnhancedTicketDetail } from "@/components/helpdesk/EnhancedTicketDetail";
+import { EmailServerConfig } from "@/components/helpdesk/EmailServerConfig";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { mockTickets } from "@/data/mock-tickets";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useFreshdeskSync } from "@/hooks/useFreshdeskSync";
-import { Plus, Headphones, LogOut, User, RefreshCw, Shield, BarChart3, Settings } from "lucide-react";
+import { Plus, Headphones, LogOut, User, RefreshCw, Shield, BarChart3, Settings, Mail } from "lucide-react";
 
-type View = 'dashboard' | 'create-ticket' | 'enhanced-ticket' | 'ticket-detail' | 'user-management' | 'reports';
+type View = 'dashboard' | 'create-ticket' | 'enhanced-ticket' | 'ticket-detail' | 'user-management' | 'reports' | 'email-config';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -152,6 +153,14 @@ const Index = () => {
               {currentView === 'dashboard' && (
                 <>
                   <Button 
+                    variant="outline" 
+                    onClick={() => setCurrentView('email-config')}
+                    className="border-white/20 text-white hover:bg-white/10"
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    Email Settings
+                  </Button>
+                  <Button 
                     onClick={handleSyncWithFreshdesk}
                     variant="outline"
                     disabled={isSyncing}
@@ -254,6 +263,10 @@ const Index = () => {
             onBack={() => setCurrentView('dashboard')}
             onStatusChange={handleStatusChange}
           />
+        )}
+
+        {currentView === 'email-config' && (
+          <EmailServerConfig />
         )}
       </main>
     </div>

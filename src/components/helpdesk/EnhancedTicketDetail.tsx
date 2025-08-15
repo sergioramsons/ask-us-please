@@ -285,6 +285,11 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
           {/* Response Form */}
           <TicketResponseForm 
             ticketId={ticket.id}
+            customerName={ticket.customer.name}
+            customerEmail={ticket.customer.email}
+            ticketSubject={ticket.title}
+            ticketStatus={ticket.status}
+            priority={ticket.priority}
             onSubmit={(response, isInternal) => {
               console.log('New response:', { response, isInternal, ticketId: ticket.id });
             }}
