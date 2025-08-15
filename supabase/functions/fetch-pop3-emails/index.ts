@@ -153,29 +153,35 @@ async function fetchEmailsFromServer(server: any): Promise<POP3Response> {
 }
 
 async function connectAndFetchEmails(config: any) {
-  // Simple POP3 implementation using raw TCP
-  const { host, port, username, password, useSSL } = config;
+  // Simple POP3 implementation using raw TCP/TLS
+  const { host, port, username, password, useSSL, useTLS } = config;
   
   try {
+    const useTlsTransport = useSSL || useTLS || port === 995;
     const conn = await Deno.connect({
       hostname: host,
       port: port,
-      transport: useSSL ? "tls" : "tcp",
+      transport: useTlsTransport ? "tls" : "tcp",
     });
 
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
 
-    // Helper function to send command and read response
-    async function sendCommand(command: string): Promise<string> {
-      await conn.write(encoder.encode(command + "\r\n"));
-      const buffer = new Uint8Array(1024);
+    // Helper function to read a chunk from the socket
+    async function readResponse(): Promise<string> {
+      const buffer = new Uint8Array(8192);
       const bytesRead = await conn.read(buffer);
       return decoder.decode(buffer.subarray(0, bytesRead || 0));
     }
 
-    // POP3 handshake
-    let response = await sendCommand("");
+    // Helper function to send command and read response
+    async function sendCommand(command: string): Promise<string> {
+      await conn.write(encoder.encode(command + "\r\n"));
+      return await readResponse();
+    }
+
+    // POP3 handshake - read server greeting without sending anything
+    let response = await readResponse();
     if (!response.startsWith("+OK")) {
       throw new Error(`POP3 connection failed: ${response}`);
     }
@@ -196,7 +202,7 @@ async function connectAndFetchEmails(config: any) {
     const messageCount = parseInt(response.split(" ")[1] || "0");
     console.log(`Found ${messageCount} messages`);
 
-    const emails = [];
+    const emails: any[] = [];
 
     // Fetch emails (limit to recent 10 to avoid timeout)
     const limit = Math.min(messageCount, 10);
@@ -419,19 +425,16 @@ async function createTicketFromEmail(emailRecord: any, emailData: any, server: a
 }
 
 async function decryptPassword(encryptedPassword: string): Promise<string> {
-  try {
-    // Remove prefix if present
-    const cleanEncrypted = encryptedPassword.startsWith('enc:') 
-      ? encryptedPassword.slice(4) 
-      : encryptedPassword;
+  // Try decrypting with ENV key first, then fallback to dev key (matches frontend behavior)
+  const cleanEncrypted = encryptedPassword.startsWith('enc:') 
+    ? encryptedPassword.slice(4) 
+    : encryptedPassword;
 
-    // Get encryption key from environment, fallback to dev key
-    const encryptionKey = Deno.env.get('ENCRYPTION_KEY') || 'helpdesk-dev-encryption-key-2024-secure';
-    
-    // Use the same key derivation as frontend
+  async function tryWithKey(keyString: string): Promise<string> {
+    // Derive key exactly like frontend (PBKDF2 + static dev salt + 600k iterations)
     const keyMaterial = await crypto.subtle.importKey(
       'raw',
-      new TextEncoder().encode(encryptionKey),
+      new TextEncoder().encode(keyString),
       { name: 'PBKDF2' },
       false,
       ['deriveKey']
@@ -441,48 +444,39 @@ async function decryptPassword(encryptedPassword: string): Promise<string> {
       {
         name: 'PBKDF2',
         salt: new TextEncoder().encode('helpdesk-dev-salt-2024'),
-        iterations: 600000, // Match frontend iterations
+        iterations: 600000,
         hash: 'SHA-256'
       },
       keyMaterial,
-      {
-        name: 'AES-GCM',
-        length: 256,
-      },
+      { name: 'AES-GCM', length: 256 },
       false,
       ['decrypt']
     );
-    
-    // Convert from base64
-    const combined = new Uint8Array(
-      atob(cleanEncrypted)
-        .split('')
-        .map(char => char.charCodeAt(0))
-    );
 
-    // Validate minimum length (IV + some encrypted data)
-    if (combined.length < 13) {
-      throw new Error('Invalid encrypted data format');
-    }
+    const combined = new Uint8Array(atob(cleanEncrypted).split('').map(c => c.charCodeAt(0)));
+    if (combined.length < 13) throw new Error('Invalid encrypted data format');
 
-    // Extract IV and encrypted data
     const iv = combined.slice(0, 12);
     const encrypted = combined.slice(12);
 
-    const decrypted = await crypto.subtle.decrypt(
-      {
-        name: 'AES-GCM',
-        iv: iv,
-      },
-      key,
-      encrypted
-    );
-
+    const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, encrypted);
     return new TextDecoder().decode(decrypted);
-  } catch (error) {
-    console.error('Error decrypting password:', error);
-    throw new Error('Failed to decrypt password');
   }
+
+  const candidates = [
+    Deno.env.get('ENCRYPTION_KEY'),
+    'helpdesk-dev-encryption-key-2024-secure'
+  ].filter(Boolean) as string[];
+
+  for (const candidate of candidates) {
+    try {
+      return await tryWithKey(candidate);
+    } catch (_) {
+      // try next
+    }
+  }
+
+  throw new Error('Failed to decrypt password');
 }
 
 serve(handler);
