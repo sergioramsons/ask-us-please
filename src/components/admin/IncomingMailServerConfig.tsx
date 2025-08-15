@@ -101,7 +101,7 @@ const IncomingMailServerConfig = () => {
         ...serverData,
         password: encryptedPassword,
         password_encrypted: true,
-      };
+      } as any; // Type assertion to handle database schema mismatch
 
       if (serverData.id) {
         // Update existing server

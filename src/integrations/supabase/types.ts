@@ -279,6 +279,83 @@ export type Database = {
         }
         Relationships: []
       }
+      incoming_mail_servers: {
+        Row: {
+          auto_assign_department: string | null
+          auto_create_tickets: boolean
+          auto_process: boolean
+          check_interval: number
+          created_at: string
+          delete_after_process: boolean
+          folder_name: string | null
+          host: string
+          id: string
+          is_active: boolean
+          last_check: string | null
+          name: string
+          password: string
+          password_encrypted: boolean
+          port: number
+          server_type: string
+          updated_at: string
+          use_ssl: boolean
+          use_tls: boolean
+          username: string
+        }
+        Insert: {
+          auto_assign_department?: string | null
+          auto_create_tickets?: boolean
+          auto_process?: boolean
+          check_interval?: number
+          created_at?: string
+          delete_after_process?: boolean
+          folder_name?: string | null
+          host: string
+          id?: string
+          is_active?: boolean
+          last_check?: string | null
+          name: string
+          password: string
+          password_encrypted?: boolean
+          port?: number
+          server_type: string
+          updated_at?: string
+          use_ssl?: boolean
+          use_tls?: boolean
+          username: string
+        }
+        Update: {
+          auto_assign_department?: string | null
+          auto_create_tickets?: boolean
+          auto_process?: boolean
+          check_interval?: number
+          created_at?: string
+          delete_after_process?: boolean
+          folder_name?: string | null
+          host?: string
+          id?: string
+          is_active?: boolean
+          last_check?: string | null
+          name?: string
+          password?: string
+          password_encrypted?: boolean
+          port?: number
+          server_type?: string
+          updated_at?: string
+          use_ssl?: boolean
+          use_tls?: boolean
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incoming_mail_servers_auto_assign_department_fkey"
+            columns: ["auto_assign_department"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
