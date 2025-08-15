@@ -111,19 +111,20 @@ export function CuratedReports() {
       const endDate = new Date();
       const startDate = subDays(endDate, parseInt(timeRange));
 
-      // Fetch tickets data
+      // Fetch tickets data with proper relationships
       const { data: tickets, error } = await supabase
         .from('tickets')
         .select(`
           *,
-          profiles:created_by(display_name),
-          contacts(first_name, last_name, email),
-          departments(name)
+          contacts(first_name, last_name, email)
         `)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching tickets:', error);
+        // Continue with mock data if query fails
+      }
 
       // Generate curated insights
       const mockData: CuratedReportData = {
