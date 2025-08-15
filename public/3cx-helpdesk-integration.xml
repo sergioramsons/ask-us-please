@@ -25,7 +25,7 @@
         <Variable Name="CompanyName" Path="users.0.company" />
       </Variables>
       <Outputs AllowEmpty="false">
-        <Output Type="ContactUrl" Value="https://helpdesk.bernsergsolutions.com/yeastar?popup=helpdesk&amp;phone=[Number]&amp;name=[FirstName] [LastName]" />
+        <Output Type="ContactUrl" Value="https://thzdazcmswmeolaiijml.lovable.app/yeastar?popup=helpdesk&amp;phone=[Number]&amp;name=[FirstName] [LastName]" />
         <Output Type="FirstName" Value="[FirstName]" />
         <Output Type="LastName" Value="[LastName]" />
         <Output Type="Email" Value="[Email]" />
