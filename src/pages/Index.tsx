@@ -191,6 +191,14 @@ const Index = () => {
                     <BarChart3 className="h-4 w-4 mr-2" />
                     Reports
                   </Button>
+                  <Button 
+                    onClick={() => window.location.href = '/portal'}
+                    variant="outline"
+                    className="border-white/20 text-white hover:bg-white/10"
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    Portal
+                  </Button>
                   {isAdmin() && (
                     <Button 
                       onClick={() => setCurrentView('admin-panel')}
