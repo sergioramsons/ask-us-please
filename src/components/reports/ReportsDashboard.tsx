@@ -14,8 +14,11 @@ import { PerformanceMetrics } from './PerformanceMetrics';
 import { DepartmentReports } from './DepartmentReports';
 import { ReportFilters } from '@/types/reports';
 import { Ticket } from '@/types/ticket';
-import { BarChart3, Calendar as CalendarIcon, Download, Filter, RefreshCw } from 'lucide-react';
+import { BarChart3, Calendar as CalendarIcon, Download, Filter, RefreshCw, FileText, FileSpreadsheet } from 'lucide-react';
 import { format } from 'date-fns';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { stringify } from 'csv-stringify/browser/esm/sync';
 
 interface ReportsDashboardProps {
   tickets: Ticket[];
@@ -61,19 +64,101 @@ export function ReportsDashboard({ tickets }: ReportsDashboardProps) {
     generateReports(tickets);
   };
 
-  const handleExportReports = () => {
-    // Mock export functionality
-    const reportData = {
-      generatedAt: new Date().toISOString(),
-      filters,
-      data: reportsData
-    };
+  const handleExportPDF = () => {
+    if (!reportsData) return;
+
+    const doc = new jsPDF();
+    const dateStr = format(new Date(), 'yyyy-MM-dd');
     
-    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
+    // Title
+    doc.setFontSize(20);
+    doc.text('Helpdesk Reports', 20, 30);
+    
+    doc.setFontSize(12);
+    doc.text(`Generated on: ${format(new Date(), 'PPP')}`, 20, 45);
+    
+    let yPosition = 65;
+    
+    // Ticket Summary
+    doc.setFontSize(16);
+    doc.text('Ticket Summary', 20, yPosition);
+    yPosition += 15;
+    
+    const ticketData = [
+      ['Total Tickets', reportsData.ticketReport.total.toString()],
+      ['Open', reportsData.ticketReport.byStatus.open?.toString() || '0'],
+      ['In Progress', reportsData.ticketReport.byStatus['in-progress']?.toString() || '0'],
+      ['Resolved', reportsData.ticketReport.byStatus.resolved?.toString() || '0'],
+      ['Closed', reportsData.ticketReport.byStatus.closed?.toString() || '0']
+    ];
+    
+    (doc as any).autoTable({
+      head: [['Metric', 'Count']],
+      body: ticketData,
+      startY: yPosition,
+      margin: { left: 20 }
+    });
+    
+    yPosition = (doc as any).lastAutoTable.finalY + 20;
+    
+    // Performance Metrics
+    doc.setFontSize(16);
+    doc.text('Performance Metrics', 20, yPosition);
+    yPosition += 15;
+    
+    const performanceData = [
+      ['Total Resolved', reportsData.performanceMetrics.totalTicketsResolved.toString()],
+      ['Avg Resolution Time (hrs)', reportsData.performanceMetrics.avgResolutionTimeHours.toFixed(2)],
+      ['First Response Time (hrs)', reportsData.performanceMetrics.firstResponseTimeHours.toFixed(2)],
+      ['Tickets Created Today', reportsData.performanceMetrics.ticketsCreatedToday.toString()],
+      ['Tickets Resolved Today', reportsData.performanceMetrics.ticketsResolvedToday.toString()],
+      ['Open Tickets', reportsData.performanceMetrics.openTicketsCount.toString()],
+      ['Overdue Tickets', reportsData.performanceMetrics.overdueTicketsCount.toString()]
+    ];
+    
+    (doc as any).autoTable({
+      head: [['Metric', 'Value']],
+      body: performanceData,
+      startY: yPosition,
+      margin: { left: 20 }
+    });
+    
+    // Save PDF
+    doc.save(`helpdesk-reports-${dateStr}.pdf`);
+  };
+
+  const handleExportCSV = () => {
+    if (!reportsData) return;
+
+    const csvData = [
+      ['Report Type', 'Metric', 'Value'],
+      ['Ticket Summary', 'Total Tickets', reportsData.ticketReport.total],
+      ['Ticket Summary', 'Open', reportsData.ticketReport.byStatus.open || 0],
+      ['Ticket Summary', 'In Progress', reportsData.ticketReport.byStatus['in-progress'] || 0],
+      ['Ticket Summary', 'Resolved', reportsData.ticketReport.byStatus.resolved || 0],
+      ['Ticket Summary', 'Closed', reportsData.ticketReport.byStatus.closed || 0],
+      ['Performance', 'Total Resolved', reportsData.performanceMetrics.totalTicketsResolved],
+      ['Performance', 'Avg Resolution Time (hrs)', reportsData.performanceMetrics.avgResolutionTimeHours.toFixed(2)],
+      ['Performance', 'First Response Time (hrs)', reportsData.performanceMetrics.firstResponseTimeHours.toFixed(2)],
+      ['Performance', 'Tickets Created Today', reportsData.performanceMetrics.ticketsCreatedToday],
+      ['Performance', 'Tickets Resolved Today', reportsData.performanceMetrics.ticketsResolvedToday],
+      ['Performance', 'Open Tickets', reportsData.performanceMetrics.openTicketsCount],
+      ['Performance', 'Overdue Tickets', reportsData.performanceMetrics.overdueTicketsCount],
+    ];
+
+    // Add department data
+    reportsData.departmentStats.forEach(dept => {
+      csvData.push(['Department', `${dept.departmentName} - Total Tickets`, dept.totalTickets]);
+      csvData.push(['Department', `${dept.departmentName} - Resolved Tickets`, dept.resolvedTickets]);
+      csvData.push(['Department', `${dept.departmentName} - Avg Resolution Time`, dept.avgResolutionTime.toFixed(2)]);
+    });
+
+    const csvString = stringify(csvData);
+    const blob = new Blob([csvString], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `helpdesk-reports-${format(new Date(), 'yyyy-MM-dd')}.json`;
+    a.download = `helpdesk-reports-${format(new Date(), 'yyyy-MM-dd')}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -94,9 +179,13 @@ export function ReportsDashboard({ tickets }: ReportsDashboardProps) {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExportReports} disabled={!reportsData}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
+          <Button variant="outline" onClick={handleExportPDF} disabled={!reportsData}>
+            <FileText className="h-4 w-4 mr-2" />
+            Export PDF
+          </Button>
+          <Button variant="outline" onClick={handleExportCSV} disabled={!reportsData}>
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Export CSV
           </Button>
           <Button onClick={handleGenerateReports} disabled={isLoading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
