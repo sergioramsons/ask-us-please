@@ -6,19 +6,22 @@ import { TicketForm } from "@/components/helpdesk/ticket-form";
 import { TicketList } from "@/components/helpdesk/ticket-list";
 import { TicketDetail } from "@/components/helpdesk/ticket-detail";
 import { Ticket, TicketStats, TicketStatus } from "@/types/ticket";
+import { UserRoleManager } from "@/components/admin/UserRoleManager";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import { mockTickets } from "@/data/mock-tickets";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useFreshdeskSync } from "@/hooks/useFreshdeskSync";
-import { Plus, Headphones, LogOut, User, RefreshCw } from "lucide-react";
+import { Plus, Headphones, LogOut, User, RefreshCw, Shield } from "lucide-react";
 
-type View = 'dashboard' | 'create-ticket' | 'ticket-detail';
+type View = 'dashboard' | 'create-ticket' | 'ticket-detail' | 'user-management';
 
 const Index = () => {
   const { user, loading } = useAuth();
   const { toast } = useToast();
   const { isLoading: isSyncing, syncTickets, createTicketInFreshdesk, updateTicketInFreshdesk } = useFreshdeskSync();
+  const { isAdmin } = useUserRoles();
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -161,6 +164,16 @@ const Index = () => {
                     <Plus className="h-4 w-4 mr-2" />
                     New Ticket
                   </Button>
+                  {isAdmin() && (
+                    <Button 
+                      onClick={() => setCurrentView('user-management')}
+                      variant="outline"
+                      className="border-white/20 text-white hover:bg-white/10"
+                    >
+                      <Shield className="h-4 w-4 mr-2" />
+                      User Management
+                    </Button>
+                  )}
                 </>
               )}
               
@@ -192,6 +205,12 @@ const Index = () => {
               onSubmit={handleCreateTicket}
               onCancel={() => setCurrentView('dashboard')}
             />
+          </div>
+        )}
+
+        {currentView === 'user-management' && (
+          <div className="max-w-4xl mx-auto">
+            <UserRoleManager />
           </div>
         )}
 
