@@ -113,11 +113,13 @@ export class NotificationService {
   // SMS functionality
   static async sendSMS(smsRequest: SMSRequest): Promise<boolean> {
     try {
-      console.log('Sending SMS:', smsRequest);
+      console.log('NotificationService: Starting SMS send with request:', smsRequest);
       
       const { data, error } = await supabase.functions.invoke('send-sms', {
         body: smsRequest
       });
+
+      console.log('NotificationService: SMS function response:', { data, error });
 
       if (error) {
         console.error('Error invoking SMS function:', error);
