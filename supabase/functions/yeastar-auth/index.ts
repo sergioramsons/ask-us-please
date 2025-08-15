@@ -71,8 +71,8 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
     
-    // Handle token endpoint
-    if (url.pathname.includes('/oauth/tokens')) {
+    // Handle token endpoint (support both /oauth/tokens and /oauth/token)
+    if (url.pathname.includes('/oauth/tokens') || url.pathname.includes('/oauth/token')) {
       const contentType = req.headers.get('content-type') || '';
       const authHeader = req.headers.get('authorization') || '';
 
@@ -144,9 +144,12 @@ const handler = async (req: Request): Promise<Response> => {
         const secretMatch = effectiveClientSecret === EXPECTED_CLIENT_SECRET;
         console.log('Client validation check', { idMatch, secretMatch, providedClientId: effectiveClientId, source: client_id ? 'body/basic' : 'code' });
         if (!idMatch || !secretMatch) {
+          const reason = !idMatch && !secretMatch
+            ? 'client_id_and_secret_mismatch'
+            : (!idMatch ? 'client_id_mismatch' : 'client_secret_mismatch');
           return new Response(JSON.stringify({
             error: 'invalid_client',
-            error_description: 'Invalid client credentials',
+            error_description: reason,
           }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
         }
       } else {
