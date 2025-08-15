@@ -167,7 +167,7 @@ const handler = async (req: Request): Promise<Response> => {
     // For now, we'll assume notifications are enabled
 
     const template = getEmailTemplate(notification);
-    const fromEmail = "BS-HelpDesk <support@yourdomain.com>";
+    const fromEmail = "BS-HelpDesk <onboarding@resend.dev>";
 
     const emailResponse = await resend.emails.send({
       from: fromEmail,
