@@ -123,7 +123,10 @@ const handler = async (req: Request): Promise<Response> => {
 
       // Strictly validate client credentials against stored secrets if provided
       if (EXPECTED_CLIENT_ID && EXPECTED_CLIENT_SECRET) {
-        if (client_id !== EXPECTED_CLIENT_ID || client_secret !== EXPECTED_CLIENT_SECRET) {
+        const idMatch = client_id === EXPECTED_CLIENT_ID;
+        const secretMatch = client_secret === EXPECTED_CLIENT_SECRET;
+        console.log('Client validation check', { idMatch, secretMatch, providedClientId: client_id });
+        if (!idMatch || !secretMatch) {
           return new Response(JSON.stringify({
             error: 'invalid_client',
             error_description: 'Invalid client credentials',
