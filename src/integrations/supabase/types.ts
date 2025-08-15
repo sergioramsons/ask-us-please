@@ -14,10 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      departments: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          manager_id: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          manager_id?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          manager_id?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
+          department_id: string | null
           display_name: string | null
           id: string
           role: string | null
@@ -27,6 +55,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          department_id?: string | null
           display_name?: string | null
           id?: string
           role?: string | null
@@ -36,13 +65,22 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          department_id?: string | null
           display_name?: string | null
           id?: string
           role?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -80,6 +118,10 @@ export type Database = {
       get_current_user_roles: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["app_role"][]
+      }
+      get_user_department: {
+        Args: { user_id: string }
+        Returns: string
       }
       has_role: {
         Args: {

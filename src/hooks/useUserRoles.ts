@@ -17,6 +17,8 @@ interface UserWithRole {
   id: string;
   email: string;
   display_name?: string;
+  department_id?: string;
+  department_name?: string;
   roles: AppRole[];
 }
 
@@ -75,12 +77,14 @@ export function useUserRoles() {
 
   const getUsersWithRoles = useCallback(async (): Promise<UserWithRole[]> => {
     try {
-      // Get all profiles with their roles
+      // Get all profiles with their roles and departments
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select(`
           user_id,
-          display_name
+          display_name,
+          department_id,
+          departments(name)
         `);
 
       if (profilesError) throw profilesError;
@@ -106,6 +110,8 @@ export function useUserRoles() {
               id: profile.user_id,
               email: 'Unknown',
               display_name: profile.display_name,
+              department_id: profile.department_id,
+              department_name: (profile as any).departments?.name,
               roles: []
             });
           }
@@ -125,12 +131,14 @@ export function useUserRoles() {
       const usersMap = new Map<string, UserWithRole>();
 
       // Add auth users
-      authUsers.users.forEach(authUser => {
+      authUsers.users.forEach((authUser: any) => {
         const profile = profiles?.find(p => p.user_id === authUser.id);
         usersMap.set(authUser.id, {
           id: authUser.id,
           email: authUser.email || 'No email',
           display_name: profile?.display_name,
+          department_id: profile?.department_id,
+          department_name: (profile as any)?.departments?.name,
           roles: []
         });
       });
