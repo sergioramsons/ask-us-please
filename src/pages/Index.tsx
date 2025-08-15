@@ -15,6 +15,7 @@ import { mockTickets } from "@/data/mock-tickets";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { NotificationService } from "@/services/NotificationService";
 import { Plus, Headphones, LogOut, User, Settings, BarChart3 } from "lucide-react";
 
 type View = 'dashboard' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports';
@@ -79,6 +80,22 @@ const Index = () => {
 
     setTickets(prev => [newTicket, ...prev]);
     setCurrentView('dashboard');
+
+    // Send notification for new ticket
+    if (ticketData.customerEmail) {
+      await NotificationService.notifyTicketCreated(
+        newTicket.id,
+        newTicket.title,
+        newTicket.priority,
+        ticketData.customerEmail,
+        ticketData.customerName
+      );
+    }
+
+    toast({
+      title: "Ticket created",
+      description: `Ticket #${newTicket.id} has been created and customer has been notified.`
+    });
   };
 
   const handleViewTicket = (ticket: Ticket) => {
@@ -87,6 +104,8 @@ const Index = () => {
   };
 
   const handleStatusChange = async (ticketId: string, status: TicketStatus) => {
+    const ticket = tickets.find(t => t.id === ticketId);
+    
     setTickets(prev => prev.map(t =>
       t.id === ticketId
         ? { ...t, status, updatedAt: new Date() }
@@ -97,6 +116,23 @@ const Index = () => {
     if (selectedTicket?.id === ticketId) {
       setSelectedTicket(prev => prev ? { ...prev, status, updatedAt: new Date() } : null);
     }
+
+    // Send notification for status change
+    if (ticket?.customer.email) {
+      await NotificationService.notifyTicketUpdated(
+        ticketId,
+        ticket.title,
+        status,
+        ticket.customer.email,
+        user?.email || 'Support Team',
+        `Ticket status changed to ${status}`
+      );
+    }
+
+    toast({
+      title: "Status updated",
+      description: `Ticket #${ticketId} status changed to ${status}. Customer has been notified.`
+    });
   };
 
 
