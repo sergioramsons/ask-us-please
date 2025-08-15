@@ -104,6 +104,44 @@ export type Database = {
         }
         Relationships: []
       }
+      email_attachments: {
+        Row: {
+          content_type: string | null
+          created_at: string
+          email_id: string
+          file_path: string | null
+          filename: string
+          id: string
+          size_bytes: number | null
+        }
+        Insert: {
+          content_type?: string | null
+          created_at?: string
+          email_id: string
+          file_path?: string | null
+          filename: string
+          id?: string
+          size_bytes?: number | null
+        }
+        Update: {
+          content_type?: string | null
+          created_at?: string
+          email_id?: string
+          file_path?: string | null
+          filename?: string
+          id?: string
+          size_bytes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_attachments_email_id_fkey"
+            columns: ["email_id"]
+            isOneToOne: false
+            referencedRelation: "incoming_emails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_server_audit: {
         Row: {
           action: string
@@ -193,6 +231,54 @@ export type Database = {
         }
         Relationships: []
       }
+      incoming_emails: {
+        Row: {
+          body_html: string | null
+          body_text: string | null
+          created_at: string
+          id: string
+          message_id: string
+          processed: boolean
+          received_at: string
+          recipient_email: string
+          sender_email: string
+          sender_name: string | null
+          subject: string
+          ticket_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          body_html?: string | null
+          body_text?: string | null
+          created_at?: string
+          id?: string
+          message_id: string
+          processed?: boolean
+          received_at?: string
+          recipient_email: string
+          sender_email: string
+          sender_name?: string | null
+          subject: string
+          ticket_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body_html?: string | null
+          body_text?: string | null
+          created_at?: string
+          id?: string
+          message_id?: string
+          processed?: boolean
+          received_at?: string
+          recipient_email?: string
+          sender_email?: string
+          sender_name?: string | null
+          subject?: string
+          ticket_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -234,6 +320,108 @@ export type Database = {
           },
         ]
       }
+      ticket_comments: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          email_id: string | null
+          id: string
+          is_internal: boolean
+          ticket_id: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          email_id?: string | null
+          id?: string
+          is_internal?: boolean
+          ticket_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          email_id?: string | null
+          id?: string
+          is_internal?: boolean
+          ticket_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_comments_email_id_fkey"
+            columns: ["email_id"]
+            isOneToOne: false
+            referencedRelation: "incoming_emails"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_comments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tickets: {
+        Row: {
+          assigned_to: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          department_id: string | null
+          description: string | null
+          first_response_at: string | null
+          id: string
+          last_activity_at: string | null
+          priority: string
+          resolved_at: string | null
+          status: string
+          subject: string
+          ticket_number: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          description?: string | null
+          first_response_at?: string | null
+          id?: string
+          last_activity_at?: string | null
+          priority?: string
+          resolved_at?: string | null
+          status?: string
+          subject: string
+          ticket_number: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          description?: string | null
+          first_response_at?: string | null
+          id?: string
+          last_activity_at?: string | null
+          priority?: string
+          resolved_at?: string | null
+          status?: string
+          subject?: string
+          ticket_number?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -266,6 +454,10 @@ export type Database = {
       current_user_has_role: {
         Args: { _role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
+      }
+      generate_ticket_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_current_user_roles: {
         Args: Record<PropertyKey, never>
