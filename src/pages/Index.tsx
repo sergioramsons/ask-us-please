@@ -34,13 +34,13 @@ const Index = () => {
   // Auto-launch helpdesk when coming from Yeastar
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const fromQuery = params.get('popup') === 'helpdesk';
+    const popup = (params.get('popup') || '').toLowerCase();
+    const phone = params.get('phone') || sessionStorage.getItem('yeastarPhone') || '';
+    const name = params.get('name') || sessionStorage.getItem('yeastarName') || '';
+    const fromQuery = popup === 'helpdesk' || !!phone || !!name;
     const fromSession = sessionStorage.getItem('yeastarLaunch') === '1';
 
-  if (fromQuery || fromSession) {
-      const phone = params.get('phone') || sessionStorage.getItem('yeastarPhone') || '';
-      const name = params.get('name') || sessionStorage.getItem('yeastarName') || '';
-      
+    if (fromQuery || fromSession) {
       setCallerInfo({ phone, name });
       setShowHelpdeskPopup(true);
 
@@ -64,7 +64,7 @@ const Index = () => {
           }
         } catch {}
       })();
-      
+
       const caller = name ? `${name} (${phone})` : phone;
       toast({ title: 'Helpdesk launched', description: caller ? `Caller: ${caller}` : 'Launched from Yeastar PBX' });
 
