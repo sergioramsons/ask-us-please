@@ -139,7 +139,7 @@ const Index = () => {
                 <Headphones className="h-6 w-6" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">HelpDesk Pro</h1>
+                <h1 className="text-2xl font-bold">BS-HelpDesk</h1>
                 <p className="text-blue-100">Support Ticket Management</p>
               </div>
             </div>
