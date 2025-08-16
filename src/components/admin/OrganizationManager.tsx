@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { toast } from 'sonner';
-import { Plus, Building2, Users, Settings } from 'lucide-react';
+import { Plus, Building2, Users, Settings, Edit, Save, X } from 'lucide-react';
 
 interface Organization {
   id: string;
@@ -38,7 +38,16 @@ const OrganizationManager: React.FC = () => {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [formData, setFormData] = useState<CreateOrgFormData>({
+    name: '',
+    slug: '',
+    domain: '',
+    max_users: 10,
+    max_tickets: '',
+  });
+  const [editFormData, setEditFormData] = useState<CreateOrgFormData>({
     name: '',
     slug: '',
     domain: '',
@@ -128,6 +137,57 @@ const OrganizationManager: React.FC = () => {
       name,
       slug: generateSlug(name)
     }));
+  };
+
+  const handleEditNameChange = (name: string) => {
+    setEditFormData(prev => ({
+      ...prev,
+      name,
+      slug: generateSlug(name)
+    }));
+  };
+
+  const handleEditOrganization = (org: Organization) => {
+    setEditingOrg(org);
+    setEditFormData({
+      name: org.name,
+      slug: org.slug,
+      domain: org.domain || '',
+      max_users: org.max_users,
+      max_tickets: org.max_tickets?.toString() || '',
+    });
+    setShowEditDialog(true);
+  };
+
+  const handleUpdateOrganization = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingOrg) return;
+    
+    try {
+      const orgData = {
+        name: editFormData.name,
+        slug: editFormData.slug,
+        domain: editFormData.domain || null,
+        max_users: editFormData.max_users,
+        max_tickets: editFormData.max_tickets ? parseInt(editFormData.max_tickets) : null,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('organizations')
+        .update(orgData)
+        .eq('id', editingOrg.id);
+
+      if (error) throw error;
+
+      toast.success('Organization updated successfully');
+      setShowEditDialog(false);
+      setEditingOrg(null);
+      fetchOrganizations();
+    } catch (error: any) {
+      console.error('Error updating organization:', error);
+      toast.error(error.message || 'Failed to update organization');
+    }
   };
 
   useEffect(() => {
@@ -242,6 +302,81 @@ const OrganizationManager: React.FC = () => {
         </Dialog>
       </div>
 
+      {/* Edit Organization Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Organization</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUpdateOrganization} className="space-y-4">
+            <div>
+              <Label htmlFor="edit-name">Organization Name</Label>
+              <Input
+                id="edit-name"
+                value={editFormData.name}
+                onChange={(e) => handleEditNameChange(e.target.value)}
+                placeholder="Acme Corporation"
+                required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="edit-slug">Slug</Label>
+              <Input
+                id="edit-slug"
+                value={editFormData.slug}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, slug: e.target.value }))}
+                placeholder="acme-corporation"
+                required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="edit-domain">Domain (optional)</Label>
+              <Input
+                id="edit-domain"
+                value={editFormData.domain}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, domain: e.target.value }))}
+                placeholder="acme.com"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="edit-max_users">Max Users</Label>
+              <Input
+                id="edit-max_users"
+                type="number"
+                value={editFormData.max_users}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, max_users: parseInt(e.target.value) }))}
+                min="1"
+                required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="edit-max_tickets">Max Tickets (optional)</Label>
+              <Input
+                id="edit-max_tickets"
+                type="number"
+                value={editFormData.max_tickets}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, max_tickets: e.target.value }))}
+                placeholder="Leave empty for unlimited"
+              />
+            </div>
+            
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                <Save className="w-4 h-4 mr-2" />
+                Update Organization
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <div className="grid gap-4">
         {organizations.map((org) => (
           <Card key={org.id}>
@@ -297,6 +432,16 @@ const OrganizationManager: React.FC = () => {
                     <SelectItem value="cancelled">Cancelled</SelectItem>
                   </SelectContent>
                 </Select>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleEditOrganization(org)}
+                  className="flex items-center gap-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  Edit
+                </Button>
               </div>
             </CardContent>
           </Card>
