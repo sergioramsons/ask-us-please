@@ -16,16 +16,16 @@ import OrganizationSelector from "@/components/ui/organization-selector";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationService } from "@/services/NotificationService";
-import { Plus, Headphones, LogOut, User, Settings, BarChart3, Inbox } from "lucide-react";
+import { Plus, Headphones, LogOut, User, Settings, BarChart3, Inbox, Ticket as TicketIcon, List } from "lucide-react";
 
-type View = 'inbox' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports';
+type View = 'tickets' | 'inbox' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports';
 
 const Index = () => {
   const { user, loading } = useAuth();
   const { organization, loading: orgLoading } = useOrganization();
   const { toast } = useToast();
   const { isAdmin } = useUserRoles();
-  const [currentView, setCurrentView] = useState<View>('inbox');
+  const [currentView, setCurrentView] = useState<View>('tickets');
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [showHelpdeskPopup, setShowHelpdeskPopup] = useState(false);
@@ -213,7 +213,7 @@ const Index = () => {
       // Refresh tickets list from database
       await loadTickets();
       
-      setCurrentView('inbox');
+      setCurrentView('tickets');
       setShowHelpdeskPopup(false);
 
       // Send notification for new ticket
@@ -340,19 +340,35 @@ const Index = () => {
                 <span className="text-sm">{user?.email}</span>
               </div>
               
-              {currentView !== 'inbox' && (
+              {(currentView !== 'tickets' && currentView !== 'inbox') && (
                 <Button 
-                  onClick={() => setCurrentView('inbox')}
+                  onClick={() => setCurrentView('tickets')}
                   variant="outline"
                   className="border-white/20 text-white hover:bg-white/10"
                 >
-                  <Inbox className="h-4 w-4 mr-2" />
-                  Back to Inbox
+                  <TicketIcon className="h-4 w-4 mr-2" />
+                  Back to Tickets
                 </Button>
               )}
               
-              {currentView === 'inbox' && (
+              {(currentView === 'tickets' || currentView === 'inbox') && (
                 <>
+                  <Button 
+                    onClick={() => setCurrentView('tickets')}
+                    variant={currentView === 'tickets' ? 'default' : 'outline'}
+                    className={currentView === 'tickets' ? 'bg-white text-primary hover:bg-blue-50' : 'border-white/20 text-white hover:bg-white/10'}
+                  >
+                    <TicketIcon className="h-4 w-4 mr-2" />
+                    Tickets
+                  </Button>
+                  <Button 
+                    onClick={() => setCurrentView('inbox')}
+                    variant={currentView === 'inbox' ? 'default' : 'outline'}
+                    className={currentView === 'inbox' ? 'bg-white text-primary hover:bg-blue-50' : 'border-white/20 text-white hover:bg-white/10'}
+                  >
+                    <Inbox className="h-4 w-4 mr-2" />
+                    Inbox
+                  </Button>
                   <Button 
                     onClick={() => setCurrentView('create-ticket')}
                     className="bg-white text-primary hover:bg-blue-50"
@@ -404,6 +420,113 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
+        {currentView === 'tickets' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">All Tickets</h2>
+                <p className="text-muted-foreground">Manage and track all support tickets</p>
+              </div>
+              <Button 
+                onClick={() => setCurrentView('create-ticket')}
+                className="bg-primary text-white hover:bg-primary/90"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Ticket
+              </Button>
+            </div>
+            
+            {/* Ticket Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div className="bg-card p-4 rounded-lg border">
+                <div className="text-2xl font-bold text-primary">{stats.total}</div>
+                <div className="text-sm text-muted-foreground">Total Tickets</div>
+              </div>
+              <div className="bg-card p-4 rounded-lg border">
+                <div className="text-2xl font-bold text-red-600">{stats.open}</div>
+                <div className="text-sm text-muted-foreground">Open</div>
+              </div>
+              <div className="bg-card p-4 rounded-lg border">
+                <div className="text-2xl font-bold text-orange-600">{stats.inProgress}</div>
+                <div className="text-sm text-muted-foreground">In Progress</div>
+              </div>
+              <div className="bg-card p-4 rounded-lg border">
+                <div className="text-2xl font-bold text-green-600">{stats.resolved}</div>
+                <div className="text-sm text-muted-foreground">Resolved</div>
+              </div>
+              <div className="bg-card p-4 rounded-lg border">
+                <div className="text-2xl font-bold text-gray-600">{stats.closed}</div>
+                <div className="text-sm text-muted-foreground">Closed</div>
+              </div>
+            </div>
+
+            {/* Import existing ticket list component */}
+            <div className="bg-card border rounded-lg">
+              {!ticketsLoading && (
+                <div className="p-6">
+                  {tickets.length === 0 ? (
+                    <div className="text-center py-8">
+                      <TicketIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium">No tickets yet</h3>
+                      <p className="text-muted-foreground">Create your first ticket to get started</p>
+                      <Button 
+                        onClick={() => setCurrentView('create-ticket')}
+                        className="mt-4"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Ticket
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {tickets.map((ticket) => (
+                        <div 
+                          key={ticket.id}
+                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                          onClick={() => handleViewTicket(ticket)}
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3">
+                              <span className="font-medium">#{ticket.id.slice(0, 8)}</span>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                ticket.status === 'open' ? 'bg-red-100 text-red-800' :
+                                ticket.status === 'in-progress' ? 'bg-orange-100 text-orange-800' :
+                                ticket.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {ticket.status}
+                              </span>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                ticket.priority === 'high' ? 'bg-red-100 text-red-800' :
+                                ticket.priority === 'medium' ? 'bg-orange-100 text-orange-800' :
+                                'bg-blue-100 text-blue-800'
+                              }`}>
+                                {ticket.priority}
+                              </span>
+                            </div>
+                            <h3 className="font-medium mt-1">{ticket.title}</h3>
+                            <p className="text-sm text-muted-foreground line-clamp-2">{ticket.description}</p>
+                            <div className="text-xs text-muted-foreground mt-2">
+                              Created {ticket.createdAt.toLocaleDateString()} • Updated {ticket.updatedAt.toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {ticketsLoading && (
+                <div className="p-6 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading tickets...</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {currentView === 'inbox' && (
           <UnifiedInbox />
         )}
@@ -412,7 +535,7 @@ const Index = () => {
           <div className="max-w-2xl mx-auto">
             <TicketForm 
               onSubmit={handleCreateTicket}
-              onCancel={() => setCurrentView('inbox')}
+              onCancel={() => setCurrentView('tickets')}
             />
           </div>
         )}
@@ -428,7 +551,7 @@ const Index = () => {
         {currentView === 'ticket-detail' && selectedTicket && (
           <EnhancedTicketDetail
             ticket={selectedTicket}
-            onBack={() => setCurrentView('inbox')}
+            onBack={() => setCurrentView('tickets')}
             onStatusChange={handleStatusChange}
           />
         )}
