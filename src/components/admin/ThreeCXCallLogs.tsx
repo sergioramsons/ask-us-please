@@ -36,6 +36,7 @@ interface CallLogFilters {
   threeCXUrl?: string;
   threeCXUsername?: string;
   threeCXPassword?: string;
+  threeCXPath?: string;
 }
 
 const ThreeCXCallLogs = () => {
@@ -47,7 +48,8 @@ const ThreeCXCallLogs = () => {
     limit: 100,
     threeCXUrl: 'https://bernserg.3cx.sc',
     threeCXUsername: '',
-    threeCXPassword: ''
+    threeCXPassword: '',
+    threeCXPath: '/xapi/CallHistory'
   });
 
   const fetchCallLogs = async () => {
@@ -211,6 +213,14 @@ const ThreeCXCallLogs = () => {
                     placeholder="3CX admin password"
                     value={filters.threeCXPassword || ''}
                     onChange={(e) => handleFilterChange('threeCXPassword', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-blue-900">Endpoint Path</label>
+                  <Input
+                    placeholder="/xapi/CallHistory"
+                    value={filters.threeCXPath || ''}
+                    onChange={(e) => handleFilterChange('threeCXPath', e.target.value)}
                   />
                 </div>
               </div>

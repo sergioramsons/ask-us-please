@@ -17,6 +17,7 @@ interface CallLogFilter {
   threeCXUrl?: string;
   threeCXUsername?: string;
   threeCXPassword?: string;
+  threeCXPath?: string;
 }
 
 const logStep = (step: string, details?: any) => {
@@ -69,35 +70,38 @@ serve(async (req) => {
     // Create authentication header for 3CX API
     const auth = btoa(`${threeCXUsername}:${threeCXPassword}`);
     
-    // Build API URL with query parameters
-    const url = new URL(`${threeCXApiUrl}/api/ActivationManager/CallHistory`);
+    // Build API URL safely with provided path (fallback to /xapi/CallHistory)
+    const base = threeCXApiUrl.startsWith('http') ? threeCXApiUrl : `https://${threeCXApiUrl}`;
+    const path = (filters.threeCXPath || '/xapi/CallHistory');
+    const endpoint = new URL(path.startsWith('/') ? path : `/${path}`, base);
+
     
     // Add date filters (default to last 7 days if not specified)
     const dateTo = filters.dateTo || new Date().toISOString().split('T')[0];
     const dateFrom = filters.dateFrom || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     
-    url.searchParams.append('dateFrom', dateFrom);
-    url.searchParams.append('dateTo', dateTo);
+    endpoint.searchParams.append('dateFrom', dateFrom);
+    endpoint.searchParams.append('dateTo', dateTo);
     
     if (filters.phoneNumber) {
-      url.searchParams.append('phoneNumber', filters.phoneNumber);
+      endpoint.searchParams.append('phoneNumber', filters.phoneNumber);
     }
     
     if (filters.extension) {
-      url.searchParams.append('extension', filters.extension);
+      endpoint.searchParams.append('extension', filters.extension);
     }
     
     if (filters.callType) {
-      url.searchParams.append('callType', filters.callType);
+      endpoint.searchParams.append('callType', filters.callType);
     }
     
     const limit = filters.limit || 100;
-    url.searchParams.append('limit', limit.toString());
+    endpoint.searchParams.append('limit', limit.toString());
 
-    logStep("Making API request to 3CX", { url: url.toString() });
+    logStep("Making API request to 3CX", { url: endpoint.toString() });
 
     // Make request to 3CX API
-    const response = await fetch(url.toString(), {
+    const response = await fetch(endpoint.toString(), {
       method: 'GET',
       headers: {
         'Authorization': `Basic ${auth}`,
