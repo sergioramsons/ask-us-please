@@ -13,6 +13,10 @@ interface CallLogFilter {
   extension?: string;
   callType?: 'inbound' | 'outbound' | 'internal';
   limit?: number;
+  // 3CX credentials from UI
+  threeCXUrl?: string;
+  threeCXUsername?: string;
+  threeCXPassword?: string;
 }
 
 const logStep = (step: string, details?: any) => {
@@ -28,16 +32,20 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    // Get environment variables
-    const threeCXApiUrl = Deno.env.get('THREECX_API_URL');
-    const threeCXUsername = Deno.env.get('THREECX_API_USERNAME');
-    const threeCXPassword = Deno.env.get('THREECX_API_PASSWORD');
+    // Parse request body for filters and credentials
+    const filters: CallLogFilter = req.method === 'POST' ? await req.json() : {};
+    logStep("Filters received", filters);
+
+    // Use credentials from request or fallback to environment
+    const threeCXApiUrl = filters.threeCXUrl || Deno.env.get('THREECX_API_URL');
+    const threeCXUsername = filters.threeCXUsername || Deno.env.get('THREECX_API_USERNAME');
+    const threeCXPassword = filters.threeCXPassword || Deno.env.get('THREECX_API_PASSWORD');
 
     if (!threeCXApiUrl || !threeCXUsername || !threeCXPassword) {
-      throw new Error('3CX API credentials not configured');
+      throw new Error('3CX API credentials not configured. Please provide threeCXUrl, threeCXUsername, and threeCXPassword in request.');
     }
 
-    logStep("3CX credentials verified");
+    logStep("3CX credentials verified", { url: threeCXApiUrl, username: threeCXUsername });
 
     // Authenticate user
     const authHeader = req.headers.get('Authorization');
@@ -57,10 +65,6 @@ serve(async (req) => {
     if (!user) throw new Error('User not authenticated');
 
     logStep("User authenticated", { userId: user.id });
-
-    // Parse request body for filters
-    const filters: CallLogFilter = req.method === 'POST' ? await req.json() : {};
-    logStep("Filters received", filters);
 
     // Create authentication header for 3CX API
     const auth = btoa(`${threeCXUsername}:${threeCXPassword}`);

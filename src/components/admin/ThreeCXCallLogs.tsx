@@ -32,6 +32,10 @@ interface CallLogFilters {
   extension?: string;
   callType?: 'inbound' | 'outbound' | 'internal';
   limit?: number;
+  // 3CX credentials
+  threeCXUrl?: string;
+  threeCXUsername?: string;
+  threeCXPassword?: string;
 }
 
 const ThreeCXCallLogs = () => {
@@ -40,7 +44,10 @@ const ThreeCXCallLogs = () => {
   const [filters, setFilters] = useState<CallLogFilters>({
     dateFrom: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     dateTo: new Date().toISOString().split('T')[0],
-    limit: 100
+    limit: 100,
+    threeCXUrl: 'https://bernserg.3cx.sc',
+    threeCXUsername: '',
+    threeCXPassword: ''
   });
 
   const fetchCallLogs = async () => {
@@ -174,8 +181,42 @@ const ThreeCXCallLogs = () => {
           <Card className="p-4">
             <div className="flex items-center gap-2 mb-4">
               <Filter className="h-4 w-4" />
-              <span className="font-medium">Filters</span>
+              <span className="font-medium">3CX Configuration & Filters</span>
             </div>
+            
+            {/* 3CX Credentials Section */}
+            <div className="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-200">
+              <h3 className="font-medium text-blue-900 mb-3">3CX Server Credentials</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-blue-900">3CX Server URL</label>
+                  <Input
+                    placeholder="https://your-3cx-server.com"
+                    value={filters.threeCXUrl || ''}
+                    onChange={(e) => handleFilterChange('threeCXUrl', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-blue-900">Username</label>
+                  <Input
+                    placeholder="3CX admin username"
+                    value={filters.threeCXUsername || ''}
+                    onChange={(e) => handleFilterChange('threeCXUsername', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-blue-900">Password</label>
+                  <Input
+                    type="password"
+                    placeholder="3CX admin password"
+                    value={filters.threeCXPassword || ''}
+                    onChange={(e) => handleFilterChange('threeCXPassword', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Filter Section */}
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
               <div>
                 <label className="text-sm font-medium">From Date</label>
