@@ -59,17 +59,24 @@ const ThreeCXCallLogs = () => {
         body: filters
       });
 
-      if (error) throw error;
+      console.log('Edge function response:', data);
 
-      if (data.success) {
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      if (data && data.success) {
         setCallLogs(data.data || []);
         toast.success(`Fetched ${data.total} call logs from 3CX`);
       } else {
-        throw new Error(data.error || 'Failed to fetch call logs');
+        const errorMsg = data?.error || 'Unknown error occurred';
+        console.error('3CX API error:', errorMsg);
+        throw new Error(errorMsg);
       }
     } catch (error: any) {
       console.error('Error fetching call logs:', error);
-      toast.error(error.message || 'Failed to fetch call logs from 3CX');
+      toast.error(`Failed to fetch call logs: ${error.message || 'Unknown error'}`);
       setCallLogs([]);
     } finally {
       setLoading(false);
