@@ -30,7 +30,7 @@ interface CallLogFilters {
   dateTo?: string;
   phoneNumber?: string;
   extension?: string;
-  callType?: 'inbound' | 'outbound' | 'internal' | '';
+  callType?: 'inbound' | 'outbound' | 'internal';
   limit?: number;
 }
 
@@ -70,7 +70,7 @@ const ThreeCXCallLogs = () => {
   const handleFilterChange = (key: keyof CallLogFilters, value: string | number) => {
     setFilters(prev => ({
       ...prev,
-      [key]: value === '' ? undefined : value
+      [key]: value === 'all' ? undefined : value
     }));
   };
 
@@ -211,12 +211,12 @@ const ThreeCXCallLogs = () => {
               </div>
               <div>
                 <label className="text-sm font-medium">Call Type</label>
-                <Select value={filters.callType || ''} onValueChange={(value) => handleFilterChange('callType', value)}>
+                <Select value={filters.callType || 'all'} onValueChange={(value) => handleFilterChange('callType', value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="All types" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All types</SelectItem>
+                    <SelectItem value="all">All types</SelectItem>
                     <SelectItem value="inbound">Inbound</SelectItem>
                     <SelectItem value="outbound">Outbound</SelectItem>
                     <SelectItem value="internal">Internal</SelectItem>
