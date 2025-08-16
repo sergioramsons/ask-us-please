@@ -847,6 +847,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      make_super_admin: {
+        Args: { user_email: string }
+        Returns: undefined
+      }
       migrate_email_server_passwords: {
         Args: Record<PropertyKey, never>
         Returns: undefined
