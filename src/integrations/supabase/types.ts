@@ -28,6 +28,7 @@ export type Database = {
           job_title: string | null
           last_name: string
           notes: string | null
+          organization_id: string | null
           phone: string | null
           postal_code: string | null
           state: string | null
@@ -48,6 +49,7 @@ export type Database = {
           job_title?: string | null
           last_name: string
           notes?: string | null
+          organization_id?: string | null
           phone?: string | null
           postal_code?: string | null
           state?: string | null
@@ -68,6 +70,7 @@ export type Database = {
           job_title?: string | null
           last_name?: string
           notes?: string | null
+          organization_id?: string | null
           phone?: string | null
           postal_code?: string | null
           state?: string | null
@@ -75,7 +78,15 @@ export type Database = {
           tags?: string[] | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contacts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       departments: {
         Row: {
@@ -84,6 +95,7 @@ export type Database = {
           id: string
           manager_id: string | null
           name: string
+          organization_id: string | null
           updated_at: string
         }
         Insert: {
@@ -92,6 +104,7 @@ export type Database = {
           id?: string
           manager_id?: string | null
           name: string
+          organization_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -100,9 +113,18 @@ export type Database = {
           id?: string
           manager_id?: string | null
           name?: string
+          organization_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "departments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_attachments: {
         Row: {
@@ -193,6 +215,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          organization_id: string | null
           password_encrypted: boolean
           reply_to: string | null
           sender_email: string
@@ -209,6 +232,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          organization_id?: string | null
           password_encrypted?: boolean
           reply_to?: string | null
           sender_email: string
@@ -225,6 +249,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          organization_id?: string | null
           password_encrypted?: boolean
           reply_to?: string | null
           sender_email?: string
@@ -236,7 +261,15 @@ export type Database = {
           updated_at?: string
           use_tls?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "email_servers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       incoming_emails: {
         Row: {
@@ -300,6 +333,7 @@ export type Database = {
           is_active: boolean
           last_check: string | null
           name: string
+          organization_id: string | null
           password: string
           password_encrypted: boolean
           port: number
@@ -322,6 +356,7 @@ export type Database = {
           is_active?: boolean
           last_check?: string | null
           name: string
+          organization_id?: string | null
           password: string
           password_encrypted?: boolean
           port?: number
@@ -344,6 +379,7 @@ export type Database = {
           is_active?: boolean
           last_check?: string | null
           name?: string
+          organization_id?: string | null
           password?: string
           password_encrypted?: boolean
           port?: number
@@ -361,7 +397,88 @@ export type Database = {
             referencedRelation: "departments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "incoming_mail_servers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      organization_admins: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_admins_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          domain: string | null
+          id: string
+          logo_url: string | null
+          max_tickets: number | null
+          max_users: number | null
+          name: string
+          settings: Json | null
+          slug: string
+          subscription_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          domain?: string | null
+          id?: string
+          logo_url?: string | null
+          max_tickets?: number | null
+          max_users?: number | null
+          name: string
+          settings?: Json | null
+          slug: string
+          subscription_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          domain?: string | null
+          id?: string
+          logo_url?: string | null
+          max_tickets?: number | null
+          max_users?: number | null
+          name?: string
+          settings?: Json | null
+          slug?: string
+          subscription_status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -370,6 +487,7 @@ export type Database = {
           department_id: string | null
           display_name: string | null
           id: string
+          organization_id: string | null
           role: string | null
           updated_at: string
           user_id: string
@@ -380,6 +498,7 @@ export type Database = {
           department_id?: string | null
           display_name?: string | null
           id?: string
+          organization_id?: string | null
           role?: string | null
           updated_at?: string
           user_id: string
@@ -390,6 +509,7 @@ export type Database = {
           department_id?: string | null
           display_name?: string | null
           id?: string
+          organization_id?: string | null
           role?: string | null
           updated_at?: string
           user_id?: string
@@ -400,6 +520,13 @@ export type Database = {
             columns: ["department_id"]
             isOneToOne: false
             referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -463,6 +590,7 @@ export type Database = {
           first_response_at: string | null
           id: string
           last_activity_at: string | null
+          organization_id: string | null
           priority: string
           resolved_at: string | null
           status: string
@@ -480,6 +608,7 @@ export type Database = {
           first_response_at?: string | null
           id?: string
           last_activity_at?: string | null
+          organization_id?: string | null
           priority?: string
           resolved_at?: string | null
           status?: string
@@ -497,6 +626,7 @@ export type Database = {
           first_response_at?: string | null
           id?: string
           last_activity_at?: string | null
+          organization_id?: string | null
           priority?: string
           resolved_at?: string | null
           status?: string
@@ -504,7 +634,15 @@ export type Database = {
           ticket_number?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tickets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -686,6 +824,10 @@ export type Database = {
         Args: { user_id: string }
         Returns: string
       }
+      get_user_organization: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -693,8 +835,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_organization_admin: {
+        Args: { org_id?: string }
+        Returns: boolean
+      }
       is_password_encrypted: {
         Args: { server_id: string }
+        Returns: boolean
+      }
+      is_super_admin: {
+        Args: Record<PropertyKey, never>
         Returns: boolean
       }
       migrate_email_server_passwords: {
