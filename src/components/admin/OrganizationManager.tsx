@@ -198,6 +198,23 @@ const OrganizationManager: React.FC = () => {
     }
   };
 
+  const handleVerifyDomain = async (domainId: string) => {
+    try {
+      const { error } = await supabase
+        .from('organization_domains')
+        .update({ is_verified: true })
+        .eq('id', domainId);
+
+      if (error) throw error;
+
+      toast.success('Domain marked as verified');
+      await fetchAllDomains();
+    } catch (error: any) {
+      console.error('Error verifying domain:', error);
+      toast.error(error.message || 'Failed to verify domain');
+    }
+  };
+
   const handleTogglePrimaryDomain = async (domainId: string, orgId: string) => {
     try {
       // First, set all domains for this org to non-primary
@@ -779,6 +796,15 @@ const OrganizationManager: React.FC = () => {
                       </div>
                       
                       <div className="flex items-center gap-2">
+                        {!domain.is_verified && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleVerifyDomain(domain.id)}
+                          >
+                            Verify Domain
+                          </Button>
+                        )}
                         {!domain.is_primary && (
                           <Button
                             variant="outline"
