@@ -13,10 +13,12 @@ import { SMSTester } from "@/components/admin/SMSTester";
 import { ContactsManager } from "@/components/admin/ContactsManager";
 import YeastarIntegration from "@/components/admin/YeastarIntegration";
 import ThreeCXIntegration from "@/components/admin/ThreeCXIntegration";
+import OrganizationManager from "@/components/admin/OrganizationManager";
 import { ChannelManager } from "@/components/channels/ChannelManager";
 import { UnifiedInbox } from "@/components/channels/UnifiedInbox";
 import { Ticket } from "@/types/ticket";
-import { Mail, Shield, BarChart3, Settings, Workflow, Clock, User, Bell, Users, MessageSquare, Phone, Inbox } from "lucide-react";
+import { useOrganization } from "@/contexts/OrganizationContext";
+import { Mail, Shield, BarChart3, Settings, Workflow, Clock, User, Bell, Users, MessageSquare, Phone, Inbox, Building2 } from "lucide-react";
 
 interface AdminPanelProps {
   tickets: Ticket[];
@@ -24,6 +26,8 @@ interface AdminPanelProps {
 }
 
 export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
+  const { isSuperAdmin } = useOrganization();
+  
   const handleCreateTicket = (ticketData: any) => {
     if (onCreateTicket) {
       onCreateTicket(ticketData);
@@ -37,7 +41,13 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
       </div>
       
       <Tabs defaultValue="channels" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-12">
+        <TabsList className={`grid w-full ${isSuperAdmin ? 'grid-cols-13' : 'grid-cols-12'}`}>
+          {isSuperAdmin && (
+            <TabsTrigger value="organizations" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Organizations
+            </TabsTrigger>
+          )}
           <TabsTrigger value="channels" className="flex items-center gap-2">
             <Inbox className="h-4 w-4" />
             Channels
@@ -87,6 +97,12 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
             Account
           </TabsTrigger>
         </TabsList>
+        
+        {isSuperAdmin && (
+          <TabsContent value="organizations" className="space-y-4">
+            <OrganizationManager />
+          </TabsContent>
+        )}
         
         <TabsContent value="channels" className="space-y-4">
           <ChannelManager />

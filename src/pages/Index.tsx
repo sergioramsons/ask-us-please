@@ -11,6 +11,8 @@ import { EnhancedTicketDetail } from "@/components/helpdesk/EnhancedTicketDetail
 import { UnifiedInbox } from "@/components/channels/UnifiedInbox";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOrganization } from "@/contexts/OrganizationContext";
+import OrganizationSelector from "@/components/ui/organization-selector";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationService } from "@/services/NotificationService";
@@ -20,6 +22,7 @@ type View = 'inbox' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'repor
 
 const Index = () => {
   const { user, loading } = useAuth();
+  const { organization, loading: orgLoading } = useOrganization();
   const { toast } = useToast();
   const { isAdmin } = useUserRoles();
   const [currentView, setCurrentView] = useState<View>('inbox');
@@ -331,6 +334,7 @@ const Index = () => {
             </div>
             
             <div className="flex items-center gap-4">
+              <OrganizationSelector />
               <div className="flex items-center gap-2 text-blue-100">
                 <User className="h-4 w-4" />
                 <span className="text-sm">{user?.email}</span>
