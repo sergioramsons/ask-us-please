@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { toast } from 'sonner';
-import { Plus, Building2, Users, Settings, Edit, Save, X } from 'lucide-react';
+import { Plus, Building2, Users, Settings, Edit, Save, X, Globe, Shield } from 'lucide-react';
 
 interface Organization {
   id: string;
@@ -25,6 +25,17 @@ interface Organization {
   updated_at: string;
 }
 
+interface OrganizationDomain {
+  id: string;
+  organization_id: string;
+  domain: string;
+  is_primary: boolean;
+  is_verified: boolean;
+  dns_records?: any;
+  created_at: string;
+  updated_at: string;
+}
+
 interface CreateOrgFormData {
   name: string;
   slug: string;
@@ -33,13 +44,21 @@ interface CreateOrgFormData {
   max_tickets: string;
 }
 
+interface DomainFormData {
+  domain: string;
+  is_primary: boolean;
+}
+
 const OrganizationManager: React.FC = () => {
   const { isSuperAdmin } = useOrganization();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [organizationDomains, setOrganizationDomains] = useState<{[key: string]: OrganizationDomain[]}>({});
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDomainDialog, setShowDomainDialog] = useState(false);
+  const [selectedOrgForDomains, setSelectedOrgForDomains] = useState<Organization | null>(null);
   const [formData, setFormData] = useState<CreateOrgFormData>({
     name: '',
     slug: '',
@@ -54,6 +73,10 @@ const OrganizationManager: React.FC = () => {
     max_users: 10,
     max_tickets: '',
   });
+  const [domainFormData, setDomainFormData] = useState<DomainFormData>({
+    domain: '',
+    is_primary: false,
+  });
 
   const fetchOrganizations = async () => {
     try {
@@ -64,11 +87,109 @@ const OrganizationManager: React.FC = () => {
 
       if (error) throw error;
       setOrganizations((data || []) as Organization[]);
+      
+      // Fetch domains for all organizations
+      await fetchAllDomains();
     } catch (error) {
       console.error('Error fetching organizations:', error);
       toast.error('Failed to load organizations');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAllDomains = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('organization_domains')
+        .select('*')
+        .order('is_primary', { ascending: false });
+
+      if (error) throw error;
+      
+      // Group domains by organization_id
+      const groupedDomains: {[key: string]: OrganizationDomain[]} = {};
+      (data || []).forEach((domain: OrganizationDomain) => {
+        if (!groupedDomains[domain.organization_id]) {
+          groupedDomains[domain.organization_id] = [];
+        }
+        groupedDomains[domain.organization_id].push(domain);
+      });
+      
+      setOrganizationDomains(groupedDomains);
+    } catch (error) {
+      console.error('Error fetching domains:', error);
+    }
+  };
+
+  const handleManageDomains = (org: Organization) => {
+    setSelectedOrgForDomains(org);
+    setShowDomainDialog(true);
+  };
+
+  const handleAddDomain = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrgForDomains) return;
+
+    try {
+      const { error } = await supabase
+        .from('organization_domains')
+        .insert([{
+          organization_id: selectedOrgForDomains.id,
+          domain: domainFormData.domain,
+          is_primary: domainFormData.is_primary,
+          is_verified: false,
+        }]);
+
+      if (error) throw error;
+
+      toast.success('Domain added successfully');
+      setDomainFormData({ domain: '', is_primary: false });
+      await fetchAllDomains();
+    } catch (error: any) {
+      console.error('Error adding domain:', error);
+      toast.error(error.message || 'Failed to add domain');
+    }
+  };
+
+  const handleDeleteDomain = async (domainId: string) => {
+    try {
+      const { error } = await supabase
+        .from('organization_domains')
+        .delete()
+        .eq('id', domainId);
+
+      if (error) throw error;
+
+      toast.success('Domain deleted successfully');
+      await fetchAllDomains();
+    } catch (error: any) {
+      console.error('Error deleting domain:', error);
+      toast.error(error.message || 'Failed to delete domain');
+    }
+  };
+
+  const handleTogglePrimaryDomain = async (domainId: string, orgId: string) => {
+    try {
+      // First, set all domains for this org to non-primary
+      await supabase
+        .from('organization_domains')
+        .update({ is_primary: false })
+        .eq('organization_id', orgId);
+
+      // Then set the selected domain as primary
+      const { error } = await supabase
+        .from('organization_domains')
+        .update({ is_primary: true })
+        .eq('id', domainId);
+
+      if (error) throw error;
+
+      toast.success('Primary domain updated');
+      await fetchAllDomains();
+    } catch (error: any) {
+      console.error('Error updating primary domain:', error);
+      toast.error(error.message || 'Failed to update primary domain');
     }
   };
 
@@ -416,6 +537,29 @@ const OrganizationManager: React.FC = () => {
                 </div>
               </div>
               
+              {/* Domains Section */}
+              {organizationDomains[org.id] && organizationDomains[org.id].length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                    <Globe className="w-4 h-4" />
+                    Domains
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {organizationDomains[org.id].map((domain) => (
+                      <Badge
+                        key={domain.id}
+                        variant={domain.is_primary ? "default" : "secondary"}
+                        className="flex items-center gap-2"
+                      >
+                        <span>{domain.domain}</span>
+                        {domain.is_primary && <Shield className="w-3 h-3" />}
+                        {domain.is_verified && <span className="text-green-500">✓</span>}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               <div className="flex gap-2">
                 <Select
                   value={org.subscription_status}
@@ -442,6 +586,16 @@ const OrganizationManager: React.FC = () => {
                   <Edit className="w-4 h-4" />
                   Edit
                 </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleManageDomains(org)}
+                  className="flex items-center gap-2"
+                >
+                  <Globe className="w-4 h-4" />
+                  Domains
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -456,6 +610,107 @@ const OrganizationManager: React.FC = () => {
           </Card>
         )}
       </div>
+
+      {/* Domain Management Dialog */}
+      <Dialog open={showDomainDialog} onOpenChange={setShowDomainDialog}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              Manage Domains - {selectedOrgForDomains?.name}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Add New Domain Form */}
+            <form onSubmit={handleAddDomain} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2">
+                  <Label htmlFor="new-domain">Domain</Label>
+                  <Input
+                    id="new-domain"
+                    value={domainFormData.domain}
+                    onChange={(e) => setDomainFormData(prev => ({ ...prev, domain: e.target.value }))}
+                    placeholder="example.com"
+                    required
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button type="submit" className="w-full">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Domain
+                  </Button>
+                </div>
+              </div>
+            </form>
+
+            {/* Existing Domains List */}
+            <div>
+              <h4 className="text-sm font-medium mb-3">Current Domains</h4>
+              {selectedOrgForDomains && organizationDomains[selectedOrgForDomains.id] ? (
+                <div className="space-y-2">
+                  {organizationDomains[selectedOrgForDomains.id].map((domain) => (
+                    <div key={domain.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Globe className="w-4 h-4 text-muted-foreground" />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{domain.domain}</span>
+                            {domain.is_primary && (
+                              <Badge variant="default" className="text-xs">
+                                <Shield className="w-3 h-3 mr-1" />
+                                Primary
+                              </Badge>
+                            )}
+                            {domain.is_verified ? (
+                              <Badge variant="default" className="text-xs bg-green-100 text-green-800">
+                                Verified
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-xs">
+                                Pending
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Added {new Date(domain.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        {!domain.is_primary && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleTogglePrimaryDomain(domain.id, domain.organization_id)}
+                          >
+                            Make Primary
+                          </Button>
+                        )}
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteDomain(domain.id)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-sm">No domains configured</p>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-4">
+              <Button variant="outline" onClick={() => setShowDomainDialog(false)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
