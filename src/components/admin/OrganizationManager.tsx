@@ -46,6 +46,9 @@ interface CreateOrgFormData {
 
 interface DomainFormData {
   domain: string;
+  domain_type: 'exact' | 'wildcard' | 'subdomain';
+  subdomain_pattern: string;
+  wildcard_domain: string;
   is_primary: boolean;
 }
 
@@ -75,6 +78,9 @@ const OrganizationManager: React.FC = () => {
   });
   const [domainFormData, setDomainFormData] = useState<DomainFormData>({
     domain: '',
+    domain_type: 'exact',
+    subdomain_pattern: '',
+    wildcard_domain: '',
     is_primary: false,
   });
 
@@ -132,19 +138,35 @@ const OrganizationManager: React.FC = () => {
     if (!selectedOrgForDomains) return;
 
     try {
+      const domainData: any = {
+        organization_id: selectedOrgForDomains.id,
+        domain: domainFormData.domain,
+        domain_type: domainFormData.domain_type,
+        is_primary: domainFormData.is_primary,
+        is_verified: false,
+      };
+
+      // Add specific fields based on domain type
+      if (domainFormData.domain_type === 'subdomain') {
+        domainData.subdomain_pattern = domainFormData.subdomain_pattern;
+      } else if (domainFormData.domain_type === 'wildcard') {
+        domainData.wildcard_domain = domainFormData.wildcard_domain;
+      }
+
       const { error } = await supabase
         .from('organization_domains')
-        .insert([{
-          organization_id: selectedOrgForDomains.id,
-          domain: domainFormData.domain,
-          is_primary: domainFormData.is_primary,
-          is_verified: false,
-        }]);
+        .insert([domainData]);
 
       if (error) throw error;
 
       toast.success('Domain added successfully');
-      setDomainFormData({ domain: '', is_primary: false });
+      setDomainFormData({ 
+        domain: '', 
+        domain_type: 'exact',
+        subdomain_pattern: '',
+        wildcard_domain: '',
+        is_primary: false 
+      });
       await fetchAllDomains();
     } catch (error: any) {
       console.error('Error adding domain:', error);
@@ -623,19 +645,91 @@ const OrganizationManager: React.FC = () => {
           <div className="space-y-6">
             {/* Add New Domain Form */}
             <form onSubmit={handleAddDomain} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="md:col-span-2">
-                  <Label htmlFor="new-domain">Domain</Label>
-                  <Input
-                    id="new-domain"
-                    value={domainFormData.domain}
-                    onChange={(e) => setDomainFormData(prev => ({ ...prev, domain: e.target.value }))}
-                    placeholder="example.com"
-                    required
-                  />
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="domain-type">Domain Type</Label>
+                  <Select
+                    value={domainFormData.domain_type}
+                    onValueChange={(value: 'exact' | 'wildcard' | 'subdomain') => 
+                      setDomainFormData(prev => ({ ...prev, domain_type: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select domain type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="exact">Exact Domain</SelectItem>
+                      <SelectItem value="subdomain">Subdomain Pattern</SelectItem>
+                      <SelectItem value="wildcard">Wildcard Domain</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="flex items-end">
-                  <Button type="submit" className="w-full">
+
+                {domainFormData.domain_type === 'exact' && (
+                  <div>
+                    <Label htmlFor="new-domain">Domain</Label>
+                    <Input
+                      id="new-domain"
+                      value={domainFormData.domain}
+                      onChange={(e) => setDomainFormData(prev => ({ ...prev, domain: e.target.value }))}
+                      placeholder="example.com"
+                      required
+                    />
+                  </div>
+                )}
+
+                {domainFormData.domain_type === 'subdomain' && (
+                  <>
+                    <div>
+                      <Label htmlFor="subdomain-pattern">Subdomain Pattern</Label>
+                      <Input
+                        id="subdomain-pattern"
+                        value={domainFormData.subdomain_pattern}
+                        onChange={(e) => setDomainFormData(prev => ({ ...prev, subdomain_pattern: e.target.value }))}
+                        placeholder="acme (for acme.yourdomain.com)"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="display-domain">Display Domain</Label>
+                      <Input
+                        id="display-domain"
+                        value={domainFormData.domain}
+                        onChange={(e) => setDomainFormData(prev => ({ ...prev, domain: e.target.value }))}
+                        placeholder="acme.yourdomain.com"
+                        required
+                      />
+                    </div>
+                  </>
+                )}
+
+                {domainFormData.domain_type === 'wildcard' && (
+                  <>
+                    <div>
+                      <Label htmlFor="wildcard-domain">Base Domain</Label>
+                      <Input
+                        id="wildcard-domain"
+                        value={domainFormData.wildcard_domain}
+                        onChange={(e) => setDomainFormData(prev => ({ ...prev, wildcard_domain: e.target.value }))}
+                        placeholder="yourdomain.com"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="display-domain-wildcard">Display Domain</Label>
+                      <Input
+                        id="display-domain-wildcard"
+                        value={domainFormData.domain}
+                        onChange={(e) => setDomainFormData(prev => ({ ...prev, domain: e.target.value }))}
+                        placeholder="*.yourdomain.com"
+                        required
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div className="flex justify-end">
+                  <Button type="submit">
                     <Plus className="w-4 h-4 mr-2" />
                     Add Domain
                   </Button>

@@ -55,23 +55,55 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     try {
-      // Get user's current organization from profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      // Check if we should resolve organization by subdomain
+      const hostname = window.location.hostname;
+      let targetOrgId: string | null = null;
 
-      if (profile?.organization_id) {
+      // Try to resolve organization from subdomain/hostname
+      if (hostname && hostname !== 'localhost' && !hostname.includes('lovableproject.com')) {
+        const { data: resolvedOrgId } = await supabase
+          .rpc('resolve_organization_by_subdomain', { hostname });
+        
+        if (resolvedOrgId) {
+          targetOrgId = resolvedOrgId;
+        }
+      }
+
+      // If no subdomain organization found, get user's current organization from profile
+      if (!targetOrgId) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('organization_id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        targetOrgId = profile?.organization_id;
+      }
+
+      if (targetOrgId) {
         // Fetch current organization
         const { data: org } = await supabase
           .from('organizations')
           .select('*')
-          .eq('id', profile.organization_id)
+          .eq('id', targetOrgId)
           .single();
 
         if (org) {
           setOrganization(org as Organization);
+          
+          // Update user's profile if we switched via subdomain
+          const { data: currentProfile } = await supabase
+            .from('profiles')
+            .select('organization_id')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (currentProfile?.organization_id !== targetOrgId) {
+            await supabase
+              .from('profiles')
+              .update({ organization_id: targetOrgId })
+              .eq('user_id', user.id);
+          }
         }
       }
 

@@ -443,31 +443,40 @@ export type Database = {
           created_at: string
           dns_records: Json | null
           domain: string
+          domain_type: string | null
           id: string
           is_primary: boolean
           is_verified: boolean
           organization_id: string
+          subdomain_pattern: string | null
           updated_at: string
+          wildcard_domain: string | null
         }
         Insert: {
           created_at?: string
           dns_records?: Json | null
           domain: string
+          domain_type?: string | null
           id?: string
           is_primary?: boolean
           is_verified?: boolean
           organization_id: string
+          subdomain_pattern?: string | null
           updated_at?: string
+          wildcard_domain?: string | null
         }
         Update: {
           created_at?: string
           dns_records?: Json | null
           domain?: string
+          domain_type?: string | null
           id?: string
           is_primary?: boolean
           is_verified?: boolean
           organization_id?: string
+          subdomain_pattern?: string | null
           updated_at?: string
+          wildcard_domain?: string | null
         }
         Relationships: [
           {
@@ -899,6 +908,10 @@ export type Database = {
       password_appears_encrypted: {
         Args: { password_text: string }
         Returns: boolean
+      }
+      resolve_organization_by_subdomain: {
+        Args: { hostname: string }
+        Returns: string
       }
     }
     Enums: {
