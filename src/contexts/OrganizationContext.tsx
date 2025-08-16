@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
+import { detectTenant, TenantInfo } from '@/lib/subdomain';
 
 interface Organization {
   id: string;
