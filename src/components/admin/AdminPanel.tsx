@@ -41,62 +41,64 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
       </div>
       
       <Tabs defaultValue="channels" className="space-y-6">
-        <TabsList className={`grid w-full ${isSuperAdmin ? 'grid-cols-13' : 'grid-cols-12'}`}>
-          {isSuperAdmin && (
-            <TabsTrigger value="organizations" className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              Organizations
+        <div className="w-full overflow-x-auto">
+          <TabsList className="grid w-full min-w-fit grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-1 h-auto p-1">
+            {isSuperAdmin && (
+              <TabsTrigger value="organizations" className="flex items-center gap-2 whitespace-nowrap px-3 py-2">
+                <Building2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Organizations</span>
+              </TabsTrigger>
+            )}
+            <TabsTrigger value="channels" className="flex items-center gap-2 whitespace-nowrap px-3 py-2">
+              <Inbox className="h-4 w-4" />
+              <span className="hidden sm:inline">Channels</span>
             </TabsTrigger>
-          )}
-          <TabsTrigger value="channels" className="flex items-center gap-2">
-            <Inbox className="h-4 w-4" />
-            Channels
-          </TabsTrigger>
-          <TabsTrigger value="inbox" className="flex items-center gap-2">
-            <Mail className="h-4 w-4" />
-            Unified Inbox
-          </TabsTrigger>
-          <TabsTrigger value="email" className="flex items-center gap-2">
-            <Mail className="h-4 w-4" />
-            Email Settings
-          </TabsTrigger>
-          <TabsTrigger value="users" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            User Management
-          </TabsTrigger>
-          <TabsTrigger value="contacts" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Contacts
-          </TabsTrigger>
-          <TabsTrigger value="reports" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Reports
-          </TabsTrigger>
-          <TabsTrigger value="workflow" className="flex items-center gap-2">
-            <Workflow className="h-4 w-4" />
-            Workflows
-          </TabsTrigger>
-          <TabsTrigger value="business-hours" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Business Hours
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            Email Test
-          </TabsTrigger>
-          <TabsTrigger value="sms" className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
-            SMS Test
-          </TabsTrigger>
-          <TabsTrigger value="pbx" className="flex items-center gap-2">
-            <Phone className="h-4 w-4" />
-            PBX Integration
-          </TabsTrigger>
-          <TabsTrigger value="account" className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            Account
-          </TabsTrigger>
-        </TabsList>
+            <TabsTrigger value="inbox" className="flex items-center gap-2 whitespace-nowrap px-3 py-2">
+              <Mail className="h-4 w-4" />
+              <span className="hidden sm:inline">Inbox</span>
+            </TabsTrigger>
+            <TabsTrigger value="email" className="flex items-center gap-2 whitespace-nowrap px-3 py-2">
+              <Mail className="h-4 w-4" />
+              <span className="hidden sm:inline">Email</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center gap-2 whitespace-nowrap px-3 py-2">
+              <Shield className="h-4 w-4" />
+              <span className="hidden sm:inline">Users</span>
+            </TabsTrigger>
+            <TabsTrigger value="contacts" className="flex items-center gap-2 whitespace-nowrap px-3 py-2">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Contacts</span>
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center gap-2 whitespace-nowrap px-3 py-2">
+              <BarChart3 className="h-4 w-4" />
+              <span className="hidden sm:inline">Reports</span>
+            </TabsTrigger>
+            <TabsTrigger value="workflow" className="flex items-center gap-2 whitespace-nowrap px-3 py-2">
+              <Workflow className="h-4 w-4" />
+              <span className="hidden sm:inline">Workflows</span>
+            </TabsTrigger>
+            <TabsTrigger value="business-hours" className="flex items-center gap-2 whitespace-nowrap px-3 py-2">
+              <Clock className="h-4 w-4" />
+              <span className="hidden sm:inline">Hours</span>
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex items-center gap-2 whitespace-nowrap px-3 py-2">
+              <Bell className="h-4 w-4" />
+              <span className="hidden sm:inline">Email Test</span>
+            </TabsTrigger>
+            <TabsTrigger value="sms" className="flex items-center gap-2 whitespace-nowrap px-3 py-2">
+              <MessageSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">SMS Test</span>
+            </TabsTrigger>
+            <TabsTrigger value="pbx" className="flex items-center gap-2 whitespace-nowrap px-3 py-2">
+              <Phone className="h-4 w-4" />
+              <span className="hidden sm:inline">PBX</span>
+            </TabsTrigger>
+            <TabsTrigger value="account" className="flex items-center gap-2 whitespace-nowrap px-3 py-2">
+              <User className="h-4 w-4" />
+              <span className="hidden sm:inline">Account</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
         
         {isSuperAdmin && (
           <TabsContent value="organizations" className="space-y-4">
