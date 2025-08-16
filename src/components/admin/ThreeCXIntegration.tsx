@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Download, Copy, FileText } from 'lucide-react';
+import { Download, Copy, FileText, Phone } from 'lucide-react';
+import ThreeCXCallLogs from './ThreeCXCallLogs';
 
 const ThreeCXIntegration = () => {
   const [copied, setCopied] = useState(false);
@@ -73,44 +75,63 @@ const ThreeCXIntegration = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            3CX V20 IP PBX Integration Configuration
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="bg-muted p-4 rounded-lg">
-            <h3 className="font-semibold mb-2">Configuration Values:</h3>
-            <div className="text-sm space-y-1">
-              <p><strong>Server URL:</strong> https://thzdazcmswmeolaiijml.supabase.co</p>
-            </div>
-          </div>
-          
-          <div className="flex gap-2">
-            <Button onClick={handleDownload} className="gap-2">
-              <Download className="h-4 w-4" />
-              Download XML Template
-            </Button>
-            <Button variant="outline" onClick={handleCopy} className="gap-2">
-              <Copy className="h-4 w-4" />
-              {copied ? 'Copied!' : 'Copy Content'}
-            </Button>
-          </div>
+    <div className="container mx-auto p-6 max-w-7xl">
+      <Tabs defaultValue="configuration" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="configuration" className="gap-2">
+            <FileText className="h-4 w-4" />
+            Integration Configuration
+          </TabsTrigger>
+          <TabsTrigger value="call-logs" className="gap-2">
+            <Phone className="h-4 w-4" />
+            Call Logs
+          </TabsTrigger>
+        </TabsList>
 
-          <div>
-            <label className="text-sm font-medium">3CX V20 CRM Template XML:</label>
-            <Textarea
-              value={xmlContent}
-              readOnly
-              className="mt-2 font-mono text-xs h-64"
-              placeholder="3CX CRM template content..."
-            />
-          </div>
-        </CardContent>
-      </Card>
+        <TabsContent value="configuration" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                3CX V20 IP PBX Integration Configuration
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-muted p-4 rounded-lg">
+                <h3 className="font-semibold mb-2">Configuration Values:</h3>
+                <div className="text-sm space-y-1">
+                  <p><strong>Server URL:</strong> https://thzdazcmswmeolaiijml.supabase.co</p>
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button onClick={handleDownload} className="gap-2">
+                  <Download className="h-4 w-4" />
+                  Download XML Template
+                </Button>
+                <Button variant="outline" onClick={handleCopy} className="gap-2">
+                  <Copy className="h-4 w-4" />
+                  {copied ? 'Copied!' : 'Copy Content'}
+                </Button>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">3CX V20 CRM Template XML:</label>
+                <Textarea
+                  value={xmlContent}
+                  readOnly
+                  className="mt-2 font-mono text-xs h-64"
+                  placeholder="3CX CRM template content..."
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="call-logs" className="mt-6">
+          <ThreeCXCallLogs />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
