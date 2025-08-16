@@ -31,6 +31,9 @@ interface OrganizationDomain {
   domain: string;
   is_primary: boolean;
   is_verified: boolean;
+  domain_type: 'exact' | 'wildcard' | 'subdomain';
+  subdomain_pattern?: string;
+  wildcard_domain?: string;
   dns_records?: any;
   created_at: string;
   updated_at: string;
@@ -115,7 +118,11 @@ const OrganizationManager: React.FC = () => {
       
       // Group domains by organization_id
       const groupedDomains: {[key: string]: OrganizationDomain[]} = {};
-      (data || []).forEach((domain: OrganizationDomain) => {
+      (data || []).forEach((domainRaw: any) => {
+        const domain: OrganizationDomain = {
+          ...domainRaw,
+          domain_type: domainRaw.domain_type as 'exact' | 'wildcard' | 'subdomain'
+        };
         if (!groupedDomains[domain.organization_id]) {
           groupedDomains[domain.organization_id] = [];
         }
