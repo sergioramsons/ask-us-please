@@ -161,6 +161,8 @@ const Index = () => {
       // First, try to find or create a contact
       let contactId = null;
       if (ticketData.customerEmail) {
+        console.log('Creating ticket for customer:', { email: ticketData.customerEmail, name: ticketData.customerName, organization: organization?.id, user: user?.id });
+        
         const { data: existingContact } = await supabase
           .from('contacts')
           .select('id')
@@ -168,9 +170,11 @@ const Index = () => {
           .maybeSingle();
 
         if (existingContact) {
+          console.log('Found existing contact:', existingContact.id);
           contactId = existingContact.id;
         } else {
           // Create new contact
+          console.log('Creating new contact...');
           const { data: newContact, error: contactError } = await supabase
             .from('contacts')
             .insert({
@@ -185,8 +189,17 @@ const Index = () => {
             .single();
 
           if (contactError) {
-            console.warn('Could not create contact:', contactError);
+            console.error('Could not create contact:', contactError);
+            console.log('Contact creation failed with data:', {
+              first_name: ticketData.customerName?.split(' ')[0] || '',
+              last_name: ticketData.customerName?.split(' ').slice(1).join(' ') || '',
+              email: ticketData.customerEmail,
+              phone: ticketData.phone || callerInfo?.phone,
+              organization_id: organization?.id || null,
+              created_by: user?.id
+            });
           } else {
+            console.log('Successfully created contact:', newContact.id);
             contactId = newContact.id;
           }
         }
