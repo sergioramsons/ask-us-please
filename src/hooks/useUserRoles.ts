@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type AppRole = 'admin' | 'moderator' | 'user';
+export type AppRole = 'agent' | 'supervisor' | 'admin' | 'account_admin';
 
 interface UserRole {
   id: string;
@@ -40,8 +40,12 @@ export function useUserRoles() {
 
       if (error) throw error;
 
-      const roles = data.map(item => item.role as AppRole);
-      setCurrentUserRoles(roles);
+      // Filter and map roles to ensure they match our current AppRole type
+      const validRoles = data
+        .filter(item => ['agent', 'supervisor', 'admin', 'account_admin'].includes(item.role))
+        .map(item => item.role as AppRole);
+      
+      setCurrentUserRoles(validRoles);
     } catch (error) {
       console.error('Error fetching current user roles:', error);
     }
@@ -58,11 +62,16 @@ export function useUserRoles() {
           role,
           created_at,
           updated_at
-        `);
+         `);
 
       if (error) throw error;
 
-      setUserRoles(data || []);
+      // Filter and map roles to ensure they match our current AppRole type
+      const validRoles = (data || []).filter(item => 
+        ['agent', 'supervisor', 'admin', 'account_admin'].includes(item.role)
+      );
+
+      setUserRoles(validRoles as UserRole[]);
     } catch (error) {
       console.error('Error fetching user roles:', error);
       toast({
@@ -117,12 +126,12 @@ export function useUserRoles() {
           }
         });
 
-        roles?.forEach(role => {
-          const user = usersMap.get(role.user_id);
-          if (user) {
-            user.roles.push(role.role as AppRole);
-          }
-        });
+         roles?.forEach(role => {
+           const user = usersMap.get(role.user_id);
+           if (user && ['agent', 'supervisor', 'admin', 'account_admin'].includes(role.role)) {
+             user.roles.push(role.role as AppRole);
+           }
+         });
 
         return Array.from(usersMap.values());
       }
@@ -144,12 +153,12 @@ export function useUserRoles() {
       });
 
       // Add roles to users
-      roles?.forEach(role => {
-        const user = usersMap.get(role.user_id);
-        if (user) {
-          user.roles.push(role.role as AppRole);
-        }
-      });
+       roles?.forEach(role => {
+         const user = usersMap.get(role.user_id);
+         if (user && ['agent', 'supervisor', 'admin', 'account_admin'].includes(role.role)) {
+           user.roles.push(role.role as AppRole);
+         }
+       });
 
       return Array.from(usersMap.values());
     } catch (error) {
@@ -224,8 +233,16 @@ export function useUserRoles() {
     return hasRole('admin');
   }, [hasRole]);
 
-  const isModerator = useCallback((): boolean => {
-    return hasRole('moderator');
+  const isSupervisor = useCallback((): boolean => {
+    return hasRole('supervisor');
+  }, [hasRole]);
+
+  const isAgent = useCallback((): boolean => {
+    return hasRole('agent');
+  }, [hasRole]);
+
+  const isAccountAdmin = useCallback((): boolean => {
+    return hasRole('account_admin');
   }, [hasRole]);
 
   useEffect(() => {
@@ -244,6 +261,8 @@ export function useUserRoles() {
     removeRole,
     hasRole,
     isAdmin,
-    isModerator,
+    isSupervisor,
+    isAgent,
+    isAccountAdmin,
   };
 }

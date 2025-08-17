@@ -22,7 +22,7 @@ interface UserWithRole {
 
 export function UserRoleManager() {
   const [users, setUsers] = useState<UserWithRole[]>([]);
-  const [selectedRole, setSelectedRole] = useState<AppRole>('user');
+  const [selectedRole, setSelectedRole] = useState<AppRole>('agent');
   const [selectedDepartment, setSelectedDepartment] = useState<string>('');
   const [newDepartmentName, setNewDepartmentName] = useState('');
   const [newDepartmentDesc, setNewDepartmentDesc] = useState('');
@@ -32,7 +32,7 @@ export function UserRoleManager() {
   const [newUserPassword, setNewUserPassword] = useState('');
   const [newUserDisplayName, setNewUserDisplayName] = useState('');
   const [newUserDepartment, setNewUserDepartment] = useState<string>('');
-  const [newUserRole, setNewUserRole] = useState<AppRole>('user');
+  const [newUserRole, setNewUserRole] = useState<AppRole>('agent');
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   
   const { getUsersWithRoles, assignRole, removeRole, isLoading, isAdmin } = useUserRoles();
@@ -120,7 +120,7 @@ export function UserRoleManager() {
         }
 
         // Assign role if not default 'user'
-        if (newUserRole !== 'user') {
+        if (newUserRole !== 'agent') {
           await assignRole(authData.user.id, newUserRole);
         }
 
@@ -129,7 +129,7 @@ export function UserRoleManager() {
         setNewUserPassword('');
         setNewUserDisplayName('');
         setNewUserDepartment('');
-        setNewUserRole('user');
+        setNewUserRole('agent');
 
         // Reload users
         await loadUsers();
@@ -178,9 +178,10 @@ export function UserRoleManager() {
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="user">User</SelectItem>
-                  <SelectItem value="moderator">Moderator</SelectItem>
+                  <SelectItem value="agent">Agent</SelectItem>
+                  <SelectItem value="supervisor">Supervisor</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="account_admin">Account Admin</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
@@ -358,9 +359,10 @@ export function UserRoleManager() {
                         <SelectValue placeholder="Select role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="moderator">Moderator</SelectItem>
+                        <SelectItem value="agent">Agent</SelectItem>
+                        <SelectItem value="supervisor">Supervisor</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="account_admin">Account Admin</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
