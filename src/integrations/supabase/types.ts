@@ -14,6 +14,102 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_availability: {
+        Row: {
+          current_tickets: number | null
+          department_id: string | null
+          id: string
+          is_available: boolean | null
+          max_tickets: number | null
+          organization_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          current_tickets?: number | null
+          department_id?: string | null
+          id?: string
+          is_available?: boolean | null
+          max_tickets?: number | null
+          organization_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          current_tickets?: number | null
+          department_id?: string | null
+          id?: string
+          is_available?: boolean | null
+          max_tickets?: number | null
+          organization_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_availability_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_availability_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assignment_rules: {
+        Row: {
+          created_at: string | null
+          department_id: string | null
+          id: string
+          is_active: boolean | null
+          organization_id: string | null
+          priority_order: number | null
+          rule_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          department_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          organization_id?: string | null
+          priority_order?: number | null
+          rule_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          department_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          organization_id?: string | null
+          priority_order?: number | null
+          rule_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_rules_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contacts: {
         Row: {
           address: string | null
@@ -634,7 +730,9 @@ export type Database = {
       }
       tickets: {
         Row: {
+          assigned_at: string | null
           assigned_to: string | null
+          auto_assigned: boolean | null
           contact_id: string | null
           created_at: string
           created_by: string | null
@@ -649,10 +747,14 @@ export type Database = {
           status: string
           subject: string
           ticket_number: string
+          transfer_reason: string | null
+          transferred_from: string | null
           updated_at: string
         }
         Insert: {
+          assigned_at?: string | null
           assigned_to?: string | null
+          auto_assigned?: boolean | null
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -667,10 +769,14 @@ export type Database = {
           status?: string
           subject: string
           ticket_number: string
+          transfer_reason?: string | null
+          transferred_from?: string | null
           updated_at?: string
         }
         Update: {
+          assigned_at?: string | null
           assigned_to?: string | null
+          auto_assigned?: boolean | null
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -685,6 +791,8 @@ export type Database = {
           status?: string
           subject?: string
           ticket_number?: string
+          transfer_reason?: string | null
+          transferred_from?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -853,6 +961,10 @@ export type Database = {
       }
     }
     Functions: {
+      auto_assign_ticket: {
+        Args: { ticket_id: string }
+        Returns: string
+      }
       current_user_has_role: {
         Args: { _role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
@@ -915,6 +1027,14 @@ export type Database = {
       resolve_organization_by_subdomain: {
         Args: { hostname: string }
         Returns: string
+      }
+      transfer_ticket: {
+        Args: {
+          new_agent_id: string
+          ticket_id: string
+          transfer_reason?: string
+        }
+        Returns: boolean
       }
     }
     Enums: {

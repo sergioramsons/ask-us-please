@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Ticket, TicketComment, TicketAttachment } from '@/types/ticket';
 import { TicketResponseForm } from './TicketResponseForm';
+import { TicketAssignmentManager } from './TicketAssignmentManager';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   ArrowLeft, 
@@ -101,6 +102,12 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
       case 'minimal': return 'bg-green-500 text-white';
       default: return 'bg-gray-500 text-white';
     }
+  };
+
+  const handleAssignmentChange = (newAssigneeId: string | null, newAssigneeName: string) => {
+    // This would typically trigger a parent component update
+    // For now, we'll just handle it locally since we need to pass this up
+    console.log('Assignment changed:', newAssigneeId, newAssigneeName);
   };
 
   const getStatusColor = (status: string) => {
@@ -420,6 +427,14 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
               )}
             </CardContent>
           </Card>
+
+          {/* Assignment Management */}
+          <TicketAssignmentManager
+            ticketId={ticket.id}
+            currentAssigneeId={ticket.assignee?.id}
+            currentAssigneeName={ticket.assignee?.name}
+            onAssignmentChange={handleAssignmentChange}
+          />
 
           {/* Assignment */}
           {ticket.assignee && (
