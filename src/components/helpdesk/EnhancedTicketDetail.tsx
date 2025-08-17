@@ -84,9 +84,31 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
     }
   };
 
-  // Load comments on mount
+  // Load comments on mount and subscribe to real-time updates
   useEffect(() => {
     loadComments();
+    
+    // Subscribe to real-time updates for new comments
+    const channel = supabase
+      .channel('ticket-comments')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'ticket_comments',
+          filter: `ticket_id=eq.${ticket.id}`
+        },
+        () => {
+          console.log('New comment received, reloading...');
+          loadComments();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [ticket.id]);
 
   const formatDate = (date: Date | string) => {
