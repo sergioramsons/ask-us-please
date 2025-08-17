@@ -269,7 +269,15 @@ const handler = async (req: Request): Promise<Response> => {
     // Enforce STARTTLS for submission ports
     const effectiveTLS = (smtpPort === 587 || smtpPort === 465) ? true : Boolean(emailServer.use_tls);
 
-    console.log('SMTP config snapshot:', { host: smtpHost, port: smtpPort, tls: effectiveTLS, username_preview: smtpUsername ? `${smtpUsername.slice(0,2)}***` : '', from: `${senderName} <${senderEmail}>` });
+    console.log('SMTP config snapshot:', { 
+      host: smtpHost, 
+      port: smtpPort, 
+      tls: effectiveTLS, 
+      username_preview: smtpUsername ? `${smtpUsername.slice(0,2)}***` : '', 
+      username_length: smtpUsername?.length || 0,
+      password_length: smtpPasswordStr?.length || 0,
+      from: `${senderName} <${senderEmail}>` 
+    });
 
     // Basic validation before attempting SMTP
     if (!smtpHost || !smtpUsername || !smtpPasswordStr || !senderEmail) {
