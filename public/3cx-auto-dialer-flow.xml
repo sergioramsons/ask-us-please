@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CallflowDesigner version="1.0" name="Auto Dialer Campaign Flow">
+  <callflow name="AutoDialerCampaign" description="Automated dialing campaign with Supabase integration">
+    
+    <!-- Variables -->
+    <variables>
+      <variable name="campaign_id" type="string" default="" description="Campaign UUID from Supabase" />
+      <variable name="api_base_url" type="string" default="https://thzdazcmswmeolaiijml.supabase.co/functions/v1/auto-dialer-campaign" description="Supabase API endpoint" />
+      <variable name="current_phone" type="string" default="" description="Current phone number to dial" />
+      <variable name="agent_extension" type="string" default="100" description="Agent extension for transfers" />
+      <variable name="delay_seconds" type="string" default="5" description="Delay between calls" />
+      <variable name="call_start_time" type="string" default="" description="Call start timestamp" />
+      <variable name="call_end_time" type="string" default="" description="Call end timestamp" />
+      <variable name="call_duration" type="string" default="0" description="Call duration in seconds" />
+    </variables>
+
+    <!-- Main Flow Start -->
+    <start>
+      <!-- Set campaign ID - you can pass this as parameter or set it here -->
+      <set_variable name="campaign_id" value="{DN.param.campaign_id}" />
+      
+      <!-- If no campaign_id parameter, use default (replace with actual campaign ID) -->
+      <condition expression="{campaign_id} == ''">
+        <true>
+          <set_variable name="campaign_id" value="YOUR_CAMPAIGN_ID_HERE" />
+        </true>
+      </condition>
+      
+      <!-- Log campaign start -->
+      <log message="Starting Auto Dialer Campaign: {campaign_id}" />
+      
+      <!-- Jump to main loop -->
+      <goto target="get_next_number" />
+    </start>
+
+    <!-- Get Next Number from API -->
+    <block name="get_next_number">
+      <log message="Requesting next number for campaign: {campaign_id}" />
+      
+      <!-- HTTP Request to get next phone number -->
+      <http_request 
+        url="{api_base_url}" 
+        method="POST" 
+        content_type="application/json"
+        timeout="30">
+        
+        <headers>
+          <header name="Content-Type" value="application/json" />
+        </headers>
+        
+        <body>{
+  "action": "get_next_number",
+  "campaignId": "{campaign_id}"
+}</body>
+
+        <!-- Success Response -->
+        <success>
+          <log message="API Response: {http_response}" />
+          
+          <!-- Parse response -->
+          <set_variable name="has_next" value="{http_response.hasNext}" />
+          <set_variable name="current_phone" value="{http_response.phoneNumber}" />
+          <set_variable name="agent_extension" value="{http_response.agentExtension}" />
+          <set_variable name="delay_seconds" value="{http_response.delaySeconds}" />
+          
+          <!-- Check if campaign has more numbers -->
+          <condition expression="{has_next} == true">
+            <true>
+              <log message="Next number to dial: {current_phone}" />
+              <goto target="make_call" />
+            </true>
+            <false>
+              <log message="Campaign completed - no more numbers" />
+              <goto target="campaign_complete" />
+            </false>
+          </condition>
+        </success>
+
+        <!-- API Error -->
+        <error>
+          <log message="API Error getting next number: {http_error}" />
+          <goto target="campaign_error" />
+        </error>
+      </http_request>
+    </block>
+
+    <!-- Make Outbound Call -->
+    <block name="make_call">
+      <log message="Dialing: {current_phone}" />
+      
+      <!-- Record call start time -->
+      <set_variable name="call_start_time" value="{now}" />
+      
+      <!-- Make outbound call -->
+      <make_call 
+        number="{current_phone}" 
+        timeout="30" 
+        caller_id="YOUR_BUSINESS_NUMBER"
+        recording="true">
+        
+        <!-- Call Answered -->
+        <on_answer>
+          <log message="Call answered: {current_phone}" />
+          
+          <!-- Play optional message before transfer -->
+          <play_audio file="please_hold.wav" />
+          
+          <!-- Transfer to agent -->
+          <transfer extension="{agent_extension}" timeout="60">
+            
+            <!-- Transfer successful -->
+            <on_answer>
+              <log message="Transfer successful to extension: {agent_extension}" />
+              
+              <!-- Record call end time and calculate duration -->
+              <set_variable name="call_end_time" value="{now}" />
+              <set_variable name="call_duration" value="{call_end_time - call_start_time}" />
+              
+              <!-- Log successful call -->
+              <goto target="log_call_result" data="connected" />
+            </on_answer>
+            
+            <!-- Transfer failed -->
+            <on_busy>
+              <log message="Agent busy - call failed" />
+              <goto target="log_call_result" data="failed" />
+            </on_busy>
+            
+            <on_no_answer>
+              <log message="Agent no answer - call failed" />
+              <goto target="log_call_result" data="failed" />
+            </on_no_answer>
+          </transfer>
+        </on_answer>
+
+        <!-- Call Busy -->
+        <on_busy>
+          <log message="Call busy: {current_phone}" />
+          <goto target="log_call_result" data="busy" />
+        </on_busy>
+
+        <!-- No Answer -->
+        <on_no_answer>
+          <log message="No answer: {current_phone}" />
+          <goto target="log_call_result" data="no_answer" />
+        </on_no_answer>
+
+        <!-- Call Failed -->
+        <on_error>
+          <log message="Call failed: {current_phone} - Error: {call_error}" />
+          <goto target="log_call_result" data="failed" />
+        </on_error>
+      </make_call>
+    </block>
+
+    <!-- Log Call Result -->
+    <block name="log_call_result">
+      <set_variable name="call_status" value="{block_data}" />
+      
+      <log message="Logging call result: {current_phone} = {call_status}" />
+      
+      <!-- HTTP Request to log call result -->
+      <http_request 
+        url="{api_base_url}" 
+        method="POST" 
+        content_type="application/json"
+        timeout="30">
+        
+        <headers>
+          <header name="Content-Type" value="application/json" />
+        </headers>
+        
+        <body>{
+  "action": "update_result",
+  "campaignId": "{campaign_id}",
+  "phoneNumber": "{current_phone}",
+  "status": "{call_status}",
+  "callDuration": {call_duration},
+  "callId": "{call_id}"
+}</body>
+
+        <!-- Success -->
+        <success>
+          <log message="Call result logged successfully" />
+          <goto target="call_delay" />
+        </success>
+
+        <!-- Error -->
+        <error>
+          <log message="Error logging call result: {http_error}" />
+          <goto target="call_delay" />
+        </error>
+      </http_request>
+    </block>
+
+    <!-- Delay Between Calls -->
+    <block name="call_delay">
+      <log message="Waiting {delay_seconds} seconds before next call" />
+      
+      <!-- Wait specified delay -->
+      <wait seconds="{delay_seconds}" />
+      
+      <!-- Continue to next number -->
+      <goto target="get_next_number" />
+    </block>
+
+    <!-- Campaign Complete -->
+    <block name="campaign_complete">
+      <log message="Auto Dialer Campaign {campaign_id} completed successfully" />
+      
+      <!-- Optional: Play completion message -->
+      <play_audio file="campaign_complete.wav" />
+      
+      <!-- End call flow -->
+      <hangup />
+    </block>
+
+    <!-- Campaign Error -->
+    <block name="campaign_error">
+      <log message="Auto Dialer Campaign {campaign_id} encountered an error" />
+      
+      <!-- Optional: Play error message -->
+      <play_audio file="campaign_error.wav" />
+      
+      <!-- End call flow -->
+      <hangup />
+    </block>
+
+  </callflow>
+</CallflowDesigner>
