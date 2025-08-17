@@ -69,9 +69,10 @@ serve(async (req) => {
     // Create authentication header for 3CX API
     const auth = btoa(`${threeCXUsername}:${threeCXPassword}`);
     
-    // Build API URL
+    // Build API URL for 3CX call initiation
     const base = threeCXApiUrl.startsWith('http') ? threeCXApiUrl : `https://${threeCXApiUrl}`;
-    const path = request.threeCXPath || '/xapi/v1/Calls';
+    // Use the correct 3CX Web Client API path for initiating calls
+    const path = request.threeCXPath || '/webclient/api/call/new';
     const endpoint = new URL(path.startsWith('/') ? path : `/${path}`, base);
 
     let results = [];
@@ -80,18 +81,21 @@ serve(async (req) => {
       // Make a single call
       logStep("Making single call", { number: request.phoneNumber, extension: request.extension });
       
+      // 3CX Web Client API call payload format
       const callPayload = {
-        caller: request.extension || '100', // Default extension
-        callee: request.phoneNumber,
-        timeout: 30 // 30 seconds timeout
+        destination: request.phoneNumber,
+        callerid: request.extension || '100'
       };
+
+      logStep("Call payload", callPayload);
 
       const response = await fetch(endpoint.toString(), {
         method: 'POST',
         headers: {
           'Authorization': `Basic ${auth}`,
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'User-Agent': 'Helpdesk-Auto-Dialer/1.0'
         },
         body: JSON.stringify(callPayload)
       });
@@ -126,17 +130,19 @@ serve(async (req) => {
           logStep(`Dialing ${i + 1}/${request.phoneNumbers.length}`, { number: phoneNumber });
 
           const callPayload = {
-            caller: extension,
-            callee: phoneNumber,
-            timeout: 30
+            destination: phoneNumber,
+            callerid: extension
           };
+
+          logStep(`Call ${i + 1} payload`, callPayload);
 
           const response = await fetch(endpoint.toString(), {
             method: 'POST',
             headers: {
               'Authorization': `Basic ${auth}`,
               'Content-Type': 'application/json',
-              'Accept': 'application/json'
+              'Accept': 'application/json',
+              'User-Agent': 'Helpdesk-Auto-Dialer/1.0'
             },
             body: JSON.stringify(callPayload)
           });
