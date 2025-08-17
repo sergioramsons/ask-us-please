@@ -37,35 +37,43 @@ const Index = () => {
     try {
       const { data, error } = await supabase
         .from('tickets')
-        .select('*')
+        .select(`
+          *,
+          contacts(first_name, last_name, email, phone, company)
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       // Transform database tickets to match the UI format
-      const transformedTickets: Ticket[] = (data || []).map(ticket => ({
-        id: ticket.id,
-        title: ticket.subject,
-        description: ticket.description || '',
-        status: ticket.status as any,
-        priority: ticket.priority as any,
-        severity: 'minor' as any,
-        category: 'general',
-        source: 'portal' as any,
-        customer: {
-          name: 'Customer',
-          email: '',
-        },
-        createdAt: new Date(ticket.created_at),
-        updatedAt: new Date(ticket.updated_at),
-        tags: [],
-        watchers: [],
-        attachments: [],
-        comments: [],
-        slaBreached: false,
-        escalationLevel: 0,
-        customFields: {},
-      }));
+      const transformedTickets: Ticket[] = (data || []).map(ticket => {
+        const contact = ticket.contacts as any;
+        return {
+          id: ticket.id,
+          title: ticket.subject,
+          description: ticket.description || '',
+          status: ticket.status as any,
+          priority: ticket.priority as any,
+          severity: 'minor' as any,
+          category: 'general',
+          source: 'portal' as any,
+          customer: {
+            name: contact ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim() : 'Customer',
+            email: contact?.email || '',
+            phone: contact?.phone || '',
+            company: contact?.company || '',
+          },
+          createdAt: new Date(ticket.created_at),
+          updatedAt: new Date(ticket.updated_at),
+          tags: [],
+          watchers: [],
+          attachments: [],
+          comments: [],
+          slaBreached: false,
+          escalationLevel: 0,
+          customFields: {},
+        };
+      });
 
       setTickets(transformedTickets);
     } catch (error: any) {
