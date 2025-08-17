@@ -206,6 +206,77 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (!res.ok || (result && result.success === false)) {
         console.error('SMTP send error detail:', { status: res.status, result });
+        // Fallback to Resend if SMTP fails
+        const apiKey = Deno.env.get('RESEND_API_KEY');
+        if (apiKey) {
+          try {
+            console.log('SMTP failed; falling back to Resend');
+            const resend = new Resend(apiKey);
+            const template = getEmailTemplate(notification);
+            const fromEmail = "BS-HelpDesk <onboarding@resend.dev>";
+
+            const emailResponse = await resend.emails.send({
+              from: fromEmail,
+              to: [notification.recipientEmail],
+              subject: template.subject,
+              html: template.html,
+            });
+
+            if (emailResponse.error) {
+              console.error('Resend fallback send error:', emailResponse.error);
+              return new Response(
+                JSON.stringify({
+                  success: false,
+                  message: 'SMTP failed and Resend fallback also failed',
+                  smtp_status: res.status,
+                  smtp_error: result?.error || 'Unknown SMTP error',
+                  resend_error: emailResponse.error,
+                }),
+                { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+              );
+            }
+
+            // Best-effort audit log
+            try {
+              await supabase.from('email_server_audit').insert({
+                action: 'NOTIFICATION_SENT_FALLBACK',
+                details: {
+                  type: notification.type,
+                  ticket_id: notification.ticketId,
+                  recipient: notification.recipientEmail,
+                  email_id: emailResponse.data?.id,
+                  provider: 'resend'
+                }
+              });
+            } catch (logError) {
+              console.warn('Failed to log fallback notification:', logError);
+            }
+
+            return new Response(
+              JSON.stringify({
+                success: true,
+                message: 'Notification sent via Resend fallback',
+                provider: 'resend',
+                messageId: emailResponse.data?.id,
+              }),
+              { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+            );
+          } catch (fallbackErr) {
+            console.error('Unexpected Resend fallback error:', fallbackErr);
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message: 'SMTP failed and Resend fallback hit an unexpected error',
+                smtp_status: res.status,
+                smtp_error: result?.error || 'Unknown SMTP error',
+                fallback_error: (fallbackErr as any)?.message || String(fallbackErr),
+              }),
+              { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+            );
+          }
+        }
+
+        // No Resend configured, return SMTP failure details
         return new Response(
           JSON.stringify({
             success: false,
