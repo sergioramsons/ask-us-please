@@ -118,20 +118,24 @@ const handler = async (req: Request): Promise<Response> => {
       use_tls: server.use_tls,
     });
 
-    // Decrypt password via DB function
+    // Simple password decryption handling
     let password = server.password as string;
-    try {
-      const { data: decrypted, error: rpcError } = await supabase.rpc('decrypt_server_password', {
-        encrypted_password: password,
-      });
-      if (rpcError) throw rpcError;
-      if (typeof decrypted === 'string' && decrypted.length > 0) {
-        password = decrypted;
-        console.log('Password decrypted via DB RPC');
+    
+    // Check if password is encrypted and decrypt it
+    if (password && password.startsWith('enc:')) {
+      try {
+        // Remove 'enc:' prefix and decode base64
+        const encoded = password.substring(4);
+        const decoded = atob(encoded);
+        password = decoded;
+        console.log('Password decrypted successfully');
+      } catch (e) {
+        console.error('Password decryption failed:', e);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Password decryption failed' }),
+          { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
       }
-    } catch (e) {
-      console.error('Password decryption failed:', e);
-      // Continue with original value (may already be plain)
     }
 
     // Determine TLS usage
