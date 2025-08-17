@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Download, Copy, FileText, Phone, Radio } from 'lucide-react';
 import ThreeCXCallLogs from './ThreeCXCallLogs';
-import ThreeCXAutoDialer from './ThreeCXAutoDialer';
+import AutoDialerCampaigns from './AutoDialerCampaigns';
 
 const ThreeCXIntegration = () => {
   const [copied, setCopied] = useState(false);
@@ -138,7 +138,7 @@ const ThreeCXIntegration = () => {
         </TabsContent>
 
         <TabsContent value="auto-dialer" className="mt-6">
-          <ThreeCXAutoDialer />
+          <AutoDialerCampaigns />
         </TabsContent>
       </Tabs>
     </div>

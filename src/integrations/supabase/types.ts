@@ -124,6 +124,116 @@ export type Database = {
           },
         ]
       }
+      auto_dialer_campaigns: {
+        Row: {
+          agent_extension: string
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          current_index: number
+          delay_seconds: number
+          failed_calls: number
+          id: string
+          name: string
+          organization_id: string
+          phone_numbers: string[]
+          started_at: string | null
+          status: string
+          successful_calls: number
+          total_calls: number
+          updated_at: string
+        }
+        Insert: {
+          agent_extension: string
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          current_index?: number
+          delay_seconds?: number
+          failed_calls?: number
+          id?: string
+          name: string
+          organization_id: string
+          phone_numbers: string[]
+          started_at?: string | null
+          status?: string
+          successful_calls?: number
+          total_calls?: number
+          updated_at?: string
+        }
+        Update: {
+          agent_extension?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          current_index?: number
+          delay_seconds?: number
+          failed_calls?: number
+          id?: string
+          name?: string
+          organization_id?: string
+          phone_numbers?: string[]
+          started_at?: string | null
+          status?: string
+          successful_calls?: number
+          total_calls?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      auto_dialer_results: {
+        Row: {
+          agent_extension: string | null
+          call_duration: number | null
+          call_id: string | null
+          campaign_id: string
+          connected_at: string | null
+          created_at: string
+          dialed_at: string
+          disconnected_at: string | null
+          error_message: string | null
+          id: string
+          phone_number: string
+          status: string
+        }
+        Insert: {
+          agent_extension?: string | null
+          call_duration?: number | null
+          call_id?: string | null
+          campaign_id: string
+          connected_at?: string | null
+          created_at?: string
+          dialed_at?: string
+          disconnected_at?: string | null
+          error_message?: string | null
+          id?: string
+          phone_number: string
+          status: string
+        }
+        Update: {
+          agent_extension?: string | null
+          call_duration?: number | null
+          call_id?: string | null
+          campaign_id?: string
+          connected_at?: string | null
+          created_at?: string
+          dialed_at?: string
+          disconnected_at?: string | null
+          error_message?: string | null
+          id?: string
+          phone_number?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auto_dialer_results_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "auto_dialer_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contacts: {
         Row: {
           address: string | null
