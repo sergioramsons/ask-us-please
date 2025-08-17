@@ -115,7 +115,22 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
         </TabsContent>
         
         <TabsContent value="email" className="space-y-4">
-          <EmailManager />
+          <Tabs defaultValue="outgoing" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="outgoing">Outgoing Mail</TabsTrigger>
+              <TabsTrigger value="incoming-servers">Incoming Servers</TabsTrigger>
+              <TabsTrigger value="incoming-emails">Incoming Emails</TabsTrigger>
+            </TabsList>
+            <TabsContent value="outgoing">
+              <EmailManager />
+            </TabsContent>
+            <TabsContent value="incoming-servers">
+              <IncomingMailServerConfig />
+            </TabsContent>
+            <TabsContent value="incoming-emails">
+              <IncomingEmailManager />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
         
         <TabsContent value="users" className="space-y-4">
