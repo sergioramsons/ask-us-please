@@ -33,6 +33,7 @@ const Index = () => {
   const [callerInfo, setCallerInfo] = useState<{phone: string; name: string; email?: string} | null>(null);
   const [ticketsLoading, setTicketsLoading] = useState(true);
   const [deletingTicket, setDeletingTicket] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<TicketStatus | 'all'>('all');
 
   // Load tickets from database
   const loadTickets = async () => {
@@ -521,26 +522,70 @@ const Index = () => {
             
             {/* Ticket Stats */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              <div className="bg-card p-4 rounded-lg border">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setStatusFilter('all')}
+                onKeyDown={(e) => e.key === 'Enter' && setStatusFilter('all')}
+                className={`bg-card p-4 rounded-lg border cursor-pointer transition-colors ${statusFilter === 'all' ? 'border-primary ring-2 ring-primary/30' : 'hover:bg-muted/50'}`}
+              >
                 <div className="text-2xl font-bold text-primary">{stats.total}</div>
                 <div className="text-sm text-muted-foreground">Total Tickets</div>
               </div>
-              <div className="bg-card p-4 rounded-lg border">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setStatusFilter('open')}
+                onKeyDown={(e) => e.key === 'Enter' && setStatusFilter('open')}
+                className={`bg-card p-4 rounded-lg border cursor-pointer transition-colors ${statusFilter === 'open' ? 'border-primary ring-2 ring-primary/30' : 'hover:bg-muted/50'}`}
+              >
                 <div className="text-2xl font-bold text-red-600">{stats.open}</div>
                 <div className="text-sm text-muted-foreground">Open</div>
               </div>
-              <div className="bg-card p-4 rounded-lg border">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setStatusFilter('in-progress')}
+                onKeyDown={(e) => e.key === 'Enter' && setStatusFilter('in-progress')}
+                className={`bg-card p-4 rounded-lg border cursor-pointer transition-colors ${statusFilter === 'in-progress' ? 'border-primary ring-2 ring-primary/30' : 'hover:bg-muted/50'}`}
+              >
                 <div className="text-2xl font-bold text-orange-600">{stats.inProgress}</div>
                 <div className="text-sm text-muted-foreground">In Progress</div>
               </div>
-              <div className="bg-card p-4 rounded-lg border">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setStatusFilter('resolved')}
+                onKeyDown={(e) => e.key === 'Enter' && setStatusFilter('resolved')}
+                className={`bg-card p-4 rounded-lg border cursor-pointer transition-colors ${statusFilter === 'resolved' ? 'border-primary ring-2 ring-primary/30' : 'hover:bg-muted/50'}`}
+              >
                 <div className="text-2xl font-bold text-green-600">{stats.resolved}</div>
                 <div className="text-sm text-muted-foreground">Resolved</div>
               </div>
-              <div className="bg-card p-4 rounded-lg border">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setStatusFilter('closed')}
+                onKeyDown={(e) => e.key === 'Enter' && setStatusFilter('closed')}
+                className={`bg-card p-4 rounded-lg border cursor-pointer transition-colors ${statusFilter === 'closed' ? 'border-primary ring-2 ring-primary/30' : 'hover:bg-muted/50'}`}
+              >
                 <div className="text-2xl font-bold text-gray-600">{stats.closed}</div>
                 <div className="text-sm text-muted-foreground">Closed</div>
               </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Showing {statusFilter === 'all' ? tickets.length : tickets.filter(t => t.status === statusFilter).length} of {tickets.length}
+                {statusFilter !== 'all' && (
+                  <span> • Filter: <span className="font-medium capitalize">{String(statusFilter).replace('-', ' ')}</span></span>
+                )}
+              </div>
+              {statusFilter !== 'all' && (
+                <Button variant="outline" size="sm" onClick={() => setStatusFilter('all')}>
+                  Clear filter
+                </Button>
+              )}
             </div>
 
             {/* Import existing ticket list component */}
@@ -562,7 +607,7 @@ const Index = () => {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {tickets.map((ticket) => (
+                      {(statusFilter === 'all' ? tickets : tickets.filter(t => t.status === statusFilter)).map((ticket) => (
                          <div 
                            key={ticket.id}
                            className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
