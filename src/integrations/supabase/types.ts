@@ -990,6 +990,10 @@ export type Database = {
         Args: { encrypted_password: string }
         Returns: string
       }
+      delete_ticket: {
+        Args: { ticket_id: string }
+        Returns: boolean
+      }
       encrypt_server_password: {
         Args: { plain_password: string }
         Returns: string

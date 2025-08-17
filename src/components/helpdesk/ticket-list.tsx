@@ -25,21 +25,11 @@ export function TicketList({ tickets, onViewTicket, onTicketDeleted }: TicketLis
   const handleDeleteTicket = async (ticketId: string) => {
     setDeletingTicket(ticketId);
     try {
-      // First delete all comments for this ticket
-      const { error: commentsError } = await supabase
-        .from('ticket_comments')
-        .delete()
-        .eq('ticket_id', ticketId);
+      // Use the secure delete function instead of direct SQL
+      const { error } = await supabase
+        .rpc('delete_ticket', { ticket_id: ticketId });
 
-      if (commentsError) throw commentsError;
-
-      // Then delete the ticket
-      const { error: ticketError } = await supabase
-        .from('tickets')
-        .delete()
-        .eq('id', ticketId);
-
-      if (ticketError) throw ticketError;
+      if (error) throw error;
 
       toast({
         title: "Success",
