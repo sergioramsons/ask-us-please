@@ -7,8 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { OrganizationDeletion } from './OrganizationDeletion';
 import { toast } from 'sonner';
 import { Plus, Building2, Users, Settings, Edit, Save, X, Globe, Shield } from 'lucide-react';
 
@@ -390,84 +392,212 @@ const OrganizationManager: React.FC = () => {
           <h2 className="text-2xl font-bold">Organization Management</h2>
           <p className="text-muted-foreground">Manage client organizations and their settings</p>
         </div>
-        
-        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Organization
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Create New Organization</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleCreateOrganization} className="space-y-4">
-              <div>
-                <Label htmlFor="name">Organization Name</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => handleNameChange(e.target.value)}
-                  placeholder="Acme Corporation"
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="slug">Slug</Label>
-                <Input
-                  id="slug"
-                  value={formData.slug}
-                  onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
-                  placeholder="acme-corporation"
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="domain">Domain (optional)</Label>
-                <Input
-                  id="domain"
-                  value={formData.domain}
-                  onChange={(e) => setFormData(prev => ({ ...prev, domain: e.target.value }))}
-                  placeholder="acme.com"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="max_users">Max Users</Label>
-                <Input
-                  id="max_users"
-                  type="number"
-                  value={formData.max_users}
-                  onChange={(e) => setFormData(prev => ({ ...prev, max_users: parseInt(e.target.value) }))}
-                  min="1"
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="max_tickets">Max Tickets (optional)</Label>
-                <Input
-                  id="max_tickets"
-                  type="number"
-                  value={formData.max_tickets}
-                  onChange={(e) => setFormData(prev => ({ ...prev, max_tickets: e.target.value }))}
-                  placeholder="Leave empty for unlimited"
-                />
-              </div>
-              
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">Create Organization</Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
       </div>
+
+      <Tabs defaultValue="management" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="management">Management</TabsTrigger>
+          <TabsTrigger value="deletion">Deletion</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="management" className="space-y-6">
+          <div className="flex justify-end">
+            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Organization
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Create New Organization</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleCreateOrganization} className="space-y-4">
+                  <div>
+                    <Label htmlFor="name">Organization Name</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => handleNameChange(e.target.value)}
+                      placeholder="Acme Corporation"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="slug">Slug</Label>
+                    <Input
+                      id="slug"
+                      value={formData.slug}
+                      onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
+                      placeholder="acme-corporation"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="domain">Domain (optional)</Label>
+                    <Input
+                      id="domain"
+                      value={formData.domain}
+                      onChange={(e) => setFormData(prev => ({ ...prev, domain: e.target.value }))}
+                      placeholder="acme.com"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="max_users">Max Users</Label>
+                    <Input
+                      id="max_users"
+                      type="number"
+                      value={formData.max_users}
+                      onChange={(e) => setFormData(prev => ({ ...prev, max_users: parseInt(e.target.value) }))}
+                      min="1"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="max_tickets">Max Tickets (optional)</Label>
+                    <Input
+                      id="max_tickets"
+                      type="number"
+                      value={formData.max_tickets}
+                      onChange={(e) => setFormData(prev => ({ ...prev, max_tickets: e.target.value }))}
+                      placeholder="Leave empty for unlimited"
+                    />
+                  </div>
+                  
+                  <div className="flex justify-end space-x-2 pt-4">
+                    <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit">Create Organization</Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <div className="grid gap-4">
+            {organizations.map((org) => (
+              <Card key={org.id}>
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Building2 className="w-5 h-5" />
+                        {org.name}
+                      </CardTitle>
+                      <CardDescription>
+                        Slug: {org.slug} {org.domain && `• Domain: ${org.domain}`}
+                      </CardDescription>
+                    </div>
+                    <Badge variant={
+                      org.subscription_status === 'active' ? 'default' :
+                      org.subscription_status === 'suspended' ? 'secondary' : 'destructive'
+                    }>
+                      {org.subscription_status}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm">Max Users: {org.max_users}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Settings className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm">
+                        Max Tickets: {org.max_tickets || 'Unlimited'}
+                      </span>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Created: {new Date(org.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  
+                  {/* Domains Section */}
+                  {organizationDomains[org.id] && organizationDomains[org.id].length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                        <Globe className="w-4 h-4" />
+                        Domains
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {organizationDomains[org.id].map((domain) => (
+                          <Badge
+                            key={domain.id}
+                            variant={domain.is_primary ? "default" : "secondary"}
+                            className="flex items-center gap-2"
+                          >
+                            <span>{domain.domain}</span>
+                            {domain.is_primary && <Shield className="w-3 h-3" />}
+                            {domain.is_verified && <span className="text-green-500">✓</span>}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-2">
+                    <Select
+                      value={org.subscription_status}
+                      onValueChange={(value: 'active' | 'suspended' | 'cancelled') => 
+                        updateOrganizationStatus(org.id, value)
+                      }
+                    >
+                      <SelectTrigger className="w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="suspended">Suspended</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditOrganization(org)}
+                      className="flex items-center gap-2"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleManageDomains(org)}
+                      className="flex items-center gap-2"
+                    >
+                      <Globe className="w-4 h-4" />
+                      Domains
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            
+            {organizations.length === 0 && (
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <Building2 className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-muted-foreground">No organizations created yet</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="deletion" className="space-y-6">
+          <OrganizationDeletion />
+        </TabsContent>
+      </Tabs>
 
       {/* Edit Organization Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
@@ -543,119 +673,6 @@ const OrganizationManager: React.FC = () => {
           </form>
         </DialogContent>
       </Dialog>
-
-      <div className="grid gap-4">
-        {organizations.map((org) => (
-          <Card key={org.id}>
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building2 className="w-5 h-5" />
-                    {org.name}
-                  </CardTitle>
-                  <CardDescription>
-                    Slug: {org.slug} {org.domain && `• Domain: ${org.domain}`}
-                  </CardDescription>
-                </div>
-                <Badge variant={
-                  org.subscription_status === 'active' ? 'default' :
-                  org.subscription_status === 'suspended' ? 'secondary' : 'destructive'
-                }>
-                  {org.subscription_status}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">Max Users: {org.max_users}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Settings className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">
-                    Max Tickets: {org.max_tickets || 'Unlimited'}
-                  </span>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Created: {new Date(org.created_at).toLocaleDateString()}
-                </div>
-              </div>
-              
-              {/* Domains Section */}
-              {organizationDomains[org.id] && organizationDomains[org.id].length > 0 && (
-                <div className="mb-4">
-                  <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-                    <Globe className="w-4 h-4" />
-                    Domains
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {organizationDomains[org.id].map((domain) => (
-                      <Badge
-                        key={domain.id}
-                        variant={domain.is_primary ? "default" : "secondary"}
-                        className="flex items-center gap-2"
-                      >
-                        <span>{domain.domain}</span>
-                        {domain.is_primary && <Shield className="w-3 h-3" />}
-                        {domain.is_verified && <span className="text-green-500">✓</span>}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              <div className="flex gap-2">
-                <Select
-                  value={org.subscription_status}
-                  onValueChange={(value: 'active' | 'suspended' | 'cancelled') => 
-                    updateOrganizationStatus(org.id, value)
-                  }
-                >
-                  <SelectTrigger className="w-40">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="suspended">Suspended</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleEditOrganization(org)}
-                  className="flex items-center gap-2"
-                >
-                  <Edit className="w-4 h-4" />
-                  Edit
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleManageDomains(org)}
-                  className="flex items-center gap-2"
-                >
-                  <Globe className="w-4 h-4" />
-                  Domains
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        
-        {organizations.length === 0 && (
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <Building2 className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">No organizations created yet</p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
 
       {/* Domain Management Dialog */}
       <Dialog open={showDomainDialog} onOpenChange={setShowDomainDialog}>
