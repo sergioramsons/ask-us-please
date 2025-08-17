@@ -49,14 +49,35 @@ serve(async (req) => {
       );
     }
 
-    // Check if user has admin role
-    const { data: roles, error: roleError } = await supabaseClient
-      .from('user_roles')
+    // Check if user has admin privileges (super_admin or org/admin roles)
+    let isAuthorized = false;
+
+    // 1) Super admin via organization_admins
+    const { data: superAdminRow, error: superAdminError } = await supabaseClient
+      .from('organization_admins')
       .select('role')
       .eq('user_id', user.id)
-      .in('role', ['admin', 'account_admin']);
+      .eq('role', 'super_admin')
+      .maybeSingle();
 
-    if (roleError || !roles || roles.length === 0) {
+    if (superAdminRow?.role === 'super_admin') {
+      isAuthorized = true;
+    }
+
+    // 2) Org-level admin roles
+    if (!isAuthorized) {
+      const { data: roles, error: roleError } = await supabaseClient
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .in('role', ['admin', 'account_admin']);
+
+      if (!roleError && roles && roles.length > 0) {
+        isAuthorized = true;
+      }
+    }
+
+    if (!isAuthorized) {
       return new Response(
         JSON.stringify({ error: 'Insufficient permissions' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
