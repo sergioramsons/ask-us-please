@@ -446,6 +446,7 @@ export type Database = {
           organization_id: string | null
           password: string
           password_encrypted: boolean
+          password_status: string | null
           port: number
           server_type: string
           updated_at: string
@@ -469,6 +470,7 @@ export type Database = {
           organization_id?: string | null
           password: string
           password_encrypted?: boolean
+          password_status?: string | null
           port?: number
           server_type: string
           updated_at?: string
@@ -492,6 +494,7 @@ export type Database = {
           organization_id?: string | null
           password?: string
           password_encrypted?: boolean
+          password_status?: string | null
           port?: number
           server_type?: string
           updated_at?: string
