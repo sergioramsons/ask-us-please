@@ -148,17 +148,40 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Using email server:', emailServer.name);
 
-    // Decrypt password if encrypted
-    let smtpPassword = emailServer.smtp_password;
-    if (emailServer.password_encrypted) {
+    // Decrypt password if encrypted with multiple fallbacks
+    let smtpPassword = emailServer.smtp_password as string;
+    if (emailServer.password_encrypted && typeof smtpPassword === 'string') {
       try {
-        smtpPassword = await decryptPasswordFlexible(emailServer.smtp_password);
-        console.log('SMTP password decrypted successfully');
-      } catch (e) {
-        console.error('SMTP password decryption failed:', e);
-        throw new Error('Failed to decrypt email server password');
+        smtpPassword = await decryptPasswordFlexible(smtpPassword);
+        console.log('SMTP password decrypted successfully (AES-GCM)');
+      } catch (e1) {
+        console.warn('AES-GCM decryption failed, trying DB RPC fallback...', e1?.message);
+        try {
+          const { data: plain, error: rpcError } = await supabase.rpc('decrypt_server_password', {
+            encrypted_password: emailServer.smtp_password as string,
+          });
+          if (rpcError) throw rpcError;
+          if (plain) {
+            smtpPassword = plain as string;
+            console.log('SMTP password decrypted via DB RPC');
+          } else {
+            throw new Error('DB RPC returned empty password');
+          }
+        } catch (e2) {
+          console.warn('DB RPC decryption failed, trying simple base64 fallback...', e2?.message);
+          try {
+            const clean = (emailServer.smtp_password as string).startsWith('enc:')
+              ? (emailServer.smtp_password as string).slice(4)
+              : (emailServer.smtp_password as string);
+            smtpPassword = new TextDecoder().decode(Uint8Array.from(atob(clean), c => c.charCodeAt(0)));
+            console.log('SMTP password decoded via base64 fallback');
+          } catch (e3) {
+            console.error('All decryption strategies failed');
+            throw new Error('Failed to decrypt email server password');
+          }
+        }
       }
-    } else {
+    } else if (!emailServer.password_encrypted) {
       console.warn('WARNING: Email server password is not encrypted');
     }
 
@@ -235,13 +258,20 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     // Send email using SMTP
+    const smtpHost = String(emailServer.smtp_host || '').trim();
+    const smtpPort = Number(emailServer.smtp_port) || 587;
+    const smtpUsername = String(emailServer.smtp_username || '').trim();
+    const senderEmail = String(emailServer.sender_email || '').trim();
+    const senderName = String(emailServer.sender_name || 'Support Team').trim();
+    const replyTo = String(emailServer.reply_to || senderEmail).trim();
+
     const client = new SMTPClient({
       connection: {
-        hostname: emailServer.smtp_host,
-        port: emailServer.smtp_port,
-        tls: emailServer.use_tls,
+        hostname: smtpHost,
+        port: smtpPort,
+        tls: Boolean(emailServer.use_tls),
         auth: {
-          username: emailServer.smtp_username,
+          username: smtpUsername,
           password: smtpPassword,
         },
       },
