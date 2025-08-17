@@ -177,7 +177,7 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
         </Button>
         <div>
           <h1 className="text-2xl font-bold">{ticket.title}</h1>
-          <p className="text-muted-foreground">Ticket #{ticket.id}</p>
+          <p className="text-muted-foreground">Ticket #{ticket.ticketNumber || ticket.id.slice(0, 8)}</p>
         </div>
       </div>
 

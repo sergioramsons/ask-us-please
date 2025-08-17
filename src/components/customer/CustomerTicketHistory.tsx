@@ -171,7 +171,7 @@ export function CustomerTicketHistory() {
                   {selectedTicket.title}
                 </CardTitle>
                 <CardDescription>
-                  Ticket #{selectedTicket.id} • Created {format(selectedTicket.createdAt, 'PPP')}
+                  Ticket #{selectedTicket.ticketNumber || selectedTicket.id.slice(0, 8)} • Created {format(selectedTicket.createdAt, 'PPP')}
                 </CardDescription>
               </div>
               <Badge className={getStatusColor(selectedTicket.status)}>
