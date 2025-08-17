@@ -54,29 +54,66 @@ for (const email of pendingEmails) {
                         subject.includes('vacation');
 
     if (!isAutoReply) {
-      const ticket = await createTicketFromEmail(email);
-      if (ticket) {
-        console.log('Created ticket:', ticket.ticket_number, 'for email:', email.id);
-        // Update email record with ticket reference
-        const { error: updateErr } = await supabase
-          .from('incoming_emails')
-          .update({ 
-            ticket_id: ticket.id,
-            processed: true 
-          })
-          .eq('id', email.id);
-        if (updateErr) throw updateErr;
-        createdTickets++;
-        markedProcessed++;
+      // Check if this is a reply to an existing ticket
+      const ticketNumberMatch = email.subject.match(/\[?ticket\s*#?([A-Z]{2}\d{5})\]?/i) || 
+                                email.subject.match(/\[?#?([A-Z]{2}\d{5})\]?/i);
+      
+      if (ticketNumberMatch) {
+        // This is a reply to an existing ticket
+        const ticketNumber = ticketNumberMatch[1];
+        const handled = await handleTicketReply(email, ticketNumber);
+        if (handled) {
+          markedProcessed++;
+          console.log('Added reply to existing ticket:', ticketNumber, 'for email:', email.id);
+        } else {
+          // Failed to handle as reply, create new ticket
+          const ticket = await createTicketFromEmail(email);
+          if (ticket) {
+            console.log('Created new ticket:', ticket.ticket_number, 'for email:', email.id);
+            const { error: updateErr } = await supabase
+              .from('incoming_emails')
+              .update({ 
+                ticket_id: ticket.id,
+                processed: true 
+              })
+              .eq('id', email.id);
+            if (updateErr) throw updateErr;
+            createdTickets++;
+            markedProcessed++;
+          } else {
+            const { error: markErr } = await supabase
+              .from('incoming_emails')
+              .update({ processed: true })
+              .eq('id', email.id);
+            if (markErr) throw markErr;
+            markedProcessed++;
+            errors.push(`Email ${email.id}: Ticket creation returned no result`);
+          }
+        }
       } else {
-        // Ticket creation failed silently; still mark as processed to avoid re-processing loop
-        const { error: markErr } = await supabase
-          .from('incoming_emails')
-          .update({ processed: true })
-          .eq('id', email.id);
-        if (markErr) throw markErr;
-        markedProcessed++;
-        errors.push(`Email ${email.id}: Ticket creation returned no result`);
+        // New ticket
+        const ticket = await createTicketFromEmail(email);
+        if (ticket) {
+          console.log('Created ticket:', ticket.ticket_number, 'for email:', email.id);
+          const { error: updateErr } = await supabase
+            .from('incoming_emails')
+            .update({ 
+              ticket_id: ticket.id,
+              processed: true 
+            })
+            .eq('id', email.id);
+          if (updateErr) throw updateErr;
+          createdTickets++;
+          markedProcessed++;
+        } else {
+          const { error: markErr } = await supabase
+            .from('incoming_emails')
+            .update({ processed: true })
+            .eq('id', email.id);
+          if (markErr) throw markErr;
+          markedProcessed++;
+          errors.push(`Email ${email.id}: Ticket creation returned no result`);
+        }
       }
     } else {
       // Mark auto-reply emails as processed without creating tickets
@@ -118,6 +155,92 @@ return new Response(
     );
   }
 };
+
+async function handleTicketReply(emailRecord: any, ticketNumber: string) {
+  try {
+    // Find the existing ticket
+    const { data: existingTicket } = await supabase
+      .from('tickets')
+      .select('id, contact_id')
+      .eq('ticket_number', ticketNumber)
+      .maybeSingle();
+
+    if (!existingTicket) {
+      console.log(`Ticket ${ticketNumber} not found for reply`);
+      return false;
+    }
+
+    // Check if contact exists for the sender
+    let contactId = null;
+    const { data: existingContact } = await supabase
+      .from('contacts')
+      .select('id')
+      .eq('email', emailRecord.sender_email)
+      .maybeSingle();
+
+    if (existingContact) {
+      contactId = existingContact.id;
+    } else {
+      // Create new contact
+      const { data: newContact, error: contactError } = await supabase
+        .from('contacts')
+        .insert({
+          email: emailRecord.sender_email,
+          first_name: emailRecord.sender_name?.split(' ')[0] || 'Unknown',
+          last_name: emailRecord.sender_name?.split(' ').slice(1).join(' ') || 'User',
+        })
+        .select()
+        .single();
+
+      if (!contactError && newContact) {
+        contactId = newContact.id;
+      }
+    }
+
+    // Add comment to existing ticket
+    const { error: commentError } = await supabase
+      .from('ticket_comments')
+      .insert({
+        ticket_id: existingTicket.id,
+        content: emailRecord.body_text || emailRecord.body_html || 'Email content not available',
+        email_id: emailRecord.id,
+        is_internal: false,
+      });
+
+    if (commentError) {
+      console.error('Error adding comment to ticket:', commentError);
+      return false;
+    }
+
+    // Update the ticket's last activity
+    await supabase
+      .from('tickets')
+      .update({ 
+        last_activity_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existingTicket.id);
+
+    // Mark email as processed and linked to ticket
+    const { error: updateError } = await supabase
+      .from('incoming_emails')
+      .update({ 
+        ticket_id: existingTicket.id,
+        processed: true 
+      })
+      .eq('id', emailRecord.id);
+
+    if (updateError) {
+      console.error('Error updating email record:', updateError);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in handleTicketReply:', error);
+    return false;
+  }
+}
 
 async function createTicketFromEmail(emailRecord: any) {
   try {
