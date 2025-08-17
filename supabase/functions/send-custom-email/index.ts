@@ -16,6 +16,7 @@ interface CustomEmailRequest {
   subject: string;
   message: string;
   agentName: string;
+  agentSignature?: string;
   ticketStatus: string;
   priority: string;
   isResolution?: boolean;
@@ -100,6 +101,7 @@ const handler = async (req: Request): Promise<Response> => {
       subject,
       message,
       agentName,
+      agentSignature,
       ticketStatus,
       priority,
       isResolution = false,
@@ -194,6 +196,7 @@ const handler = async (req: Request): Promise<Response> => {
         ticketStatus,
         ticketPriority: priority,
         agentName,
+        agentSignature,
         message,
         isResolution,
       })

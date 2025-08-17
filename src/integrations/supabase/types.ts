@@ -539,6 +539,7 @@ export type Database = {
           id: string
           organization_id: string | null
           role: string | null
+          signature: string | null
           updated_at: string
           user_id: string
         }
@@ -550,6 +551,7 @@ export type Database = {
           id?: string
           organization_id?: string | null
           role?: string | null
+          signature?: string | null
           updated_at?: string
           user_id: string
         }
@@ -561,6 +563,7 @@ export type Database = {
           id?: string
           organization_id?: string | null
           role?: string | null
+          signature?: string | null
           updated_at?: string
           user_id?: string
         }

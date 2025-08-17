@@ -19,6 +19,7 @@ interface TicketEmailProps {
   ticketStatus: string
   ticketPriority: string
   agentName: string
+  agentSignature?: string
   message: string
   isResolution?: boolean
 }
@@ -30,6 +31,7 @@ export const TicketEmail = ({
   ticketStatus,
   ticketPriority,
   agentName,
+  agentSignature,
   message,
   isResolution = false,
 }: TicketEmailProps) => (
@@ -73,7 +75,13 @@ export const TicketEmail = ({
         <Text style={footer}>
           Thank you for choosing our service!<br />
           Best regards,<br />
-          <strong>Support Team</strong>
+          <strong>{agentName}</strong>
+          {agentSignature && (
+            <>
+              <br /><br />
+              <Text style={signature}>{agentSignature}</Text>
+            </>
+          )}
         </Text>
 
         <Text style={disclaimer}>
@@ -201,4 +209,12 @@ const disclaimer = {
   lineHeight: '1.4',
   margin: '20px',
   textAlign: 'center' as const,
+}
+
+const signature = {
+  color: '#6b7280',
+  fontSize: '13px',
+  lineHeight: '1.4',
+  whiteSpace: 'pre-wrap' as const,
+  fontStyle: 'italic',
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -34,7 +34,32 @@ export function TicketResponseForm({
   const [response, setResponse] = useState('');
   const [isInternal, setIsInternal] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [userSignature, setUserSignature] = useState('');
   const { toast } = useToast();
+
+  // Load user signature
+  useEffect(() => {
+    const loadUserSignature = async () => {
+      try {
+        const { data: user } = await supabase.auth.getUser();
+        if (user?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('signature')
+            .eq('user_id', user.user.id)
+            .single();
+          
+          if (profile?.signature) {
+            setUserSignature(profile.signature);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user signature:', error);
+      }
+    };
+    
+    loadUserSignature();
+  }, []);
 
   const handleCannedResponseSelect = (cannedResponse: CannedResponse) => {
     // If there's existing content, add the canned response with some spacing
@@ -113,7 +138,8 @@ export function TicketResponseForm({
                 customerEmail,
                 subject: ticketSubject,
                 message: response,
-                agentName: 'Support Agent', // This would come from auth context in real app
+                agentName: 'Support Agent',
+                agentSignature: userSignature,
                 ticketStatus,
                 priority,
                 isResolution: ticketStatus === 'resolved',
@@ -129,7 +155,8 @@ export function TicketResponseForm({
                 customerEmail,
                 subject: ticketSubject,
                 message: response,
-                agentName: 'Support Agent', // This would come from auth context in real app
+                agentName: 'Support Agent',
+                agentSignature: userSignature,
                 ticketStatus,
                 priority,
                 isResolution: ticketStatus === 'resolved'

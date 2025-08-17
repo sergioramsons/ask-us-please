@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -44,7 +45,8 @@ export function UserProfileManager() {
   const [formData, setFormData] = useState({
     display_name: "",
     department_id: "",
-    avatar_url: ""
+    avatar_url: "",
+    signature: ""
   });
 
   useEffect(() => {
@@ -72,7 +74,8 @@ export function UserProfileManager() {
         setFormData({
           display_name: data.display_name || "",
           department_id: data.department_id || "",
-          avatar_url: data.avatar_url || ""
+          avatar_url: data.avatar_url || "",
+          signature: data.signature || ""
         });
       } else {
         // Create profile if it doesn't exist
@@ -92,7 +95,8 @@ export function UserProfileManager() {
         setFormData({
           display_name: newProfile.display_name || "",
           department_id: newProfile.department_id || "",
-          avatar_url: newProfile.avatar_url || ""
+          avatar_url: newProfile.avatar_url || "",
+          signature: newProfile.signature || ""
         });
       }
     } catch (error: any) {
@@ -147,6 +151,7 @@ export function UserProfileManager() {
           display_name: formData.display_name,
           department_id: formData.department_id || null,
           avatar_url: formData.avatar_url || null,
+          signature: formData.signature || null,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id);
@@ -284,6 +289,20 @@ export function UserProfileManager() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="signature">Email Signature</Label>
+                <Textarea
+                  id="signature"
+                  value={formData.signature}
+                  onChange={(e) => setFormData(prev => ({ ...prev, signature: e.target.value }))}
+                  placeholder="Enter your email signature..."
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground">
+                  This signature will be added to all your email responses.
+                </p>
               </div>
             </div>
 
