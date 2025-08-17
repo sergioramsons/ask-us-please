@@ -21,7 +21,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { serverId } = await req.json();
+    const { server_id: serverId } = await req.json();
     
     if (!serverId) {
       return new Response(
@@ -30,9 +30,9 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Fetch server configuration
+    // Fetch SMTP server configuration
     const { data: server, error: fetchError } = await supabase
-      .from('incoming_mail_servers')
+      .from('email_servers')
       .select('*')
       .eq('id', serverId)
       .single();
@@ -44,59 +44,52 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log('Testing connection for server:', {
+    console.log('Testing SMTP connection for server:', {
       name: server.name,
-      host: server.host,
-      port: server.port,
-      type: server.server_type
+      host: server.smtp_host,
+      port: server.smtp_port,
+      username: server.smtp_username
     });
 
-    // Basic connection test simulation
-    // In a real implementation, you would use an IMAP/POP3 library
+    // Basic SMTP connection test simulation
+    // In a real implementation, you would use an SMTP library like nodemailer
     // For now, we'll simulate the test based on common configurations
     
     let success = false;
     let errorMessage = "";
 
     try {
-      // Simulate connection test
-      const isValidHost = server.host && server.host.length > 0;
-      const isValidPort = server.port > 0 && server.port <= 65535;
-      const hasCredentials = server.username && server.password;
+      // Simulate SMTP connection test
+      const isValidHost = server.smtp_host && server.smtp_host.length > 0;
+      const isValidPort = server.smtp_port > 0 && server.smtp_port <= 65535;
+      const hasCredentials = server.smtp_username && server.smtp_password;
 
       if (!isValidHost) {
-        errorMessage = "Invalid host configuration";
+        errorMessage = "Invalid SMTP host configuration";
       } else if (!isValidPort) {
-        errorMessage = "Invalid port configuration";
+        errorMessage = "Invalid SMTP port configuration";
       } else if (!hasCredentials) {
-        errorMessage = "Missing username or password";
+        errorMessage = "Missing SMTP username or password";
       } else {
-        // Simulate successful connection for common providers
-        const commonProviders = [
-          'imap.gmail.com',
-          'imap.outlook.com', 
-          'imap.yahoo.com',
-          'mail.yahoo.com',
-          'pop.gmail.com',
-          'pop3.live.com'
-        ];
+        // Common SMTP ports validation
+        const validSmtpPorts = [25, 465, 587, 2525];
+        const isValidSmtpPort = validSmtpPorts.includes(server.smtp_port);
         
-        success = commonProviders.some(provider => 
-          server.host.toLowerCase().includes(provider.split('.')[1])
-        ) || true; // Allow all for demo purposes
-        
-        if (!success) {
-          errorMessage = "Connection timeout or authentication failed";
+        if (!isValidSmtpPort) {
+          errorMessage = `Port ${server.smtp_port} is not a standard SMTP port. Common ports are: 25, 465, 587, 2525`;
+        } else {
+          // Simulate successful connection for demo purposes
+          success = true;
         }
       }
     } catch (error: any) {
-      errorMessage = `Connection error: ${error.message}`;
+      errorMessage = `SMTP connection error: ${error.message}`;
     }
 
-    // Update last check timestamp
+    // Update last check timestamp for SMTP server
     await supabase
-      .from('incoming_mail_servers')
-      .update({ last_check: new Date().toISOString() })
+      .from('email_servers')
+      .update({ updated_at: new Date().toISOString() })
       .eq('id', serverId);
 
     return new Response(
