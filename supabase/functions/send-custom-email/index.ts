@@ -268,6 +268,21 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('SMTP config snapshot:', { host: smtpHost, port: smtpPort, tls: Boolean(emailServer.use_tls), username_preview: smtpUsername ? `${smtpUsername.slice(0,2)}***` : '', from: `${senderName} <${senderEmail}>` });
 
+    // Basic validation before attempting SMTP
+    if (!smtpHost || !smtpUsername || !smtpPasswordStr || !senderEmail) {
+      const missing = {
+        host: !smtpHost,
+        username: !smtpUsername,
+        password: !smtpPasswordStr,
+        sender: !senderEmail,
+      };
+      console.error('SMTP config missing fields:', missing);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid SMTP configuration', details: missing }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
     const client = new SMTPClient({
       connection: {
         hostname: smtpHost,
@@ -281,11 +296,10 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     await client.send({
-      from: `${emailServer.sender_name} <${emailServer.sender_email}>`,
+      from: `${senderName} <${senderEmail}>`,
       to: customerEmail,
-      replyTo: emailServer.reply_to || emailServer.sender_email,
+      replyTo: replyTo,
       subject: `[Ticket #${ticketId}] ${isResolution ? 'Resolved: ' : ''}${subject}`,
-      content: emailHtml,
       html: emailHtml,
     });
 
@@ -315,8 +329,10 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: error.message,
-        details: 'Failed to send email via SMTP. Please check your email server configuration and encryption.' 
+        error: error?.message || String(error),
+        name: error?.name || 'Error',
+        stack: error?.stack || null,
+        details: 'Failed to send email via SMTP. Please verify host, port, TLS, username and password. Outbound SMTP may also be blocked by the environment.' 
       }),
       {
         status: 500,
