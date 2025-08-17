@@ -124,6 +124,16 @@ export function EmailServerConfig() {
       if (editingServer) {
         // Update existing server. Only update password if provided
         const updateData: any = { ...newServer };
+        // Sanitize and normalize fields
+        updateData.name = updateData.name.trim();
+        updateData.smtp_host = updateData.smtp_host.trim();
+        updateData.smtp_username = updateData.smtp_username.trim();
+        updateData.sender_name = updateData.sender_name.trim();
+        updateData.sender_email = updateData.sender_email.trim();
+        updateData.reply_to = (updateData.reply_to || '').trim();
+        updateData.smtp_port = Number(updateData.smtp_port);
+        if (updateData.smtp_port === 465) updateData.use_tls = true; // Implicit TLS
+
         if (!newServer.smtp_password || newServer.smtp_password.trim() === '') {
           delete updateData.smtp_password;
           delete updateData.password_encrypted;
@@ -158,9 +168,17 @@ export function EmailServerConfig() {
         const encryptedPassword = await encryptPassword(newServer.smtp_password);
         const serverData = {
           ...newServer,
+          name: newServer.name.trim(),
+          smtp_host: newServer.smtp_host.trim(),
+          smtp_username: newServer.smtp_username.trim(),
+          sender_name: newServer.sender_name.trim(),
+          sender_email: newServer.sender_email.trim(),
+          reply_to: (newServer.reply_to || '').trim(),
+          smtp_port: Number(newServer.smtp_port),
+          use_tls: Number(newServer.smtp_port) === 465 ? true : newServer.use_tls,
           smtp_password: encryptedPassword,
           password_encrypted: true,
-        };
+        } as any;
 
         const { error } = await supabase
           .from('email_servers')

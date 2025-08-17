@@ -115,8 +115,26 @@ export function EmailManager() {
   // Server management
   const handleSaveServer = async () => {
     try {
-      // Build payload and avoid overwriting password with empty value
+      // Build payload and sanitize inputs
       const payload: any = { ...serverForm };
+      payload.name = payload.name.trim();
+      payload.smtp_host = payload.smtp_host.trim();
+      payload.smtp_username = payload.smtp_username.trim();
+      payload.sender_name = payload.sender_name.trim();
+      payload.sender_email = payload.sender_email.trim();
+      payload.reply_to = (payload.reply_to || '').trim();
+      payload.smtp_port = Number(payload.smtp_port);
+      if (payload.smtp_port === 465) payload.use_tls = true; // Implicit TLS
+
+      // Basic validation
+      if (!payload.name || !payload.smtp_host || !payload.smtp_username || !payload.sender_email) {
+        toast({
+          title: "Missing required fields",
+          description: "Name, host, username, and sender email are required.",
+          variant: "destructive"
+        });
+        return;
+      }
 
       if (editingServer) {
         if (!serverForm.smtp_password || serverForm.smtp_password.trim() === '') {
