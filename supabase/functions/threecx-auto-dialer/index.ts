@@ -28,9 +28,65 @@ const logStep = (step: string, details?: any) => {
 };
 
 
-async function tryInitiateCall(base: string, authHeader: string, extension: string, number: string, requestedPath?: string) {
+async function tryInitiateCall(base: string, authHeader: string, extension: string, number: string, requestedPath?: string, username?: string, password?: string) {
   const buildUrl = (p: string) => new URL(p.startsWith('/') ? p : `/${p}`, base).toString();
 
+  // For v20, try session authentication first if using webclient API
+  if (requestedPath?.includes('/webclient/api/call/new')) {
+    try {
+      logStep('Attempting v20 session authentication...');
+      
+      // Login to get session
+      const loginResponse = await fetch(buildUrl('/webclient/api/login'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Helpdesk-Auto-Dialer/1.0'
+        },
+        body: JSON.stringify({
+          Username: username,
+          Password: password
+        })
+      });
+
+      if (loginResponse.ok) {
+        // Extract session cookie
+        const setCookieHeader = loginResponse.headers.get('set-cookie');
+        const sessionCookie = setCookieHeader ? setCookieHeader.split(';')[0] : '';
+        
+        logStep('Login successful, making call with session...');
+
+        // Make call with session
+        const callResponse = await fetch(buildUrl(requestedPath), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': sessionCookie,
+            'User-Agent': 'Helpdesk-Auto-Dialer/1.0'
+          },
+          body: JSON.stringify({
+            destination: number,
+            callerid: extension
+          })
+        });
+
+        if (callResponse.ok) {
+          let body: any = null;
+          try { body = await callResponse.json(); } catch { body = await callResponse.text(); }
+          return { ok: true, body, path: requestedPath, payload: { destination: number, callerid: extension } };
+        } else {
+          const text = await callResponse.text();
+          logStep('Session call failed', { path: requestedPath, status: callResponse.status, text });
+        }
+      } else {
+        logStep('Login failed', { status: loginResponse.status, text: await loginResponse.text() });
+      }
+    } catch (e) {
+      logStep('Session auth exception', { error: e instanceof Error ? e.message : String(e) });
+    }
+  }
+
+  // Fallback to trying all endpoints with Basic Auth
   const candidates: { path: string; payloads: any[] }[] = [
     { path: requestedPath || '/webclient/api/call/new', payloads: [ { destination: number, callerid: extension } ] },
     { path: '/xapi/MakeCall', payloads: [ { From: extension, To: number }, { from: extension, to: number }, { caller: extension, callee: number, timeout: 30 } ] },
@@ -118,7 +174,7 @@ serve(async (req) => {
 
     if (request.action === 'single' && request.phoneNumber) {
       const ext = request.extension || '100';
-      const attempt = await tryInitiateCall(base, auth, ext, request.phoneNumber, request.threeCXPath);
+      const attempt = await tryInitiateCall(base, auth, ext, request.phoneNumber, request.threeCXPath, threeCXUsername, threeCXPassword);
       if (!attempt.ok) {
         throw new Error('3CX API call initiation failed across all known endpoints. Check logs for details.');
       }
@@ -145,7 +201,7 @@ serve(async (req) => {
         try {
           logStep(`Dialing ${i + 1}/${request.phoneNumbers.length}`, { number: phoneNumber });
 
-          const attempt = await tryInitiateCall(base, auth, extension, phoneNumber, request.threeCXPath);
+          const attempt = await tryInitiateCall(base, auth, extension, phoneNumber, request.threeCXPath, threeCXUsername, threeCXPassword);
           if (attempt.ok) {
             results.push({
               phoneNumber,
