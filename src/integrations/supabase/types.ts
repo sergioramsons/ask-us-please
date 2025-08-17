@@ -1100,6 +1100,10 @@ export type Database = {
         Args: { encrypted_password: string }
         Returns: string
       }
+      delete_organization: {
+        Args: { org_id: string }
+        Returns: boolean
+      }
       delete_ticket: {
         Args: { p_ticket_id: string }
         Returns: boolean
