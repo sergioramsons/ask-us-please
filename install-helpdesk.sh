@@ -5,6 +5,14 @@
 
 set -e  # Exit on any error
 
+# Self-sanitize: strip BOM and CRLF then re-exec sanitized copy to avoid heredoc EOF issues
+tmp="/tmp/$(basename "$0").unix"
+awk 'NR==1{sub(/^[\xEF\xBB\xBF]/,"")} {sub(/\r$/,"",$0); print}' "$0" > "$tmp"
+if ! cmp -s "$0" "$tmp"; then
+  chmod +x "$tmp"
+  exec /bin/bash "$tmp" "$@"
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
