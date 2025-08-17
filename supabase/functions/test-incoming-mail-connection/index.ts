@@ -89,7 +89,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { server_id: serverId } = await req.json();
     if (!serverId) {
       return new Response(
-        JSON.stringify({ success: false, error: "Server ID is required" }),
+        JSON.stringify({ success: false, message: "Server ID is required" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -103,7 +103,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (fetchError || !server) {
       return new Response(
-        JSON.stringify({ success: false, error: "Incoming server configuration not found" }),
+        JSON.stringify({ success: false, message: "Incoming server configuration not found" }),
         { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -132,7 +132,7 @@ const handler = async (req: Request): Promise<Response> => {
       } catch (e) {
         console.error('Password decryption failed:', e);
         return new Response(
-          JSON.stringify({ success: false, error: 'Password decryption failed' }),
+          JSON.stringify({ success: false, message: 'Password decryption failed' }),
           { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
@@ -171,7 +171,7 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error('Error testing incoming mail connection:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message || 'Failed to test connection' }),
+      JSON.stringify({ success: false, message: error.message || 'Failed to test connection' }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
