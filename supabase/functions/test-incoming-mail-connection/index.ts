@@ -10,6 +10,47 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Encryption parameters must match the app's client-side implementation
+const ALGORITHM = 'AES-GCM';
+const KEY_LENGTH = 256;
+const DEV_KEY_MATERIAL = 'helpdesk-dev-encryption-key-2024-secure';
+const DEV_SALT = 'helpdesk-dev-salt-2024';
+
+async function getEncryptionKey(): Promise<CryptoKey> {
+  const envKey = Deno.env.get('ENCRYPTION_KEY') || DEV_KEY_MATERIAL;
+  const keyMaterial = new TextEncoder().encode(envKey);
+  const importedKey = await crypto.subtle.importKey(
+    'raw',
+    keyMaterial,
+    { name: 'PBKDF2' },
+    false,
+    ['deriveKey']
+  );
+  return await crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: new TextEncoder().encode(DEV_SALT),
+      iterations: 600000,
+      hash: 'SHA-256',
+    },
+    importedKey,
+    { name: ALGORITHM, length: KEY_LENGTH },
+    false,
+    ['decrypt']
+  );
+}
+
+async function decryptEncPassword(encrypted: string): Promise<string> {
+  const clean = encrypted.startsWith('enc:') ? encrypted.slice(4) : encrypted;
+  const bytes = new Uint8Array(atob(clean).split('').map((c) => c.charCodeAt(0)));
+  if (bytes.length < 13) throw new Error('Invalid encrypted data');
+  const iv = bytes.slice(0, 12);
+  const data = bytes.slice(12);
+  const key = await getEncryptionKey();
+  const decrypted = await crypto.subtle.decrypt({ name: ALGORITHM, iv }, key, data);
+  return new TextDecoder().decode(decrypted);
+}
+
 async function readLine(conn: Deno.Conn, timeoutMs = 8000): Promise<string> {
   const decoder = new TextDecoder();
   const buffer = new Uint8Array(2048);
@@ -118,16 +159,11 @@ const handler = async (req: Request): Promise<Response> => {
       use_tls: server.use_tls,
     });
 
-    // Simple password decryption handling
+    // Decrypt password if it is encrypted by the app
     let password = server.password as string;
-    
-    // Check if password is encrypted and decrypt it
     if (password && password.startsWith('enc:')) {
       try {
-        // Remove 'enc:' prefix and decode base64
-        const encoded = password.substring(4);
-        const decoded = atob(encoded);
-        password = decoded;
+        password = await decryptEncPassword(password);
         console.log('Password decrypted successfully');
       } catch (e) {
         console.error('Password decryption failed:', e);

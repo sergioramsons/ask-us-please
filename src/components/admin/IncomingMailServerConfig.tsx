@@ -206,9 +206,9 @@ const IncomingMailServerConfig = () => {
     },
     onSuccess: (data) => {
       if (data.success) {
-        toast.success('Connection test successful');
+        toast.success(data.message || 'Connection test successful');
       } else {
-        toast.error(`Connection test failed: ${data.error}`);
+        toast.error(`Connection test failed: ${data.message || 'Unknown error'}`);
       }
     },
     onError: (error: any) => {
