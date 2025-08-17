@@ -36,12 +36,23 @@ const Index = () => {
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'all'>('all');
 
   // Load tickets from database
-  const loadTickets = async () => {
+const loadTickets = async () => {
+    setTicketsLoading(true);
     try {
-      const { data, error } = await supabase
+      const orgId = organization?.id || null;
+      console.log('Loading tickets for org:', orgId);
+
+      // Build query with optional organization filter to align with RLS
+      let query = supabase
         .from('tickets')
         .select('*')
         .order('created_at', { ascending: false });
+
+      if (orgId) {
+        query = query.eq('organization_id', orgId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -106,12 +117,12 @@ const Index = () => {
     }
   };
 
-  // Load tickets on component mount
+// Load tickets when auth/org ready or when org changes
   useEffect(() => {
-    if (user) {
+    if (user && !orgLoading) {
       loadTickets();
     }
-  }, [user]);
+  }, [user, organization?.id, orgLoading]);
 
   // Auto-launch helpdesk when coming from Yeastar
   useEffect(() => {
