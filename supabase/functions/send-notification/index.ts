@@ -175,43 +175,57 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (activeServer) {
-      // Use SMTP server via send-custom-email function
+      // Use SMTP server via send-custom-email function (direct call to capture detailed errors)
       console.log('Using active SMTP server for notification');
-      const emailResponse = await supabase.functions.invoke('send-custom-email', {
-        body: {
-          ticketId: notification.ticketId,
-          customerName: notification.recipientName || 'Valued Customer',
-          customerEmail: notification.recipientEmail,
-          subject: getEmailTemplate(notification).subject,
-          message: notification.message || 'Please check your ticket for updates.',
-          agentName: notification.senderName || 'Support Team',
-          ticketStatus: notification.ticketStatus || 'open',
-          priority: notification.ticketPriority || 'medium',
-          isResolution: false,
-          emailServerId: activeServer.id
-        }
+      const funcUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-custom-email`;
+      const payload = {
+        ticketId: notification.ticketId,
+        customerName: notification.recipientName || 'Valued Customer',
+        customerEmail: notification.recipientEmail,
+        subject: getEmailTemplate(notification).subject,
+        message: notification.message || 'Please check your ticket for updates.',
+        agentName: notification.senderName || 'Support Team',
+        ticketStatus: notification.ticketStatus || 'open',
+        priority: notification.ticketPriority || 'medium',
+        isResolution: false,
+        emailServerId: activeServer.id
+      };
+
+      const res = await fetch(funcUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+          'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+        },
+        body: JSON.stringify(payload)
       });
 
-      if (emailResponse.error) {
-        console.error('SMTP send error:', emailResponse.error);
+      let result: any = null;
+      try { result = await res.json(); } catch (_) { result = null; }
+
+      if (!res.ok || (result && result.success === false)) {
+        console.error('SMTP send error detail:', { status: res.status, result });
         return new Response(
           JSON.stringify({
             success: false,
-            message: "SMTP email send failed",
-            error: emailResponse.error,
+            message: 'SMTP email send failed',
+            status: res.status,
+            error: result?.error || 'Unknown error',
+            details: result?.details || null,
           }),
-          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
         );
       }
 
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: "Notification sent via SMTP successfully",
+          message: 'Notification sent via SMTP successfully',
           notification_type: notification.type,
           ticket_id: notification.ticketId
         }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
 

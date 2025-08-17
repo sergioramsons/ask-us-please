@@ -266,6 +266,8 @@ const handler = async (req: Request): Promise<Response> => {
     const replyTo = String(emailServer.reply_to || senderEmail).trim();
     const smtpPasswordStr = String(smtpPassword || '').trim();
 
+    console.log('SMTP config snapshot:', { host: smtpHost, port: smtpPort, tls: Boolean(emailServer.use_tls), username_preview: smtpUsername ? `${smtpUsername.slice(0,2)}***` : '', from: `${senderName} <${senderEmail}>` });
+
     const client = new SMTPClient({
       connection: {
         hostname: smtpHost,
