@@ -16,7 +16,8 @@ import OrganizationSelector from "@/components/ui/organization-selector";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationService } from "@/services/NotificationService";
-import { Plus, Headphones, LogOut, User, Settings, BarChart3, Inbox, Ticket as TicketIcon, List } from "lucide-react";
+import { Plus, Headphones, LogOut, User, Settings, BarChart3, Inbox, Ticket as TicketIcon, List, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 type View = 'tickets' | 'inbox' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports';
 
@@ -31,6 +32,7 @@ const Index = () => {
   const [showHelpdeskPopup, setShowHelpdeskPopup] = useState(false);
   const [callerInfo, setCallerInfo] = useState<{phone: string; name: string; email?: string} | null>(null);
   const [ticketsLoading, setTicketsLoading] = useState(true);
+  const [deletingTicket, setDeletingTicket] = useState<string | null>(null);
 
   // Load tickets from database
   const loadTickets = async () => {
@@ -284,6 +286,44 @@ const Index = () => {
     }
   };
 
+  const handleDeleteTicket = async (ticketId: string) => {
+    setDeletingTicket(ticketId);
+    try {
+      // First delete all comments for this ticket
+      const { error: commentsError } = await supabase
+        .from('ticket_comments')
+        .delete()
+        .eq('ticket_id', ticketId);
+
+      if (commentsError) throw commentsError;
+
+      // Then delete the ticket
+      const { error: ticketError } = await supabase
+        .from('tickets')
+        .delete()
+        .eq('id', ticketId);
+
+      if (ticketError) throw ticketError;
+
+      // Refresh tickets list
+      await loadTickets();
+
+      toast({
+        title: "Success",
+        description: "Ticket deleted successfully",
+      });
+    } catch (error: any) {
+      console.error('Error deleting ticket:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete ticket",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingTicket(null);
+    }
+  };
+
   const handleViewTicket = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setCurrentView('ticket-detail');
@@ -523,36 +563,68 @@ const Index = () => {
                   ) : (
                     <div className="space-y-4">
                       {tickets.map((ticket) => (
-                        <div 
-                          key={ticket.id}
-                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                          onClick={() => handleViewTicket(ticket)}
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3">
-                              <span className="font-medium">#{ticket.ticketNumber || ticket.id.slice(0, 8)}</span>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                ticket.status === 'open' ? 'bg-red-100 text-red-800' :
-                                ticket.status === 'in-progress' ? 'bg-orange-100 text-orange-800' :
-                                ticket.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {ticket.status}
-                              </span>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                ticket.priority === 'high' ? 'bg-red-100 text-red-800' :
-                                ticket.priority === 'medium' ? 'bg-orange-100 text-orange-800' :
-                                'bg-blue-100 text-blue-800'
-                              }`}>
-                                {ticket.priority}
-                              </span>
-                            </div>
-                            <h3 className="font-medium mt-1">{ticket.title}</h3>
-                            <p className="text-sm text-muted-foreground line-clamp-2">{ticket.description}</p>
-                            <div className="text-xs text-muted-foreground mt-2">
-                              Created {ticket.createdAt.toLocaleDateString()} • Updated {ticket.updatedAt.toLocaleDateString()}
-                            </div>
-                          </div>
+                         <div 
+                           key={ticket.id}
+                           className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                         >
+                           <div className="flex-1" onClick={() => handleViewTicket(ticket)}>
+                             <div className="flex items-center gap-3">
+                               <span className="font-medium">#{ticket.ticketNumber || ticket.id.slice(0, 8)}</span>
+                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                 ticket.status === 'open' ? 'bg-red-100 text-red-800' :
+                                 ticket.status === 'in-progress' ? 'bg-orange-100 text-orange-800' :
+                                 ticket.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                                 'bg-gray-100 text-gray-800'
+                               }`}>
+                                 {ticket.status}
+                               </span>
+                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                 ticket.priority === 'high' ? 'bg-red-100 text-red-800' :
+                                 ticket.priority === 'medium' ? 'bg-orange-100 text-orange-800' :
+                                 'bg-blue-100 text-blue-800'
+                               }`}>
+                                 {ticket.priority}
+                               </span>
+                             </div>
+                             <h3 className="font-medium mt-1">{ticket.title}</h3>
+                             <p className="text-sm text-muted-foreground line-clamp-2">{ticket.description}</p>
+                             <div className="text-xs text-muted-foreground mt-2">
+                               Created {ticket.createdAt.toLocaleDateString()} • Updated {ticket.updatedAt.toLocaleDateString()}
+                             </div>
+                           </div>
+                           
+                           <div className="flex items-center gap-2 ml-4">
+                             <AlertDialog>
+                               <AlertDialogTrigger asChild>
+                                 <Button
+                                   variant="outline"
+                                   size="sm"
+                                   className="text-destructive hover:text-destructive"
+                                   disabled={deletingTicket === ticket.id}
+                                   onClick={(e) => e.stopPropagation()}
+                                 >
+                                   <Trash2 className="h-4 w-4" />
+                                 </Button>
+                               </AlertDialogTrigger>
+                               <AlertDialogContent>
+                                 <AlertDialogHeader>
+                                   <AlertDialogTitle>Delete Ticket</AlertDialogTitle>
+                                   <AlertDialogDescription>
+                                     Are you sure you want to delete ticket "{ticket.title}"? This action cannot be undone and will remove all comments and data associated with this ticket.
+                                   </AlertDialogDescription>
+                                 </AlertDialogHeader>
+                                 <AlertDialogFooter>
+                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                   <AlertDialogAction
+                                     onClick={() => handleDeleteTicket(ticket.id)}
+                                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                   >
+                                     Delete Ticket
+                                   </AlertDialogAction>
+                                 </AlertDialogFooter>
+                               </AlertDialogContent>
+                             </AlertDialog>
+                           </div>
                         </div>
                       ))}
                     </div>

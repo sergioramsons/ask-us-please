@@ -5,16 +5,61 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge, PriorityBadge } from "@/components/ui/status-badge";
 import { Ticket, TicketStatus } from "@/types/ticket";
-import { Search, Eye, Clock, User } from "lucide-react";
+import { Search, Eye, Clock, User, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface TicketListProps {
   tickets: Ticket[];
   onViewTicket: (ticket: Ticket) => void;
+  onTicketDeleted?: () => void;
 }
 
-export function TicketList({ tickets, onViewTicket }: TicketListProps) {
+export function TicketList({ tickets, onViewTicket, onTicketDeleted }: TicketListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'all'>('all');
+  const [deletingTicket, setDeletingTicket] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const handleDeleteTicket = async (ticketId: string) => {
+    setDeletingTicket(ticketId);
+    try {
+      // First delete all comments for this ticket
+      const { error: commentsError } = await supabase
+        .from('ticket_comments')
+        .delete()
+        .eq('ticket_id', ticketId);
+
+      if (commentsError) throw commentsError;
+
+      // Then delete the ticket
+      const { error: ticketError } = await supabase
+        .from('tickets')
+        .delete()
+        .eq('id', ticketId);
+
+      if (ticketError) throw ticketError;
+
+      toast({
+        title: "Success",
+        description: "Ticket deleted successfully",
+      });
+
+      if (onTicketDeleted) {
+        onTicketDeleted();
+      }
+    } catch (error) {
+      console.error('Error deleting ticket:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete ticket",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingTicket(null);
+    }
+  };
 
   const filteredTickets = tickets.filter(ticket => {
     const matchesSearch = ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -109,15 +154,47 @@ export function TicketList({ tickets, onViewTicket }: TicketListProps) {
                     </p>
                   </div>
                   
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onViewTicket(ticket)}
-                    className="shrink-0"
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    View
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onViewTicket(ticket)}
+                      className="shrink-0"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View
+                    </Button>
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="shrink-0 text-destructive hover:text-destructive"
+                          disabled={deletingTicket === ticket.id}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Ticket</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete ticket "{ticket.title}"? This action cannot be undone and will remove all comments and data associated with this ticket.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteTicket(ticket.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Delete Ticket
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               </div>
             ))}
