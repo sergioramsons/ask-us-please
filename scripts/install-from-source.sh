@@ -2,14 +2,17 @@
 # Offline/Zero-Git installer for Debian/Ubuntu
 # Installs the app from a local folder, a local .zip, or a remote .zip URL
 # Usage (env or args):
-#   APP_SOURCE=/path/to/folder|/path/to/archive.zip|https://example.com/app.zip \
+#   APP_SOURCE=/path/to/folder|/path/to/archive.zip|https://example.com/app.zip|github:OWNER/REPO|github:OWNER/REPO@branch \
 #   DOMAIN_NAME=helpdesk.example.com \
 #   [APP_DIR=/opt/helpdesk] [APP_PORT=3000] [ADMIN_EMAIL=admin@example.com] [INSTALL_SSL=y] [GITHUB_TOKEN=]
 #   bash scripts/install-from-source.sh
 #
-# Notes:
-# - If APP_SOURCE is a private GitHub ZIP URL, set GITHUB_TOKEN so we can add the Authorization header
-# - This script avoids git completely when APP_SOURCE is provided
+# Examples:
+# - Public GitHub: APP_SOURCE=github:sergioramsons/ask-us-please
+# - Private GitHub: APP_SOURCE=github:sergioramsons/ask-us-please GITHUB_TOKEN=ghp_xxxxx
+# - Specific branch: APP_SOURCE=github:sergioramsons/ask-us-please@develop
+# - Direct ZIP: APP_SOURCE=https://example.com/app.zip
+# - Local folder: APP_SOURCE=/path/to/app
 
 set -euo pipefail
 
@@ -70,9 +73,51 @@ stage_dir=$(mktemp -d)
 cleanup(){ rm -rf "$stage_dir" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
 
-is_url=0; [[ "$APP_SOURCE" =~ ^https?:// ]] && is_url=1
-if [ $is_url -eq 1 ]; then
-  log "Downloading ZIP from URL"
+# Handle different source types
+if [[ "$APP_SOURCE" =~ ^github: ]]; then
+  # GitHub shorthand: github:owner/repo[@branch]
+  github_spec="${APP_SOURCE#github:}"
+  if [[ "$github_spec" =~ @ ]]; then
+    repo="${github_spec%@*}"
+    branch="${github_spec#*@}"
+  else
+    repo="$github_spec"
+    branch="main"
+  fi
+  
+  log "GitHub repo: $repo (branch: $branch)"
+  
+  # Try GitHub API first (works for private repos with token)
+  api_url="https://api.github.com/repos/$repo/zipball/$branch"
+  headers=(-L)
+  if [ -n "$GITHUB_TOKEN" ]; then
+    headers+=("-H" "Authorization: Bearer $GITHUB_TOKEN")
+    log "Using GitHub API with token for private repo"
+  else
+    log "Using GitHub API for public repo"
+  fi
+  
+  if curl -fS "${headers[@]}" -o "$stage_dir/app.zip" "$api_url"; then
+    log "Downloaded from GitHub API"
+  else
+    # Fallback to codeload (public only)
+    if [ -n "$GITHUB_TOKEN" ]; then
+      err "GitHub API failed. Private repo requires valid GITHUB_TOKEN with repo scope."
+    fi
+    warn "GitHub API failed, trying public codeload URL"
+    public_url="https://codeload.github.com/$repo/zip/refs/heads/$branch"
+    curl -fS -L -o "$stage_dir/app.zip" "$public_url" || err "Failed to download from $public_url"
+  fi
+  
+  log "Extracting GitHub ZIP"
+  unzip -q "$stage_dir/app.zip" -d "$stage_dir/extracted"
+  src_root=$(find "$stage_dir/extracted" -mindepth 1 -maxdepth 1 -type d -print -quit)
+  if [ -z "$src_root" ]; then src_root="$stage_dir/extracted"; fi
+  rsync -a --delete "$src_root"/ "$APP_DIR"/
+
+elif [[ "$APP_SOURCE" =~ ^https?:// ]]; then
+  # Direct URL
+  log "Downloading ZIP from URL: $APP_SOURCE"
   headers=(-L)
   if [ -n "$GITHUB_TOKEN" ]; then
     headers+=("-H" "Authorization: Bearer $GITHUB_TOKEN")
@@ -80,26 +125,30 @@ if [ $is_url -eq 1 ]; then
   curl -fS "${headers[@]}" -o "$stage_dir/app.zip" "$APP_SOURCE" || err "Failed to download ZIP from $APP_SOURCE"
   log "Extracting ZIP"
   unzip -q "$stage_dir/app.zip" -d "$stage_dir/extracted"
-  # Find first directory level after unzip
   src_root=$(find "$stage_dir/extracted" -mindepth 1 -maxdepth 1 -type d -print -quit)
   if [ -z "$src_root" ]; then src_root="$stage_dir/extracted"; fi
   rsync -a --delete "$src_root"/ "$APP_DIR"/
+
 elif [ -f "$APP_SOURCE" ]; then
+  # Local file
   mime=$(get_mime_type "$APP_SOURCE")
   if [[ "$mime" == "application/zip" || "$APP_SOURCE" =~ \.zip$ ]]; then
-    log "Extracting local ZIP"
+    log "Extracting local ZIP: $APP_SOURCE"
     unzip -q "$APP_SOURCE" -d "$stage_dir/extracted"
     src_root=$(find "$stage_dir/extracted" -mindepth 1 -maxdepth 1 -type d -print -quit)
     if [ -z "$src_root" ]; then src_root="$stage_dir/extracted"; fi
     rsync -a --delete "$src_root"/ "$APP_DIR"/
   else
-    err "Unsupported archive type: $mime. Provide a .zip or a folder path."
+    err "Unsupported file type: $mime. Provide a .zip file, folder, URL, or github:owner/repo"
   fi
+
 elif [ -d "$APP_SOURCE" ]; then
-  log "Copying from local folder"
+  # Local directory
+  log "Copying from local folder: $APP_SOURCE"
   rsync -a --delete "$APP_SOURCE"/ "$APP_DIR"/
+
 else
-  err "APP_SOURCE not found: $APP_SOURCE"
+  err "APP_SOURCE not found or invalid format: $APP_SOURCE"
 fi
 
 cd "$APP_DIR"
