@@ -68,6 +68,8 @@ const ThreeCXAutoDialer = () => {
       return;
     }
 
+    const normalizedUrl = threeCXUrl.trim().replace(/^httpps:\/\//i, 'https://');
+
     setIsDialing(true);
     setResults([]);
     setProgress(0);
@@ -81,7 +83,7 @@ const ThreeCXAutoDialer = () => {
           extension,
           campaignName: campaignName || `Campaign ${new Date().toLocaleDateString()}`,
           dialDelay,
-          threeCXUrl,
+          threeCXUrl: normalizedUrl,
           threeCXUsername,
           threeCXPassword,
           threeCXPath
@@ -122,13 +124,15 @@ const ThreeCXAutoDialer = () => {
       return;
     }
 
+    const normalizedUrl = threeCXUrl.trim().replace(/^httpps:\/\//i, 'https://');
+
     try {
       const { data, error } = await supabase.functions.invoke('threecx-auto-dialer', {
         body: {
           action: 'single',
           phoneNumber: phoneNumber.trim(),
           extension,
-          threeCXUrl,
+          threeCXUrl: normalizedUrl,
           threeCXUsername,
           threeCXPassword,
           threeCXPath

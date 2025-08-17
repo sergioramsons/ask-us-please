@@ -164,8 +164,11 @@ serve(async (req) => {
     // Create authentication header for 3CX API
     const auth = btoa(`${threeCXUsername}:${threeCXPassword}`);
     
-    // Build API URL for 3CX call initiation
-    const base = threeCXApiUrl.startsWith('http') ? threeCXApiUrl : `https://${threeCXApiUrl}`;
+    // Build and sanitize API URL for 3CX call initiation
+    const rawUrl = (threeCXApiUrl || '').trim();
+    const sanitizedBase = rawUrl.replace(/^httpps:\/\//i, 'https://');
+    const base = sanitizedBase.startsWith('http') ? sanitizedBase : `https://${sanitizedBase}`;
+    logStep('3CX base URL', { base });
     // Use the correct 3CX Web Client API path for initiating calls
     const path = request.threeCXPath || '/webclient/api/call/new';
     const endpoint = new URL(path.startsWith('/') ? path : `/${path}`, base);
