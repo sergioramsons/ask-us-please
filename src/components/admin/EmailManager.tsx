@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Mail, Send, Edit, Trash2, TestTube, Check, X } from 'lucide-react';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 interface EmailServer {
   id: string;
@@ -48,6 +49,7 @@ export function EmailManager() {
   const [editingServer, setEditingServer] = useState<EmailServer | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
   const [testingServer, setTestingServer] = useState<string | null>(null);
+  const { organization } = useOrganization();
 
   // Server form state
   const [serverForm, setServerForm] = useState({
@@ -125,6 +127,7 @@ export function EmailManager() {
       payload.reply_to = (payload.reply_to || '').trim();
       payload.smtp_port = Number(payload.smtp_port);
       if (payload.smtp_port === 465) payload.use_tls = true; // Implicit TLS
+      if (organization?.id) payload.organization_id = organization.id;
 
       // Basic validation
       if (!payload.name || !payload.smtp_host || !payload.smtp_username || !payload.sender_email) {
@@ -142,12 +145,30 @@ export function EmailManager() {
           delete payload.smtp_password;
         }
 
-        const { error } = await supabase
+        // Try update, if zero rows affected due to RLS, claim and retry
+        let { data: updated, error } = await supabase
           .from('email_servers')
           .update(payload)
-          .eq('id', editingServer.id);
+          .eq('id', editingServer.id)
+          .select('id');
         
         if (error) throw error;
+
+        if (!updated || updated.length === 0) {
+          // Attempt to claim ownership (set organization_id) then retry
+          await supabase.functions.invoke('claim-email-server', { body: { server_id: editingServer.id } });
+          const retry = await supabase
+            .from('email_servers')
+            .update(payload)
+            .eq('id', editingServer.id)
+            .select('id');
+          error = retry.error as any;
+          updated = retry.data as any;
+          if (error) throw error;
+          if (!updated || updated.length === 0) {
+            throw new Error('Update blocked by security policy. Ensure you are an admin of this organization.');
+          }
+        }
         
         toast({
           title: "Email server updated",

@@ -27,6 +27,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { encryptPassword, decryptPassword } from '@/lib/secureEncryption';
 import { SecurityDashboard } from './SecurityDashboard';
 import { EmailPasswordMigration } from '../admin/EmailPasswordMigration';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 interface EmailServer {
   id: string;
@@ -55,6 +56,7 @@ interface EmailConfig {
 
 export function EmailServerConfig() {
   const { toast } = useToast();
+  const { organization } = useOrganization();
   const [emailServers, setEmailServers] = useState<EmailServer[]>([]);
   const [selectedServerId, setSelectedServerId] = useState<string>('');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -133,6 +135,7 @@ export function EmailServerConfig() {
         updateData.reply_to = (updateData.reply_to || '').trim();
         updateData.smtp_port = Number(updateData.smtp_port);
         if (updateData.smtp_port === 465) updateData.use_tls = true; // Implicit TLS
+        if (organization?.id) updateData.organization_id = organization.id;
 
         if (!newServer.smtp_password || newServer.smtp_password.trim() === '') {
           delete updateData.smtp_password;
@@ -143,12 +146,27 @@ export function EmailServerConfig() {
           updateData.password_encrypted = true;
         }
 
-        const { error } = await supabase
+        // Try update, if zero rows affected due to RLS, claim and retry
+        let { data: updated, error } = await supabase
           .from('email_servers')
           .update(updateData)
-          .eq('id', editingServer.id);
+          .eq('id', editingServer.id)
+          .select('id');
 
         if (error) throw error;
+
+        if (!updated || updated.length === 0) {
+          await supabase.functions.invoke('claim-email-server', { body: { server_id: editingServer.id } });
+          const retry = await supabase
+            .from('email_servers')
+            .update(updateData)
+            .eq('id', editingServer.id)
+            .select('id');
+          if (retry.error) throw retry.error;
+          if (!retry.data || retry.data.length === 0) {
+            throw new Error('Update blocked by security policy. Ensure you are an admin of this organization.');
+          }
+        }
 
         toast({
           title: "Server updated",
@@ -178,6 +196,7 @@ export function EmailServerConfig() {
           use_tls: Number(newServer.smtp_port) === 465 ? true : newServer.use_tls,
           smtp_password: encryptedPassword,
           password_encrypted: true,
+          organization_id: organization?.id,
         } as any;
 
         const { error } = await supabase
