@@ -60,61 +60,67 @@ export function TicketAssignmentManager({
     try {
       setLoading(true);
       
-      // Get all agents with their availability and current ticket count
-      const { data: agentsData, error } = await supabase
+      // Get all users with agent roles (admin or moderator)
+      const { data: userRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('role', ['admin', 'moderator']);
+
+      if (rolesError) throw rolesError;
+
+      const agentUserIds = userRoles?.map(ur => ur.user_id) || [];
+      
+      if (agentUserIds.length === 0) {
+        setAgents([]);
+        return;
+      }
+
+      // Get profiles for these users
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select(`
           user_id,
           display_name,
-          department:departments(name),
-          agent_availability(
-            current_tickets,
-            max_tickets,
-            is_available
-          )
+          department:departments(name)
         `)
-        .not('user_id', 'is', null);
+        .in('user_id', agentUserIds);
 
-      if (error) throw error;
+      if (profilesError) throw profilesError;
 
-      // Get user emails from auth metadata
-      const agentsList: Agent[] = [];
-      
-      for (const agent of agentsData || []) {
-        // Check if user has agent role
-        const { data: roles } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', agent.user_id);
+      // Get agent availability data separately
+      const { data: availability, error: availabilityError } = await supabase
+        .from('agent_availability')
+        .select('user_id, current_tickets, max_tickets, is_available')
+        .in('user_id', agentUserIds);
 
-        const hasAgentRole = roles?.some(r => ['admin', 'moderator'].includes(r.role));
-        
-        if (hasAgentRole) {
-          // Handle both array and single object cases for agent_availability
-          let availability;
-          if (Array.isArray(agent.agent_availability)) {
-            availability = agent.agent_availability[0];
-          } else {
-            availability = agent.agent_availability;
-          }
-          
-          availability = availability || {
-            current_tickets: 0,
-            max_tickets: 10,
-            is_available: true
-          };
-
-          agentsList.push({
-            id: agent.user_id,
-            display_name: agent.display_name,
-            email: '', // We'll get this from auth if needed
-            department_name: agent.department?.name,
-            current_tickets: availability.current_tickets,
-            max_tickets: availability.max_tickets,
-            is_available: availability.is_available
-          });
-        }
+      if (availabilityError) {
+        console.warn('Could not load agent availability:', availabilityError);
       }
+
+      // Create availability map
+      const availabilityMap = new Map();
+      availability?.forEach(av => {
+        availabilityMap.set(av.user_id, av);
+      });
+
+      // Transform data into Agent interface
+      const agentsList: Agent[] = (profiles || []).map(profile => {
+        const userAvailability = availabilityMap.get(profile.user_id) || {
+          current_tickets: 0,
+          max_tickets: 10,
+          is_available: true
+        };
+
+        return {
+          id: profile.user_id,
+          display_name: profile.display_name,
+          email: '', // Will be populated if needed
+          department_name: profile.department?.name,
+          current_tickets: userAvailability.current_tickets,
+          max_tickets: userAvailability.max_tickets,
+          is_available: userAvailability.is_available
+        };
+      });
 
       setAgents(agentsList);
     } catch (error: any) {
