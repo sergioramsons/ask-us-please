@@ -991,7 +991,7 @@ export type Database = {
         Returns: string
       }
       delete_ticket: {
-        Args: { ticket_id: string }
+        Args: { p_ticket_id: string }
         Returns: boolean
       }
       encrypt_server_password: {
