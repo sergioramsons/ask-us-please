@@ -49,10 +49,17 @@ serve(async (req) => {
       );
     }
 
+    // Get the user's organization for assigning to new users
+    const { data: currentUserProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('organization_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const userOrgId = currentUserProfile?.organization_id;
+
     // Check if user has admin privileges (super_admin or org/admin roles)
     let isAuthorized = false;
-
-    // 1) Organization admins or super admins via organization_admins
     const { data: orgAdminRow, error: orgAdminError } = await supabaseAdmin
       .from('organization_admins')
       .select('role')
@@ -153,7 +160,8 @@ serve(async (req) => {
         .insert({
           user_id: targetUser.id,
           display_name: displayName || null,
-          department_id: departmentId === 'none' ? null : (departmentId || null)
+          department_id: departmentId === 'none' ? null : (departmentId || null),
+          organization_id: userOrgId
         });
       if (insertProfileError) {
         console.error('Error inserting profile:', insertProfileError);
@@ -163,7 +171,8 @@ serve(async (req) => {
         .from('profiles')
         .update({
           display_name: displayName || null,
-          department_id: departmentId === 'none' ? null : (departmentId || null)
+          department_id: departmentId === 'none' ? null : (departmentId || null),
+          organization_id: userOrgId
         })
         .eq('user_id', targetUser.id);
       if (updateProfileError) {
