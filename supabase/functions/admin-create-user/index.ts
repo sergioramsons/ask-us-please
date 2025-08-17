@@ -53,7 +53,7 @@ serve(async (req) => {
     let isAuthorized = false;
 
     // 1) Super admin via organization_admins
-    const { data: superAdminRow, error: superAdminError } = await supabaseClient
+    const { data: superAdminRow, error: superAdminError } = await supabaseAdmin
       .from('organization_admins')
       .select('role')
       .eq('user_id', user.id)
@@ -66,7 +66,7 @@ serve(async (req) => {
 
     // 2) Org-level admin roles
     if (!isAuthorized) {
-      const { data: roles, error: roleError } = await supabaseClient
+      const { data: roles, error: roleError } = await supabaseAdmin
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
