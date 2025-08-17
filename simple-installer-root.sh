@@ -8,6 +8,10 @@
 
 set -euo pipefail
 
+# Force non-interactive git (no username/password prompts)
+export GIT_TERMINAL_PROMPT=0
+export GIT_ASKPASS=/bin/echo
+
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 log(){ echo -e "${GREEN}[$(date +%H:%M:%S)] $*${NC}"; }
 warn(){ echo -e "${YELLOW}[WARN] $*${NC}"; }
@@ -60,13 +64,13 @@ $SUDO mkdir -p "$APP_DIR"
 $SUDO chown -R "${USER:-$(id -un)}":"${USER:-$(id -un)}" "$APP_DIR"
 if [ -d "$APP_DIR/.git" ]; then
   if [ -n "$GITHUB_TOKEN" ]; then
-    git -c http.extraHeader="Authorization: Bearer $GITHUB_TOKEN" -C "$APP_DIR" pull --ff-only
+    git -c credential.helper= -c http.extraHeader="Authorization: Bearer $GITHUB_TOKEN" -C "$APP_DIR" pull --ff-only
   else
-    git -C "$APP_DIR" pull --ff-only
+    git -c credential.helper= -C "$APP_DIR" pull --ff-only
   fi
 else
   if [ -n "$GITHUB_TOKEN" ]; then
-    git -c http.extraHeader="Authorization: Bearer $GITHUB_TOKEN" clone "$GITHUB_REPO" "$APP_DIR" || err "Git clone failed. Ensure GITHUB_TOKEN has repo read access."
+    git -c credential.helper= -c http.extraHeader="Authorization: Bearer $GITHUB_TOKEN" clone "$GITHUB_REPO" "$APP_DIR" || err "Git clone failed. Ensure GITHUB_TOKEN has repo read access."
   else
     git clone "$GITHUB_REPO" "$APP_DIR" || err "Git clone failed. If the repo is private, set GITHUB_TOKEN with repo read access."
   fi
