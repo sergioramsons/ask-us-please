@@ -68,6 +68,8 @@ export function TicketList({ tickets, onViewTicket, onTicketDeleted }: TicketLis
     
     const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
     
+    console.log('Filtering ticket:', ticket.title, 'Status:', ticket.status, 'Filter:', statusFilter, 'Matches:', matchesStatus);
+    
     return matchesSearch && matchesStatus;
   });
 
