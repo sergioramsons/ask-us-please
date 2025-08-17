@@ -174,6 +174,27 @@ const IncomingEmailManager = () => {
     },
   });
 
+  // Process pending emails into tickets
+  const processPendingMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('process-pending-emails');
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: any) => {
+      if (data?.success) {
+        toast.success(data.message || 'Processed pending emails');
+        queryClient.invalidateQueries({ queryKey: ['incoming-emails'] });
+        queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      } else {
+        toast.error(data?.message || 'Failed to process pending emails');
+      }
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to process pending: ${error.message}`);
+    },
+  });
+
   const getStatusBadge = (email: IncomingEmail) => {
     if (email.ticket_id) {
       return <Badge variant="default" className="gap-1"><Ticket className="h-3 w-3" />Ticket Created</Badge>;
@@ -194,6 +215,15 @@ const IncomingEmailManager = () => {
               Incoming Email Management
             </CardTitle>
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => processPendingMutation.mutate()}
+                size="sm"
+                disabled={processPendingMutation.isPending}
+                className="gap-2"
+              >
+                {processPendingMutation.isPending ? 'Processing…' : 'Process Pending'}
+              </Button>
               <Button
                 variant={showProcessed ? "default" : "outline"}
                 onClick={() => setShowProcessed(!showProcessed)}
