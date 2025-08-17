@@ -178,6 +178,7 @@ const Index = () => {
               last_name: ticketData.customerName?.split(' ').slice(1).join(' ') || '',
               email: ticketData.customerEmail,
               phone: ticketData.phone || callerInfo?.phone,
+              organization_id: organization?.id || null,
               created_by: user?.id
             })
             .select('id')
@@ -192,10 +193,27 @@ const Index = () => {
       }
 
       // Create the ticket in the database
+      // Ensure organization is selected to satisfy RLS
+      if (!organization?.id) {
+        toast({
+          title: "Select organization",
+          description: "Please select an organization before creating a ticket.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Generate a proper ticket number via DB function
+      const { data: generatedNumber, error: genError } = await supabase.rpc('generate_ticket_number');
+      if (genError) {
+        throw genError;
+      }
+
       const { data: newTicket, error } = await supabase
         .from('tickets')
         .insert({
-          ticket_number: `TKT-${Date.now()}`,
+          organization_id: organization.id,
+          ticket_number: generatedNumber as string,
           subject: ticketData.title,
           description: ticketData.description,
           status: 'open',
