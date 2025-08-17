@@ -197,8 +197,8 @@ const IncomingMailServerConfig = () => {
   // Test connection mutation
   const testConnectionMutation = useMutation({
     mutationFn: async (serverId: string) => {
-      const { data, error } = await supabase.functions.invoke('test-mail-connection', {
-        body: { serverId }
+      const { data, error } = await supabase.functions.invoke('test-incoming-mail-connection', {
+        body: { server_id: serverId }
       });
       
       if (error) throw error;
