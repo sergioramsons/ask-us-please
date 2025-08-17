@@ -66,8 +66,10 @@ export function ChannelManager() {
   const { toast } = useToast();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedChannelType, setSelectedChannelType] = useState<string>('');
   const [channelConfig, setChannelConfig] = useState<Record<string, any>>({});
+  const [editingChannel, setEditingChannel] = useState<Channel | null>(null);
 
   // Mock data for now - in real implementation this would come from database
   useEffect(() => {
@@ -151,6 +153,45 @@ export function ChannelManager() {
           : channel
       )
     );
+  };
+
+  const handleEditChannel = (channel: Channel) => {
+    setEditingChannel(channel);
+    setSelectedChannelType(channel.type);
+    setChannelConfig({ ...channel.configuration, name: channel.name, description: channel.description });
+    setShowEditDialog(true);
+  };
+
+  const handleUpdateChannel = () => {
+    if (!editingChannel) return;
+
+    setChannels(prev => 
+      prev.map(channel => 
+        channel.id === editingChannel.id 
+          ? {
+              ...channel,
+              name: channelConfig.name || channel.name,
+              description: channelConfig.description || channel.description,
+              configuration: { ...channelConfig }
+            }
+          : channel
+      )
+    );
+    
+    setShowEditDialog(false);
+    setEditingChannel(null);
+    setSelectedChannelType('');
+    setChannelConfig({});
+
+    toast({
+      title: "Channel updated",
+      description: "Channel configuration has been updated successfully"
+    });
+  };
+
+  const handleOpenSettings = (channel: Channel) => {
+    // For now, just open edit dialog
+    handleEditChannel(channel);
   };
 
   const renderChannelConfig = () => {
@@ -268,6 +309,114 @@ export function ChannelManager() {
                 placeholder="Twitter Consumer Secret"
                 value={channelConfig.consumerSecret || ''}
                 onChange={(e) => setChannelConfig(prev => ({ ...prev, consumerSecret: e.target.value }))}
+              />
+            </div>
+          </div>
+        );
+
+      case 'email':
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="email-name">Email Channel Name</Label>
+              <Input
+                id="email-name"
+                placeholder="Support Email"
+                value={channelConfig.name || ''}
+                onChange={(e) => setChannelConfig(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="email-address">Email Address</Label>
+              <Input
+                id="email-address"
+                placeholder="support@company.com"
+                value={channelConfig.address || ''}
+                onChange={(e) => setChannelConfig(prev => ({ ...prev, address: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="email-description">Description</Label>
+              <Textarea
+                id="email-description"
+                placeholder="Primary email support channel"
+                value={channelConfig.description || ''}
+                onChange={(e) => setChannelConfig(prev => ({ ...prev, description: e.target.value }))}
+              />
+            </div>
+          </div>
+        );
+
+      case 'phone':
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="phone-name">Phone Channel Name</Label>
+              <Input
+                id="phone-name"
+                placeholder="Yeastar PBX"
+                value={channelConfig.name || ''}
+                onChange={(e) => setChannelConfig(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone-extension">Extension</Label>
+              <Input
+                id="phone-extension"
+                placeholder="100"
+                value={channelConfig.extension || ''}
+                onChange={(e) => setChannelConfig(prev => ({ ...prev, extension: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone-pbx-url">PBX Server URL</Label>
+              <Input
+                id="phone-pbx-url"
+                placeholder="https://pbx.company.com"
+                value={channelConfig.pbxUrl || ''}
+                onChange={(e) => setChannelConfig(prev => ({ ...prev, pbxUrl: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone-description">Description</Label>
+              <Textarea
+                id="phone-description"
+                placeholder="Phone support via PBX system"
+                value={channelConfig.description || ''}
+                onChange={(e) => setChannelConfig(prev => ({ ...prev, description: e.target.value }))}
+              />
+            </div>
+          </div>
+        );
+
+      case 'portal':
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="portal-name">Portal Name</Label>
+              <Input
+                id="portal-name"
+                placeholder="Customer Portal"
+                value={channelConfig.name || ''}
+                onChange={(e) => setChannelConfig(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="portal-url">Portal URL</Label>
+              <Input
+                id="portal-url"
+                placeholder="/portal"
+                value={channelConfig.url || ''}
+                onChange={(e) => setChannelConfig(prev => ({ ...prev, url: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="portal-description">Description</Label>
+              <Textarea
+                id="portal-description"
+                placeholder="Self-service web portal"
+                value={channelConfig.description || ''}
+                onChange={(e) => setChannelConfig(prev => ({ ...prev, description: e.target.value }))}
               />
             </div>
           </div>
@@ -465,6 +614,32 @@ export function ChannelManager() {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Edit Channel Dialog */}
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit Channel</DialogTitle>
+              <DialogDescription>
+                Update the configuration for {editingChannel?.name}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <h3 className="font-medium">Configuration</h3>
+              {renderChannelConfig()}
+              
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateChannel}>
+                  Update Channel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Active Channels */}
@@ -508,14 +683,14 @@ export function ChannelManager() {
                     )}
                   </Badge>
                   
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </div>
+                   <div className="flex gap-2">
+                     <Button variant="outline" size="sm" onClick={() => handleOpenSettings(channel)}>
+                       <Settings className="h-4 w-4" />
+                     </Button>
+                     <Button variant="outline" size="sm" onClick={() => handleEditChannel(channel)}>
+                       <Edit className="h-4 w-4" />
+                     </Button>
+                   </div>
                 </div>
 
                 {/* Channel-specific info */}
