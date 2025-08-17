@@ -89,12 +89,21 @@ const handler = async (req: Request): Promise<Response> => {
 
 async function fetchEmailsFromServer(server: any): Promise<POP3Response> {
   try {
-    console.log(`Connecting to ${server.host}:${server.port}`);
+    console.log(`Connecting to ${server.host}:${server.port} for server: ${server.name}`);
     
     // Decrypt password if encrypted
     let password = server.password;
-    if (server.password_encrypted && password.startsWith('enc:')) {
-      password = await decryptPassword(password);
+    if (server.password_encrypted && password && password.startsWith('enc:')) {
+      try {
+        password = await decryptPassword(password);
+        console.log('Password decryption successful');
+      } catch (decryptError) {
+        console.error('Password decryption failed:', decryptError);
+        return {
+          success: false,
+          message: `Password decryption failed for server ${server.name}: ${decryptError.message}`
+        };
+      }
     }
 
     const emails = await connectAndFetchEmails({
@@ -114,13 +123,19 @@ async function fetchEmailsFromServer(server: any): Promise<POP3Response> {
     for (const email of emails) {
       try {
         // Check if email already exists
-        const { data: existing } = await supabase
+        const { data: existingEmail, error: queryError } = await supabase
           .from('incoming_emails')
           .select('id')
           .eq('message_id', email.messageId)
-          .single();
+          .maybeSingle();
 
-        if (existing) {
+        if (queryError) {
+          console.error('Database query error:', queryError);
+          errors.push(`Database error checking email ${email.messageId}: ${queryError.message}`);
+          continue;
+        }
+
+        if (existingEmail) {
           console.log(`Email ${email.messageId} already exists, skipping`);
           continue;
         }

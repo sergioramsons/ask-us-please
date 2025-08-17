@@ -246,16 +246,32 @@ const fetchEmailsMutation = useMutation({
     return data;
   },
   onSuccess: (data) => {
+    console.log('Fetch emails response:', data);
     if (data.success) {
       toast.success(data.message || 'Emails fetched successfully!');
       queryClient.invalidateQueries({ queryKey: ['incoming-emails'] });
+      // Show detailed results
+      if (data.results) {
+        data.results.forEach((result: any) => {
+          if (result.errors && result.errors.length > 0) {
+            console.error('Server errors:', result.errors);
+            result.errors.forEach((error: string) => {
+              toast.error(`Server error: ${error}`);
+            });
+          }
+        });
+      }
       // Immediately process any pending emails into tickets
       processPendingMutation.mutate();
     } else {
       toast.error(data.message || 'Failed to fetch emails');
+      if (data.error) {
+        console.error('Fetch emails error:', data.error);
+      }
     }
   },
   onError: (error: any) => {
+    console.error('Fetch emails mutation error:', error);
     toast.error(`Failed to fetch emails: ${error.message}`);
   },
 });
