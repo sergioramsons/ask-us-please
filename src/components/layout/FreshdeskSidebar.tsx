@@ -26,7 +26,12 @@ interface SidebarProps {
   isCollapsed?: boolean;
 }
 
-const navigationItems = [
+const navigationItems: Array<{
+  id: View;
+  label: string;
+  icon: any;
+  description: string;
+}> = [
   {
     id: "tickets",
     label: "Tickets",
@@ -47,7 +52,12 @@ const navigationItems = [
   }
 ];
 
-const adminItems = [
+const adminItems: Array<{
+  id: View;
+  label: string;
+  icon: any;
+  description: string;
+}> = [
   {
     id: "admin-panel",
     label: "Admin Panel",
