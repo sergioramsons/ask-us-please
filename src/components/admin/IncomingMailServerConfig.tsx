@@ -106,6 +106,12 @@ const IncomingMailServerConfig = () => {
         password_encrypted: true,
       } as any; // Type assertion to handle database schema mismatch
 
+      // Enforce sensible defaults for POP3 over 995 (implicit SSL)
+      if (dataToSave.server_type === 'pop3' && Number(dataToSave.port) === 995) {
+        dataToSave.use_ssl = true;
+        dataToSave.use_tls = false;
+      }
+
       if (serverData.id) {
         // Update existing server
         const { data, error } = await supabase

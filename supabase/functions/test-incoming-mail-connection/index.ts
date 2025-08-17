@@ -16,9 +16,8 @@ const KEY_LENGTH = 256;
 const DEV_KEY_MATERIAL = 'helpdesk-dev-encryption-key-2024-secure';
 const DEV_SALT = 'helpdesk-dev-salt-2024';
 
-async function getEncryptionKey(): Promise<CryptoKey> {
-  const envKey = Deno.env.get('ENCRYPTION_KEY') || DEV_KEY_MATERIAL;
-  const keyMaterial = new TextEncoder().encode(envKey);
+async function deriveKey(keyStr: string): Promise<CryptoKey> {
+  const keyMaterial = new TextEncoder().encode(keyStr);
   const importedKey = await crypto.subtle.importKey(
     'raw',
     keyMaterial,
@@ -40,15 +39,39 @@ async function getEncryptionKey(): Promise<CryptoKey> {
   );
 }
 
-async function decryptEncPassword(encrypted: string): Promise<string> {
-  const clean = encrypted.startsWith('enc:') ? encrypted.slice(4) : encrypted;
-  const bytes = new Uint8Array(atob(clean).split('').map((c) => c.charCodeAt(0)));
+async function decryptWithKey(cleanBase64: string, keyStr: string): Promise<string> {
+  const bytes = new Uint8Array(atob(cleanBase64).split('').map((c) => c.charCodeAt(0)));
   if (bytes.length < 13) throw new Error('Invalid encrypted data');
   const iv = bytes.slice(0, 12);
   const data = bytes.slice(12);
-  const key = await getEncryptionKey();
+  const key = await deriveKey(keyStr);
   const decrypted = await crypto.subtle.decrypt({ name: ALGORITHM, iv }, key, data);
   return new TextDecoder().decode(decrypted);
+}
+
+async function decryptEncPassword(encrypted: string): Promise<string> {
+  const clean = encrypted.startsWith('enc:') ? encrypted.slice(4) : encrypted;
+  // 1) Try ENV key
+  const envKey = Deno.env.get('ENCRYPTION_KEY') || '';
+  if (envKey) {
+    try {
+      return await decryptWithKey(clean, envKey);
+    } catch (e) {
+      console.warn('Decrypt with ENV key failed, trying fallback');
+    }
+  }
+  // 2) Try DEV key used by the client
+  try {
+    return await decryptWithKey(clean, DEV_KEY_MATERIAL);
+  } catch (e) {
+    console.warn('Decrypt with DEV key failed, trying legacy base64');
+  }
+  // 3) Legacy: plain base64 of password
+  try {
+    return atob(clean);
+  } catch (_) {
+    throw new Error('Password decryption failed');
+  }
 }
 
 async function readLine(conn: Deno.Conn, timeoutMs = 8000): Promise<string> {
