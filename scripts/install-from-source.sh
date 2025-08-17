@@ -41,7 +41,7 @@ log "Starting zero-git install → source=$APP_SOURCE domain=$DOMAIN_NAME dir=$A
 
 log "Updating packages and installing prerequisites"
 $SUDO apt-get update -y
-$SUDO apt-get install -y curl wget unzip nginx ufw certbot python3-certbot-nginx ca-certificates gnupg build-essential
+$SUDO apt-get install -y curl wget unzip rsync file nginx ufw certbot python3-certbot-nginx ca-certificates gnupg build-essential
 
 # Node.js 18 + PM2
 if ! command -v node >/dev/null 2>&1; then
