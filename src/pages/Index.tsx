@@ -37,17 +37,30 @@ const Index = () => {
     try {
       const { data, error } = await supabase
         .from('tickets')
-        .select(`
-          *,
-          contacts(first_name, last_name, email, phone, company)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
+      // Get contact details for tickets that have contact_id
+      const ticketIds = (data || []).map(ticket => ticket.id);
+      const contactIds = (data || []).map(ticket => ticket.contact_id).filter(Boolean);
+      
+      let contactsMap = new Map();
+      if (contactIds.length > 0) {
+        const { data: contacts } = await supabase
+          .from('contacts')
+          .select('id, first_name, last_name, email, phone, company')
+          .in('id', contactIds);
+        
+        if (contacts) {
+          contactsMap = new Map(contacts.map(contact => [contact.id, contact]));
+        }
+      }
+
       // Transform database tickets to match the UI format
       const transformedTickets: Ticket[] = (data || []).map(ticket => {
-        const contact = ticket.contacts as any;
+        const contact = contactsMap.get(ticket.contact_id);
         return {
           id: ticket.id,
           title: ticket.subject,
