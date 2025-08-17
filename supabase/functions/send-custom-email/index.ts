@@ -264,6 +264,7 @@ const handler = async (req: Request): Promise<Response> => {
     const senderEmail = String(emailServer.sender_email || '').trim();
     const senderName = String(emailServer.sender_name || 'Support Team').trim();
     const replyTo = String(emailServer.reply_to || senderEmail).trim();
+    const smtpPasswordStr = String(smtpPassword || '').trim();
 
     const client = new SMTPClient({
       connection: {
@@ -272,7 +273,7 @@ const handler = async (req: Request): Promise<Response> => {
         tls: Boolean(emailServer.use_tls),
         auth: {
           username: smtpUsername,
-          password: smtpPassword,
+          password: smtpPasswordStr,
         },
       },
     });
