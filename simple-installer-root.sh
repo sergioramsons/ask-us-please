@@ -20,12 +20,13 @@ APP_DIR=${APP_DIR:-${3:-/opt/helpdesk}}
 APP_PORT=${APP_PORT:-${4:-3000}}
 ADMIN_EMAIL=${ADMIN_EMAIL:-${5:-}}
 INSTALL_SSL=${INSTALL_SSL:-${6:-n}}
+GITHUB_TOKEN=${GITHUB_TOKEN:-${7:-}}  # Optional: GitHub PAT for private repos
 
 [[ -z "$GITHUB_REPO" || -z "$DOMAIN_NAME" ]] && {
   echo "";
   echo "Usage:";
-  echo "  GITHUB_REPO=... DOMAIN_NAME=... [APP_DIR=/opt/helpdesk] [APP_PORT=3000] [ADMIN_EMAIL=admin@example.com] [INSTALL_SSL=y] bash simple-installer-root.sh";
-  echo "  bash simple-installer-root.sh https://github.com/OWNER/REPO.git helpdesk.example.com /opt/helpdesk 3000 admin@example.com y";
+  echo "  GITHUB_REPO=... DOMAIN_NAME=... [APP_DIR=/opt/helpdesk] [APP_PORT=3000] [ADMIN_EMAIL=admin@example.com] [INSTALL_SSL=y] [GITHUB_TOKEN=xxxxx] bash simple-installer-root.sh";
+  echo "  bash simple-installer-root.sh https://github.com/OWNER/REPO.git helpdesk.example.com /opt/helpdesk 3000 admin@example.com y xxxxxx";
   echo ""; err "Missing required inputs: GITHUB_REPO and DOMAIN_NAME";
 }
 
@@ -40,8 +41,13 @@ $SUDO apt-get install -y curl wget git nginx ufw certbot python3-certbot-nginx c
 
 if ! command -v node >/dev/null 2>&1; then
   log "Installing Node.js 18 (NodeSource)"
-  curl -fsSL https://deb.nodesource.com/setup_18.x | $SUDO -E bash -
-  $SUDO apt-get install -y nodejs
+  if [ -n "$SUDO" ]; then
+    curl -fsSL https://deb.nodesource.com/setup_18.x | $SUDO bash -
+    $SUDO apt-get install -y nodejs
+  else
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    apt-get install -y nodejs
+  fi
 fi
 
 if ! command -v pm2 >/dev/null 2>&1; then
@@ -53,9 +59,17 @@ log "Cloning/updating repository"
 $SUDO mkdir -p "$APP_DIR"
 $SUDO chown -R "${USER:-$(id -un)}":"${USER:-$(id -un)}" "$APP_DIR"
 if [ -d "$APP_DIR/.git" ]; then
-  git -C "$APP_DIR" pull --ff-only
+  if [ -n "$GITHUB_TOKEN" ]; then
+    git -c http.extraHeader="Authorization: Bearer $GITHUB_TOKEN" -C "$APP_DIR" pull --ff-only
+  else
+    git -C "$APP_DIR" pull --ff-only
+  fi
 else
-  git clone "$GITHUB_REPO" "$APP_DIR"
+  if [ -n "$GITHUB_TOKEN" ]; then
+    git -c http.extraHeader="Authorization: Bearer $GITHUB_TOKEN" clone "$GITHUB_REPO" "$APP_DIR" || err "Git clone failed. Ensure GITHUB_TOKEN has repo read access."
+  else
+    git clone "$GITHUB_REPO" "$APP_DIR" || err "Git clone failed. If the repo is private, set GITHUB_TOKEN with repo read access."
+  fi
 fi
 
 cd "$APP_DIR"
@@ -98,7 +112,7 @@ module.exports = {
   }]
 }
 EOF
-pm2 start ecosystem.config.js || pm2 restart helpdesk
+pm2 start ecosystem.config.js || pm2 restart helpdesk || true
 pm2 save
 # Ensure PM2 starts on boot for current user
 pm2 startup systemd -u "${USER:-$(id -un)}" --hp "$HOME" >/dev/null 2>&1 || true
