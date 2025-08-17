@@ -38,6 +38,7 @@ const ThreeCXAutoDialer = () => {
   const [threeCXUrl, setThreeCXUrl] = useState('');
   const [threeCXUsername, setThreeCXUsername] = useState('');
   const [threeCXPassword, setThreeCXPassword] = useState('');
+  const [threeCXPath, setThreeCXPath] = useState('/webclient/api/call/new');
   const [results, setResults] = useState<CallResult[]>([]);
   const [progress, setProgress] = useState(0);
   const [campaignStats, setCampaignStats] = useState<CampaignStats | null>(null);
@@ -82,7 +83,8 @@ const ThreeCXAutoDialer = () => {
           dialDelay,
           threeCXUrl,
           threeCXUsername,
-          threeCXPassword
+          threeCXPassword,
+          threeCXPath
         }
       });
 
@@ -128,7 +130,8 @@ const ThreeCXAutoDialer = () => {
           extension,
           threeCXUrl,
           threeCXUsername,
-          threeCXPassword
+          threeCXPassword,
+          threeCXPath
         }
       });
 
@@ -236,9 +239,18 @@ const ThreeCXAutoDialer = () => {
                   placeholder="API Password"
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="threecx-path">API Path (optional)</Label>
+                <Input
+                  id="threecx-path"
+                  value={threeCXPath}
+                  onChange={(e) => setThreeCXPath(e.target.value)}
+                  placeholder="/webclient/api/call/new (v20) or /xapi/MakeCall (older)"
+                />
+              </div>
             </div>
           </div>
-
+ 
           <Separator />
 
           {/* Campaign Configuration */}

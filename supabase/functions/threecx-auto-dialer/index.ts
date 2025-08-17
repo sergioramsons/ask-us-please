@@ -27,6 +27,45 @@ const logStep = (step: string, details?: any) => {
   console.log(`[3CX-AUTO-DIALER] ${step}${detailsStr}`);
 };
 
+
+async function tryInitiateCall(base: string, authHeader: string, extension: string, number: string, requestedPath?: string) {
+  const buildUrl = (p: string) => new URL(p.startsWith('/') ? p : `/${p}`, base).toString();
+
+  const candidates: { path: string; payloads: any[] }[] = [
+    { path: requestedPath || '/webclient/api/call/new', payloads: [ { destination: number, callerid: extension } ] },
+    { path: '/xapi/MakeCall', payloads: [ { From: extension, To: number }, { from: extension, to: number }, { caller: extension, callee: number, timeout: 30 } ] },
+    { path: '/xapi/v1/Calls', payloads: [ { caller: extension, callee: number, timeout: 30 } ] },
+  ];
+
+  for (const candidate of candidates) {
+    for (const payload of candidate.payloads) {
+      try {
+        const res = await fetch(buildUrl(candidate.path), {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${authHeader}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'User-Agent': 'Helpdesk-Auto-Dialer/1.0'
+          },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          let body: any = null;
+          try { body = await res.json(); } catch { body = await res.text(); }
+          return { ok: true, body, path: candidate.path, payload };
+        }
+        const text = await res.text();
+        logStep('Attempt failed', { path: candidate.path, status: res.status, text });
+      } catch (e) {
+        logStep('Attempt exception', { path: candidate.path, error: e instanceof Error ? e.message : String(e) });
+      }
+    }
+  }
+  return { ok: false };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -78,38 +117,15 @@ serve(async (req) => {
     let results = [];
 
     if (request.action === 'single' && request.phoneNumber) {
-      // Make a single call
-      logStep("Making single call", { number: request.phoneNumber, extension: request.extension });
-      
-      // 3CX Web Client API call payload format
-      const callPayload = {
-        destination: request.phoneNumber,
-        callerid: request.extension || '100'
-      };
-
-      logStep("Call payload", callPayload);
-
-      const response = await fetch(endpoint.toString(), {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${auth}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': 'Helpdesk-Auto-Dialer/1.0'
-        },
-        body: JSON.stringify(callPayload)
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`3CX API error: ${response.status} - ${errorText}`);
+      const ext = request.extension || '100';
+      const attempt = await tryInitiateCall(base, auth, ext, request.phoneNumber, request.threeCXPath);
+      if (!attempt.ok) {
+        throw new Error('3CX API call initiation failed across all known endpoints. Check logs for details.');
       }
-
-      const result = await response.json();
       results.push({
         phoneNumber: request.phoneNumber,
         status: 'initiated',
-        callId: result.callId || result.id,
+        callId: attempt.body?.callId || attempt.body?.id || attempt.body?.call_id || undefined,
         timestamp: new Date().toISOString()
       });
 
@@ -129,40 +145,20 @@ serve(async (req) => {
         try {
           logStep(`Dialing ${i + 1}/${request.phoneNumbers.length}`, { number: phoneNumber });
 
-          const callPayload = {
-            destination: phoneNumber,
-            callerid: extension
-          };
-
-          logStep(`Call ${i + 1} payload`, callPayload);
-
-          const response = await fetch(endpoint.toString(), {
-            method: 'POST',
-            headers: {
-              'Authorization': `Basic ${auth}`,
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'User-Agent': 'Helpdesk-Auto-Dialer/1.0'
-            },
-            body: JSON.stringify(callPayload)
-          });
-
-          let result;
-          if (response.ok) {
-            result = await response.json();
+          const attempt = await tryInitiateCall(base, auth, extension, phoneNumber, request.threeCXPath);
+          if (attempt.ok) {
             results.push({
               phoneNumber,
               status: 'initiated',
-              callId: result.callId || result.id,
+              callId: attempt.body?.callId || attempt.body?.id || attempt.body?.call_id || undefined,
               timestamp: new Date().toISOString(),
               attempt: 1
             });
           } else {
-            const errorText = await response.text();
             results.push({
               phoneNumber,
               status: 'failed',
-              error: `API error: ${response.status} - ${errorText}`,
+              error: 'All known endpoints failed (see function logs for details).',
               timestamp: new Date().toISOString(),
               attempt: 1
             });
