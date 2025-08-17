@@ -63,6 +63,7 @@ const Index = () => {
         const contact = contactsMap.get(ticket.contact_id);
         return {
           id: ticket.id,
+          ticketNumber: ticket.ticket_number || ticket.id, // Use ticket_number from database
           title: ticket.subject,
           description: ticket.description || '',
           status: ticket.status as any,
@@ -529,7 +530,7 @@ const Index = () => {
                         >
                           <div className="flex-1">
                             <div className="flex items-center gap-3">
-                              <span className="font-medium">#{ticket.id.slice(0, 8)}</span>
+                              <span className="font-medium">#{ticket.ticketNumber || ticket.id.slice(0, 8)}</span>
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                 ticket.status === 'open' ? 'bg-red-100 text-red-800' :
                                 ticket.status === 'in-progress' ? 'bg-orange-100 text-orange-800' :

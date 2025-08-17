@@ -55,6 +55,7 @@ export interface TicketResolution {
 
 export interface Ticket {
   id: string;
+  ticketNumber?: string; // Optional ticket number field
   title: string;
   description: string;
   status: TicketStatus;
