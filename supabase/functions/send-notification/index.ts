@@ -166,20 +166,71 @@ const handler = async (req: Request): Promise<Response> => {
     // Check if user has notifications enabled (in a real app, you'd check user preferences)
     // For now, we'll assume notifications are enabled
 
-    // Check if email service is configured
-    const apiKey = Deno.env.get('RESEND_API_KEY');
-    if (!apiKey) {
-      console.log('RESEND_API_KEY not configured - skipping email notification');
+    // Check for active SMTP server first
+    const { data: activeServer } = await supabase
+      .from('email_servers')
+      .select('*')
+      .eq('is_active', true)
+      .limit(1)
+      .single();
+
+    if (activeServer) {
+      // Use SMTP server via send-custom-email function
+      console.log('Using active SMTP server for notification');
+      const emailResponse = await supabase.functions.invoke('send-custom-email', {
+        body: {
+          ticketId: notification.ticketId,
+          customerName: notification.recipientName || 'Valued Customer',
+          customerEmail: notification.recipientEmail,
+          subject: getEmailTemplate(notification).subject,
+          message: notification.message || 'Please check your ticket for updates.',
+          agentName: notification.senderName || 'Support Team',
+          ticketStatus: notification.ticketStatus || 'open',
+          priority: notification.ticketPriority || 'medium',
+          isResolution: false,
+          emailServerId: activeServer.id
+        }
+      });
+
+      if (emailResponse.error) {
+        console.error('SMTP send error:', emailResponse.error);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: "SMTP email send failed",
+            error: emailResponse.error,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'Email notifications disabled - RESEND_API_KEY not configured',
+          message: "Notification sent via SMTP successfully",
           notification_type: notification.type,
           ticket_id: notification.ticketId
         }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    // Fallback to Resend if no SMTP server is active
+    const apiKey = Deno.env.get('RESEND_API_KEY');
+    if (!apiKey) {
+      console.log('No active SMTP server and RESEND_API_KEY not configured - skipping email notification');
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Email notifications disabled - no email service configured',
+          notification_type: notification.type,
+          ticket_id: notification.ticketId
+        }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+    
+    console.log('Using Resend for notification (no active SMTP server)');
     const resend = new Resend(apiKey);
 
     const template = getEmailTemplate(notification);
