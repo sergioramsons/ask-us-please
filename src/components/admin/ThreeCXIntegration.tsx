@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Download, Copy, FileText, Phone } from 'lucide-react';
+import { Download, Copy, FileText, Phone, Radio } from 'lucide-react';
 import ThreeCXCallLogs from './ThreeCXCallLogs';
+import ThreeCXAutoDialer from './ThreeCXAutoDialer';
 
 const ThreeCXIntegration = () => {
   const [copied, setCopied] = useState(false);
@@ -77,7 +78,7 @@ const ThreeCXIntegration = () => {
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <Tabs defaultValue="configuration" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="configuration" className="gap-2">
             <FileText className="h-4 w-4" />
             Integration Configuration
@@ -85,6 +86,10 @@ const ThreeCXIntegration = () => {
           <TabsTrigger value="call-logs" className="gap-2">
             <Phone className="h-4 w-4" />
             Call Logs
+          </TabsTrigger>
+          <TabsTrigger value="auto-dialer" className="gap-2">
+            <Radio className="h-4 w-4" />
+            Auto Dialer
           </TabsTrigger>
         </TabsList>
 
@@ -130,6 +135,10 @@ const ThreeCXIntegration = () => {
 
         <TabsContent value="call-logs" className="mt-6">
           <ThreeCXCallLogs />
+        </TabsContent>
+
+        <TabsContent value="auto-dialer" className="mt-6">
+          <ThreeCXAutoDialer />
         </TabsContent>
       </Tabs>
     </div>
