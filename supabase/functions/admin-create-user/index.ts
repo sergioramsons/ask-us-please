@@ -103,46 +103,112 @@ serve(async (req) => {
       email_confirm: true
     });
 
+    // Resolve target user (newly created or existing)
+    let targetUser: any = authData?.user ?? null;
+
     if (createError) {
+      const msg = (createError.message || '').toLowerCase();
+      // If user already exists, fetch it and continue to update profile/roles
+      if (msg.includes('already') && (msg.includes('registered') || msg.includes('exists'))) {
+        const { data: usersPage, error: listErr } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        if (listErr) {
+          return new Response(
+            JSON.stringify({ error: `User exists but could not be listed: ${listErr.message}` }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        const existing = usersPage?.users?.find((u: any) => (u.email || '').toLowerCase() === email.toLowerCase());
+        if (!existing) {
+          return new Response(
+            JSON.stringify({ error: 'User already exists but could not be found by email' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        targetUser = existing;
+      } else {
+        return new Response(
+          JSON.stringify({ error: createError.message }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    if (!targetUser) {
       return new Response(
-        JSON.stringify({ error: createError.message }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Unable to resolve target user' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (authData.user) {
-      // Update profile with display name and department
-      if (displayName || departmentId) {
-        const { error: profileError } = await supabaseAdmin
-          .from('profiles')
-          .update({
-            display_name: displayName || null,
-            department_id: departmentId === 'none' ? null : departmentId || null
-          })
-          .eq('user_id', authData.user.id);
+    // Ensure profile exists and apply updates
+    const { data: existingProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('user_id', targetUser.id)
+      .maybeSingle();
 
-        if (profileError) {
-          console.error('Error updating profile:', profileError);
-        }
+    if (!existingProfile) {
+      const { error: insertProfileError } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          user_id: targetUser.id,
+          display_name: displayName || null,
+          department_id: departmentId === 'none' ? null : (departmentId || null)
+        });
+      if (insertProfileError) {
+        console.error('Error inserting profile:', insertProfileError);
       }
+    } else if (displayName || departmentId) {
+      const { error: updateProfileError } = await supabaseAdmin
+        .from('profiles')
+        .update({
+          display_name: displayName || null,
+          department_id: departmentId === 'none' ? null : (departmentId || null)
+        })
+        .eq('user_id', targetUser.id);
+      if (updateProfileError) {
+        console.error('Error updating profile:', updateProfileError);
+      }
+    }
 
-      // Assign role if provided and not default 'agent'
-      if (role && role !== 'agent') {
-        const { error: roleError } = await supabaseAdmin
+    // Ensure default 'agent' role exists
+    const { data: hasAgent } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', targetUser.id)
+      .eq('role', 'agent')
+      .maybeSingle();
+
+    if (!hasAgent) {
+      const { error: addAgentError } = await supabaseAdmin
+        .from('user_roles')
+        .insert({ user_id: targetUser.id, role: 'agent' });
+      if (addAgentError) {
+        console.error('Error assigning default agent role:', addAgentError);
+      }
+    }
+
+    // Assign requested role if provided and not 'agent'
+    if (role && role !== 'agent') {
+      const { data: hasRole } = await supabaseAdmin
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', targetUser.id)
+        .eq('role', role)
+        .maybeSingle();
+
+      if (!hasRole) {
+        const { error: addRoleError } = await supabaseAdmin
           .from('user_roles')
-          .insert({
-            user_id: authData.user.id,
-            role: role
-          });
-
-        if (roleError) {
-          console.error('Error assigning role:', roleError);
+          .insert({ user_id: targetUser.id, role });
+        if (addRoleError) {
+          console.error('Error assigning role:', addRoleError);
         }
       }
     }
 
     return new Response(
-      JSON.stringify({ success: true, user: authData.user }),
+      JSON.stringify({ success: true, user: targetUser }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
