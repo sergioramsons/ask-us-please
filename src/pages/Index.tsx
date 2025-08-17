@@ -193,16 +193,6 @@ const Index = () => {
       }
 
       // Create the ticket in the database
-      // Ensure organization is selected to satisfy RLS
-      if (!organization?.id) {
-        toast({
-          title: "Select organization",
-          description: "Please select an organization before creating a ticket.",
-          variant: "destructive",
-        });
-        return;
-      }
-
       // Generate a proper ticket number via DB function
       const { data: generatedNumber, error: genError } = await supabase.rpc('generate_ticket_number');
       if (genError) {
@@ -212,7 +202,7 @@ const Index = () => {
       const { data: newTicket, error } = await supabase
         .from('tickets')
         .insert({
-          organization_id: organization.id,
+          organization_id: organization?.id || null, // Allow null if no org selected
           ticket_number: generatedNumber as string,
           subject: ticketData.title,
           description: ticketData.description,
