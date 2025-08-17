@@ -92,6 +92,7 @@ const Index = () => {
         };
       });
 
+      console.log('Loaded tickets from database:', transformedTickets.length, transformedTickets);
       setTickets(transformedTickets);
     } catch (error: any) {
       console.error('Error loading tickets:', error);
