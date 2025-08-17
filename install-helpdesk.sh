@@ -143,19 +143,16 @@ setup_application() {
     log "Installing dependencies..."
     npm install
     
-    # Create environment file
+    # Create environment file without heredoc to avoid EOF issues
     log "Creating environment configuration..."
-    cat > .env << 'EOF'
-# Supabase Configuration
-VITE_SUPABASE_URL=https://thzdazcmswmeolaiijml.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRoemRhemNtc3dtZW9sYWlpam1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDQzNTYsImV4cCI6MjA3MDgyMDM1Nn0.YL3OuA8zhliqJSDw8qzZjvonTXJPc9INBv-b10g_tEQ
-
-# Application Configuration
-NODE_ENV=production
-PORT=__APP_PORT__
-EOF
-    # Replace placeholder with actual port
-    sed -i "s/__APP_PORT__/$APP_PORT/" .env
+    : > .env
+    printf "%s\n" "# Supabase Configuration" >> .env
+    printf "%s\n" "VITE_SUPABASE_URL=https://thzdazcmswmeolaiijml.supabase.co" >> .env
+    printf "%s\n" "VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRoemRhemNtc3dtZW9sYWlpam1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDQzNTYsImV4cCI6MjA3MDgyMDM1Nn0.YL3OuA8zhliqJSDw8qzZjvonTXJPc9INBv-b10g_tEQ" >> .env
+    printf "%s\n" "" >> .env
+    printf "%s\n" "# Application Configuration" >> .env
+    printf "%s\n" "NODE_ENV=production" >> .env
+    printf "%s\n" "PORT=${APP_PORT}" >> .env
     
     # Build application
     log "Building application..."
