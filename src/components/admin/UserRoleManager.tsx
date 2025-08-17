@@ -93,49 +93,49 @@ export function UserRoleManager() {
 
     setIsCreatingUser(true);
     try {
-      // Create user account
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: newUserEmail,
-        password: newUserPassword,
-        user_metadata: {
-          display_name: newUserDisplayName
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
+      // Call the edge function to create user with admin privileges
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          email: newUserEmail,
+          password: newUserPassword,
+          displayName: newUserDisplayName,
+          departmentId: newUserDepartment === 'none' ? null : newUserDepartment || null,
+          role: newUserRole
         },
-        email_confirm: true // Skip email verification for admin-created users
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
-      if (authError) throw authError;
-
-      if (authData.user) {
-        // Update profile with display name and department
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            display_name: newUserDisplayName || null,
-            department_id: newUserDepartment === 'none' ? null : newUserDepartment || null
-          })
-          .eq('user_id', authData.user.id);
-
-        if (profileError) {
-          console.error('Error updating profile:', profileError);
-        }
-
-        // Assign role if not default 'user'
-        if (newUserRole !== 'agent') {
-          await assignRole(authData.user.id, newUserRole);
-        }
-
-        // Clear form
-        setNewUserEmail('');
-        setNewUserPassword('');
-        setNewUserDisplayName('');
-        setNewUserDepartment('');
-        setNewUserRole('agent');
-
-        // Reload users
-        await loadUsers();
+      if (error) {
+        throw new Error(error.message || 'Failed to create user');
       }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Clear form on success
+      setNewUserEmail('');
+      setNewUserPassword('');
+      setNewUserDisplayName('');
+      setNewUserDepartment('');
+      setNewUserRole('agent');
+
+      // Reload users
+      await loadUsers();
+
+      // Show success message
+      console.log('User created successfully:', data.user);
     } catch (error: any) {
       console.error('Error creating user:', error);
+      // You might want to show a toast notification here
     } finally {
       setIsCreatingUser(false);
     }
