@@ -3,6 +3,7 @@ import { UserRoleManager } from "@/components/admin/UserRoleManager";
 import { ReportsDashboard } from "@/components/reports/ReportsDashboard";
 import { EmailManager } from "@/components/admin/EmailManager";
 import IncomingEmailManager from "@/components/admin/IncomingEmailManager";
+import { ManualEmailProcessor } from "@/components/admin/ManualEmailProcessor";
 import IncomingMailServerConfig from "@/components/admin/IncomingMailServerConfig";
 import { EnhancedTicketForm } from "@/components/helpdesk/EnhancedTicketForm";
 import { WorkflowBuilder } from "@/components/workflow/WorkflowBuilder";
@@ -116,10 +117,11 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
         
         <TabsContent value="email" className="space-y-4">
           <Tabs defaultValue="outgoing" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="outgoing">Outgoing Mail</TabsTrigger>
               <TabsTrigger value="incoming-servers">Incoming Servers</TabsTrigger>
               <TabsTrigger value="incoming-emails">Incoming Emails</TabsTrigger>
+              <TabsTrigger value="manual-process">Process Emails</TabsTrigger>
             </TabsList>
             <TabsContent value="outgoing">
               <EmailManager />
@@ -129,6 +131,9 @@ export function AdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
             </TabsContent>
             <TabsContent value="incoming-emails">
               <IncomingEmailManager />
+            </TabsContent>
+            <TabsContent value="manual-process">
+              <ManualEmailProcessor />
             </TabsContent>
           </Tabs>
         </TabsContent>
