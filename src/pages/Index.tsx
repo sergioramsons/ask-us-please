@@ -409,10 +409,6 @@ const Index = () => {
             
             <div className="flex items-center gap-4">
               <OrganizationSelector />
-              <div className="flex items-center gap-2 text-blue-100">
-                <User className="h-4 w-4" />
-                <span className="text-sm">{user?.email}</span>
-              </div>
               
               {(currentView !== 'tickets' && currentView !== 'inbox') && (
                 <Button 
