@@ -25,7 +25,7 @@ export function FreshdeskLayout({
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-gradient-surface flex">
       {/* Sidebar */}
       <FreshdeskSidebar
         currentView={currentView}
@@ -44,7 +44,7 @@ export function FreshdeskLayout({
         />
         
         {/* Content */}
-        <main className="freshdesk-content flex-1 p-6">
+        <main className="modern-content flex-1 p-6">
           <div className={cn(
             "max-w-7xl mx-auto",
             "animate-fade-in"

@@ -83,17 +83,29 @@ export function FreshdeskSidebar({ currentView, onViewChange, isCollapsed = fals
       key={item.id}
       onClick={() => onViewChange(item.id)}
       className={cn(
-        "freshdesk-nav-item w-full text-left",
-        currentView === item.id && "freshdesk-nav-item-active"
+        "modern-nav-item w-full text-left group relative",
+        currentView === item.id && "modern-nav-item-active"
       )}
       title={isCollapsed ? item.label : undefined}
     >
-      <item.icon className="h-4 w-4 flex-shrink-0" />
-      {!isCollapsed && (
-        <div className="flex flex-col flex-1 min-w-0">
-          <span className="font-medium">{item.label}</span>
-          <span className="text-xs text-muted-foreground">{item.description}</span>
+      <div className="flex items-center gap-3">
+        <div className={cn(
+          "w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200",
+          currentView === item.id 
+            ? "bg-primary/20 text-primary" 
+            : "text-muted-foreground group-hover:bg-accent/50 group-hover:text-foreground"
+        )}>
+          <item.icon className="h-4 w-4 flex-shrink-0" />
         </div>
+        {!isCollapsed && (
+          <div className="flex flex-col flex-1 min-w-0">
+            <span className="font-medium text-sm">{item.label}</span>
+            <span className="text-xs text-muted-foreground opacity-80">{item.description}</span>
+          </div>
+        )}
+      </div>
+      {currentView === item.id && (
+        <div className="absolute right-2 w-1 h-8 bg-gradient-primary rounded-full animate-scale-in" />
       )}
     </button>
   );
@@ -128,35 +140,45 @@ export function FreshdeskSidebar({ currentView, onViewChange, isCollapsed = fals
 
   return (
     <div className={cn(
-      "freshdesk-sidebar flex flex-col",
-      isCollapsed ? "w-16" : "w-60"
+      "modern-sidebar flex flex-col transition-all duration-300",
+      isCollapsed ? "w-16" : "w-72"
     )}>
       {/* Logo/Brand */}
-      <div className="p-4 border-b border-sidebar-border">
+      <div className="p-6 border-b border-sidebar-border/50">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
+          <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg animate-float">
             <HelpCircle className="h-5 w-5 text-primary-foreground" />
           </div>
           {!isCollapsed && (
-            <div>
-              <h2 className="font-semibold text-sm">BS-HelpDesk</h2>
-              <p className="text-xs text-muted-foreground">Support Platform</p>
+            <div className="animate-slide-right">
+              <h2 className="font-bold text-lg bg-gradient-primary bg-clip-text text-transparent">
+                BS-HelpDesk
+              </h2>
+              <p className="text-sm text-muted-foreground">Advanced Support Platform</p>
             </div>
           )}
         </div>
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 p-4 space-y-6">
-        {renderSection("Main", navigationItems, "main")}
+      <div className="flex-1 p-6 space-y-8">
+        {renderSection("Main Workspace", navigationItems, "main")}
         
         {isAdmin() && renderSection("Administration", adminItems, "admin")}
       </div>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-sidebar-border">
-        <div className="text-xs text-muted-foreground text-center">
-          {isCollapsed ? "v1.0" : "Version 1.0.0"}
+      {/* Enhanced Footer */}
+      <div className="p-6 border-t border-sidebar-border/50 bg-gradient-surface">
+        <div className="space-y-3">
+          {!isCollapsed && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="status-dot status-resolved"></div>
+              <span>All systems operational</span>
+            </div>
+          )}
+          <div className="text-xs text-muted-foreground text-center font-mono">
+            {isCollapsed ? "v2.0" : "Version 2.0.0 • Built with ❤️"}
+          </div>
         </div>
       </div>
     </div>
