@@ -52,15 +52,15 @@ serve(async (req) => {
     // Check if user has admin privileges (super_admin or org/admin roles)
     let isAuthorized = false;
 
-    // 1) Super admin via organization_admins
-    const { data: superAdminRow, error: superAdminError } = await supabaseAdmin
+    // 1) Organization admins or super admins via organization_admins
+    const { data: orgAdminRow, error: orgAdminError } = await supabaseAdmin
       .from('organization_admins')
       .select('role')
       .eq('user_id', user.id)
-      .eq('role', 'super_admin')
+      .in('role', ['super_admin', 'admin'])
       .maybeSingle();
 
-    if (superAdminRow?.role === 'super_admin') {
+    if (orgAdminRow?.role === 'super_admin' || orgAdminRow?.role === 'admin') {
       isAuthorized = true;
     }
 
