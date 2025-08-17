@@ -115,10 +115,18 @@ export function EmailManager() {
   // Server management
   const handleSaveServer = async () => {
     try {
+      // Build payload and avoid overwriting password with empty value
+      const payload: any = { ...serverForm };
+
       if (editingServer) {
+        if (!serverForm.smtp_password || serverForm.smtp_password.trim() === '') {
+          // Do not update password if left blank while editing
+          delete payload.smtp_password;
+        }
+
         const { error } = await supabase
           .from('email_servers')
-          .update(serverForm)
+          .update(payload)
           .eq('id', editingServer.id);
         
         if (error) throw error;
@@ -128,9 +136,19 @@ export function EmailManager() {
           description: "Email server configuration has been updated successfully."
         });
       } else {
+        // Creating a new server requires a password
+        if (!serverForm.smtp_password || serverForm.smtp_password.trim() === '') {
+          toast({
+            title: "Password required",
+            description: "Please enter the SMTP password for the new server.",
+            variant: "destructive"
+          });
+          return;
+        }
+
         const { error } = await supabase
           .from('email_servers')
-          .insert(serverForm);
+          .insert(payload);
         
         if (error) throw error;
         
@@ -272,10 +290,10 @@ export function EmailManager() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Email Management</h2>
-          <p className="text-muted-foreground">Configure email servers and templates</p>
-        </div>
+      <div>
+        <h2 className="text-2xl font-bold">Email Management</h2>
+        <p className="text-muted-foreground">Configure email servers and templates</p>
+      </div>
       </div>
 
       {/* Email Servers */}
@@ -362,6 +380,7 @@ export function EmailManager() {
                       onChange={(e) => setServerForm(prev => ({ ...prev, smtp_password: e.target.value }))}
                       placeholder="App password or SMTP password"
                     />
+                    <p className="text-xs text-muted-foreground">Leave blank when editing to keep the current password.</p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="sender_name">Sender Name</Label>

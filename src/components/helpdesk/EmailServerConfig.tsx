@@ -121,20 +121,21 @@ export function EmailServerConfig() {
 
   const handleSaveServer = async () => {
     try {
-      // Encrypt the password before saving
-      const encryptedPassword = await encryptPassword(newServer.smtp_password);
-      
-      const serverData = {
-        ...newServer,
-        smtp_password: encryptedPassword,
-        password_encrypted: true
-      };
-
       if (editingServer) {
-        // Update existing server
+        // Update existing server. Only update password if provided
+        const updateData: any = { ...newServer };
+        if (!newServer.smtp_password || newServer.smtp_password.trim() === '') {
+          delete updateData.smtp_password;
+          delete updateData.password_encrypted;
+        } else {
+          const encryptedPassword = await encryptPassword(newServer.smtp_password);
+          updateData.smtp_password = encryptedPassword;
+          updateData.password_encrypted = true;
+        }
+
         const { error } = await supabase
           .from('email_servers')
-          .update(serverData)
+          .update(updateData)
           .eq('id', editingServer.id);
 
         if (error) throw error;
@@ -144,7 +145,23 @@ export function EmailServerConfig() {
           description: "Email server configuration has been updated securely.",
         });
       } else {
-        // Create new server
+        // Creating a new server requires a password
+        if (!newServer.smtp_password || newServer.smtp_password.trim() === '') {
+          toast({
+            title: "Password required",
+            description: "Please enter the SMTP password for the new server.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const encryptedPassword = await encryptPassword(newServer.smtp_password);
+        const serverData = {
+          ...newServer,
+          smtp_password: encryptedPassword,
+          password_encrypted: true,
+        };
+
         const { error } = await supabase
           .from('email_servers')
           .insert([serverData]);
@@ -243,7 +260,7 @@ export function EmailServerConfig() {
       smtp_host: server.smtp_host,
       smtp_port: server.smtp_port,
       smtp_username: server.smtp_username,
-      smtp_password: server.smtp_password,
+      smtp_password: '', // Clear password; leaving blank will keep existing
       use_tls: server.use_tls,
       sender_name: server.sender_name,
       sender_email: server.sender_email,
@@ -549,6 +566,7 @@ export function EmailServerConfig() {
                           onChange={(e) => setNewServer(prev => ({ ...prev, smtp_password: e.target.value }))}
                           placeholder="App Password"
                         />
+                        <p className="text-xs text-muted-foreground">Leave blank when editing to keep the current password.</p>
                       </div>
                     </div>
 
