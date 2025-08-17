@@ -145,15 +145,17 @@ setup_application() {
     
     # Create environment file
     log "Creating environment configuration..."
-    cat > .env << EOF
+    cat > .env << 'EOF'
 # Supabase Configuration
 VITE_SUPABASE_URL=https://thzdazcmswmeolaiijml.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRoemRhemNtc3dtZW9sYWlpam1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNDQzNTYsImV4cCI6MjA3MDgyMDM1Nn0.YL3OuA8zhliqJSDw8qzZjvonTXJPc9INBv-b10g_tEQ
 
 # Application Configuration
 NODE_ENV=production
-PORT=$APP_PORT
+PORT=__APP_PORT__
 EOF
+    # Replace placeholder with actual port
+    sed -i "s/__APP_PORT__/$APP_PORT/" .env
     
     # Build application
     log "Building application..."
