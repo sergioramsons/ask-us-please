@@ -292,7 +292,7 @@ const Index = () => {
     try {
       // Use the secure delete function instead of direct SQL
       const { error } = await supabase
-        .rpc('delete_ticket', { ticket_id: ticketId });
+        .rpc('delete_ticket', { p_ticket_id: ticketId });
 
       if (error) throw error;
 
