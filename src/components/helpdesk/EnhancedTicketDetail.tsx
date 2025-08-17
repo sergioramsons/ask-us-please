@@ -311,16 +311,18 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
                         <div className="flex items-center gap-3 mb-2">
                            <Avatar className="h-8 w-8">
                              <AvatarFallback>
-                               {comment.profile?.display_name ? 
-                                 comment.profile.display_name.split(' ').map((n: string) => n[0]).join('') : 
-                                 'U'
-                               }
+                               {(
+                                 (comment.profile?.display_name || ticket.customer?.company || ticket.customer?.name || ticket.customer?.email || 'U')
+                                   .split(' ')
+                                   .map((n: string) => n[0])
+                                   .join('')
+                               )}
                              </AvatarFallback>
                            </Avatar>
                            <div className="flex-1">
                              <div className="flex items-center gap-2">
                                <span className="font-medium">
-                                 {comment.profile?.display_name || 'User'}
+                                 {comment.profile?.display_name || ticket.customer?.company || ticket.customer?.name || ticket.customer?.email || 'Customer'}
                                </span>
                               {comment.is_internal && (
                                 <Badge variant="secondary" className="text-xs">Internal</Badge>
