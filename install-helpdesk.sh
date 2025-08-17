@@ -501,13 +501,6 @@ main() {
     check_root
     detect_os
     get_configuration
-    
-    log "Installing on $OS with the following settings:"
-    log "Repository: $GITHUB_REPO"
-    log "Domain: $DOMAIN_NAME"
-    log "Directory: $HOME/$APP_DIR"
-    log "Port: $APP_PORT"
-    
     install_prerequisites
     setup_application
     configure_nginx
@@ -518,30 +511,22 @@ main() {
     
     log "🎉 Installation completed successfully!"
     echo
-    info "📋 Next Steps:"
-    info "1. Visit https://$DOMAIN_NAME to access your helpdesk"
-    info "2. Check application status: $HOME/$APP_DIR/status.sh"
-    info "3. Update application: $HOME/$APP_DIR/update.sh"
-    info "4. View logs: pm2 logs $APP_DIR"
+    info "🌐 Your helpdesk should be accessible at: https://$DOMAIN_NAME"
+    info "📁 Application directory: $HOME/$APP_DIR"
+    info "🔧 Update your app: $HOME/$APP_DIR/update.sh"
+    info "📊 Check status: $HOME/$APP_DIR/status.sh"
     echo
-    info "📁 Important Locations:"
-    info "- Application: $HOME/$APP_DIR"
-    info "- Nginx config: /etc/nginx/sites-available/$APP_DIR"
-    info "- SSL certificates: /etc/letsencrypt/live/$DOMAIN_NAME"
-    info "- Application logs: $HOME/$APP_DIR/logs/"
+    info "Useful commands:"
+    info "  pm2 status $APP_DIR        # Check application status"
+    info "  pm2 logs $APP_DIR          # View application logs"
+    info "  pm2 restart $APP_DIR       # Restart application"
+    info "  sudo nginx -t               # Test Nginx configuration"
+    info "  sudo systemctl status nginx # Check Nginx status"
     echo
-    info "🔧 Useful Commands:"
-    info "- Restart app: pm2 restart $APP_DIR"
-    info "- Stop app: pm2 stop $APP_DIR"
-    info "- Start app: pm2 start $APP_DIR"
-    info "- Reload Nginx: sudo systemctl reload nginx"
-    info "- Renew SSL: sudo certbot renew"
-    echo
-    warning "🔐 Security Reminder:"
-    warning "- Keep your system updated: sudo apt update && sudo apt upgrade"
-    warning "- Monitor your application logs regularly"
-    warning "- Set up automated backups"
-    warning "- Monitor SSL certificate expiration"
+    warning "Next steps:"
+    warning "1. Make sure your domain DNS is pointing to this server"
+    warning "2. If SSL failed, run: sudo certbot --nginx -d $DOMAIN_NAME"
+    warning "3. Configure your GitHub repository for automatic deployments"
 }
 
 # Run main function
