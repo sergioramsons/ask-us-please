@@ -8,127 +8,137 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 250 50% 98%;
-    --foreground: 224 71% 4%;
+    /* Freshdesk-inspired clean color palette */
+    --background: 0 0% 98%;
+    --foreground: 0 0% 9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 224 71% 4%;
+    --card-foreground: 0 0% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 224 71% 4%;
+    --popover-foreground: 0 0% 9%;
 
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 98%;
+    /* Freshdesk blue accent */
+    --primary: 210 100% 56%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 9% 46%;
+    /* Clean grays */
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 45%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 220 14% 96%;
-    --accent-foreground: 220 9% 46%;
+    --accent: 210 40% 98%;
+    --accent-foreground: 210 100% 56%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
+    /* Clean borders */
     --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 217 91% 60%;
+    --input: 0 0% 94%;
+    --ring: 210 100% 56%;
 
-    /* Custom helpdesk colors */
-    --success: 142 71% 45%;
+    /* Status colors */
+    --success: 142 76% 36%;
     --success-foreground: 0 0% 98%;
     
-    --warning: 38 92% 50%;
+    --warning: 43 96% 56%;
     --warning-foreground: 0 0% 98%;
     
-    --info: 199 89% 48%;
+    --info: 210 100% 56%;
     --info-foreground: 0 0% 98%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(199 89% 48%));
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(220 14% 98%));
-    
-    /* Shadows */
-    --shadow-soft: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow-medium: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
-    --shadow-large: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
-
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
+    /* Freshdesk sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 45%;
+    --sidebar-primary: 210 100% 56%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 98%;
+    --sidebar-accent-foreground: 0 0% 9%;
     --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 210 100% 56%;
 
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Clean gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(210 100% 56%), hsl(220 100% 60%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(0 0% 98%));
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(0 0% 96%));
+    
+    /* Soft shadows */
+    --shadow-soft: 0 1px 3px 0 hsl(0 0% 0% / 0.08);
+    --shadow-medium: 0 4px 12px 0 hsl(0 0% 0% / 0.1);
+    --shadow-large: 0 8px 24px 0 hsl(0 0% 0% / 0.12);
+    --shadow-elegant: 0 2px 8px 0 hsl(0 0% 0% / 0.06);
+
+    /* Typography */
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+
+    /* Border radius */
+    --radius: 6px;
+    --radius-sm: 4px;
+    --radius-lg: 8px;
+
+    /* Header height */
+    --header-height: 60px;
   }
 
   .dark {
-    --background: 224 71% 4%;
-    --foreground: 210 20% 98%;
+    --background: 0 0% 7%;
+    --foreground: 0 0% 98%;
 
-    --card: 224 71% 4%;
-    --card-foreground: 210 20% 98%;
+    --card: 0 0% 9%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 224 71% 4%;
-    --popover-foreground: 210 20% 98%;
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 217 91% 60%;
-    --primary-foreground: 224 71% 4%;
+    --primary: 210 100% 60%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 215 28% 17%;
-    --secondary-foreground: 210 20% 98%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 80%;
 
-    --muted: 215 28% 17%;
-    --muted-foreground: 217 10% 65%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 60%;
 
-    --accent: 215 28% 17%;
-    --accent-foreground: 210 20% 98%;
+    --accent: 0 0% 12%;
+    --accent-foreground: 0 0% 98%;
 
     --destructive: 0 62% 30%;
-    --destructive-foreground: 210 20% 98%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 215 28% 17%;
-    --input: 215 28% 17%;
-    --ring: 217 91% 60%;
+    --border: 0 0% 15%;
+    --input: 0 0% 12%;
+    --ring: 210 100% 60%;
 
-    /* Custom helpdesk colors - dark mode */
-    --success: 142 71% 45%;
+    --success: 142 76% 36%;
     --success-foreground: 0 0% 98%;
     
-    --warning: 38 92% 50%;
+    --warning: 43 96% 56%;
     --warning-foreground: 0 0% 98%;
     
-    --info: 199 89% 48%;
+    --info: 210 100% 60%;
     --info-foreground: 0 0% 98%;
 
-    /* Gradients - dark mode */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(199 89% 48%));
-    --gradient-card: linear-gradient(135deg, hsl(224 71% 4%), hsl(215 28% 17%));
-    
-    /* Shadows - dark mode */
-    --shadow-soft: 0 1px 3px 0 hsl(0 0% 0% / 0.3), 0 1px 2px -1px hsl(0 0% 0% / 0.3);
-    --shadow-medium: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -2px hsl(0 0% 0% / 0.3);
-    --shadow-large: 0 10px 15px -3px hsl(0 0% 0% / 0.3), 0 4px 6px -4px hsl(0 0% 0% / 0.3);
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-background: 0 0% 9%;
+    --sidebar-foreground: 0 0% 80%;
+    --sidebar-primary: 210 100% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 210 100% 60%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(210 100% 60%), hsl(220 100% 65%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 9%), hsl(0 0% 12%));
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 9%), hsl(0 0% 7%));
+    
+    --shadow-soft: 0 1px 3px 0 hsl(0 0% 0% / 0.3);
+    --shadow-medium: 0 4px 12px 0 hsl(0 0% 0% / 0.4);
+    --shadow-large: 0 8px 24px 0 hsl(0 0% 0% / 0.5);
+    --shadow-elegant: 0 2px 8px 0 hsl(0 0% 0% / 0.3);
   }
 }
 
@@ -138,6 +148,40 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: var(--font-sans);
+  }
+
+  /* Freshdesk-style components */
+  .freshdesk-header {
+    @apply h-[var(--header-height)] bg-white border-b border-border shadow-soft;
+  }
+
+  .freshdesk-sidebar {
+    @apply w-60 bg-sidebar border-r border-sidebar-border shadow-soft;
+  }
+
+  .freshdesk-content {
+    @apply bg-accent/30 min-h-[calc(100vh-var(--header-height))];
+  }
+
+  .freshdesk-card {
+    @apply bg-card border border-border shadow-elegant rounded-[var(--radius)] p-6;
+  }
+
+  .freshdesk-button {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 rounded-[var(--radius)] px-4 py-2 font-medium text-sm transition-colors;
+  }
+
+  .freshdesk-input {
+    @apply bg-background border border-input rounded-[var(--radius-sm)] px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
+  }
+
+  .freshdesk-nav-item {
+    @apply flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-[var(--radius-sm)] transition-colors;
+  }
+
+  .freshdesk-nav-item-active {
+    @apply bg-sidebar-accent text-sidebar-primary font-semibold;
   }
 }

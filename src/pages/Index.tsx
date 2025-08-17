@@ -9,14 +9,14 @@ import { AdminPanel } from "@/components/admin/AdminPanel";
 import { ReportsDashboard } from "@/components/reports/ReportsDashboard";
 import { EnhancedTicketDetail } from "@/components/helpdesk/EnhancedTicketDetail";
 import { UnifiedInbox } from "@/components/channels/UnifiedInbox";
+import { FreshdeskLayout } from "@/components/layout/FreshdeskLayout";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrganization } from "@/contexts/OrganizationContext";
-import OrganizationSelector from "@/components/ui/organization-selector";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationService } from "@/services/NotificationService";
-import { Plus, Headphones, LogOut, User, Settings, BarChart3, Inbox, Ticket as TicketIcon, List, Trash2 } from "lucide-react";
+import { Plus, Trash2, Ticket as TicketIcon, Headphones } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 type View = 'tickets' | 'inbox' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports';
@@ -66,7 +66,7 @@ const Index = () => {
         const contact = contactsMap.get(ticket.contact_id);
         return {
           id: ticket.id,
-          ticketNumber: ticket.ticket_number || ticket.id, // Use ticket_number from database
+          ticketNumber: ticket.ticket_number || ticket.id,
           title: ticket.subject,
           description: ticket.description || '',
           status: ticket.status as any,
@@ -164,9 +164,9 @@ const Index = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="text-sm text-muted-foreground">Loading your dashboard...</p>
         </div>
       </div>
     );
@@ -215,14 +215,6 @@ const Index = () => {
 
           if (contactError) {
             console.error('Could not create contact:', contactError);
-            console.log('Contact creation failed with data:', {
-              first_name: ticketData.customerName?.split(' ')[0] || '',
-              last_name: ticketData.customerName?.split(' ').slice(1).join(' ') || '',
-              email: ticketData.customerEmail,
-              phone: ticketData.phone || callerInfo?.phone,
-              organization_id: organization?.id || null,
-              created_by: user?.id
-            });
           } else {
             console.log('Successfully created contact:', newContact.id);
             contactId = newContact.id;
@@ -231,7 +223,6 @@ const Index = () => {
       }
 
       // Create the ticket in the database
-      // Generate a proper ticket number via DB function
       const { data: generatedNumber, error: genError } = await supabase.rpc('generate_ticket_number');
       if (genError) {
         throw genError;
@@ -240,7 +231,7 @@ const Index = () => {
       const { data: newTicket, error } = await supabase
         .from('tickets')
         .insert({
-          organization_id: organization?.id || null, // Allow null if no org selected
+          organization_id: organization?.id || null,
           ticket_number: generatedNumber as string,
           subject: ticketData.title,
           description: ticketData.description,
@@ -290,13 +281,11 @@ const Index = () => {
   const handleDeleteTicket = async (ticketId: string) => {
     setDeletingTicket(ticketId);
     try {
-      // Use the secure delete function instead of direct SQL
       const { error } = await supabase
         .rpc('delete_ticket', { p_ticket_id: ticketId });
 
       if (error) throw error;
 
-      // Refresh tickets list
       await loadTickets();
 
       toast({
@@ -324,7 +313,6 @@ const Index = () => {
     try {
       const ticket = tickets.find(t => t.id === ticketId);
       
-      // Update in database
       const { error } = await supabase
         .from('tickets')
         .update({ 
@@ -336,19 +324,16 @@ const Index = () => {
 
       if (error) throw error;
 
-      // Update local state
       setTickets(prev => prev.map(t =>
         t.id === ticketId
           ? { ...t, status, updatedAt: new Date() }
           : t
       ));
       
-      // Update selected ticket if it's the one being changed
       if (selectedTicket?.id === ticketId) {
         setSelectedTicket(prev => prev ? { ...prev, status, updatedAt: new Date() } : null);
       }
 
-      // Send notification for status change
       if (ticket?.customer.email) {
         await NotificationService.notifyTicketUpdated(
           ticket?.ticketNumber || ticketId,
@@ -374,339 +359,199 @@ const Index = () => {
     }
   };
 
+  const renderTicketsView = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">All Tickets</h2>
+          <p className="text-muted-foreground">Manage and track all support tickets</p>
+        </div>
+        <Button 
+          onClick={() => setCurrentView('create-ticket')}
+          variant="freshdesk"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          New Ticket
+        </Button>
+      </div>
+      
+      {/* Ticket Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        {[
+          { key: 'all', label: 'Total', value: stats.total, color: 'text-primary' },
+          { key: 'open', label: 'Open', value: stats.open, color: 'text-red-600' },
+          { key: 'in-progress', label: 'In Progress', value: stats.inProgress, color: 'text-orange-600' },
+          { key: 'resolved', label: 'Resolved', value: stats.resolved, color: 'text-green-600' },
+          { key: 'closed', label: 'Closed', value: stats.closed, color: 'text-gray-600' },
+        ].map((stat) => (
+          <div
+            key={stat.key}
+            role="button"
+            tabIndex={0}
+            onClick={() => setStatusFilter(stat.key as any)}
+            onKeyDown={(e) => e.key === 'Enter' && setStatusFilter(stat.key as any)}
+            className={`freshdesk-card cursor-pointer transition-all hover:shadow-medium ${
+              statusFilter === stat.key ? 'ring-2 ring-primary' : ''
+            }`}
+          >
+            <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
+            <div className="text-sm text-muted-foreground">{stat.label}</div>
+          </div>
+        ))}
+      </div>
 
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast({
-        title: "Signed out",
-        description: "You have been successfully signed out."
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          Showing {statusFilter === 'all' ? tickets.length : tickets.filter(t => t.status === statusFilter).length} of {tickets.length}
+          {statusFilter !== 'all' && (
+            <span> • Filter: <span className="font-medium capitalize">{String(statusFilter).replace('-', ' ')}</span></span>
+          )}
+        </div>
+        {statusFilter !== 'all' && (
+          <Button variant="outline" size="sm" onClick={() => setStatusFilter('all')}>
+            Clear filter
+          </Button>
+        )}
+      </div>
+
+      {/* Tickets List */}
+      <div className="freshdesk-card">
+        {!ticketsLoading && (
+          <div>
+            {tickets.length === 0 ? (
+              <div className="text-center py-12">
+                <TicketIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium">No tickets yet</h3>
+                <p className="text-muted-foreground mb-4">Create your first ticket to get started</p>
+                <Button 
+                  onClick={() => setCurrentView('create-ticket')}
+                  variant="freshdesk"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Ticket
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {(statusFilter === 'all' ? tickets : tickets.filter(t => t.status === statusFilter)).map((ticket) => (
+                   <div 
+                     key={ticket.id}
+                     className="flex items-center justify-between p-4 border border-border rounded hover:bg-accent/50 transition-colors cursor-pointer"
+                     onClick={() => handleViewTicket(ticket)}
+                   >
+                     <div className="flex-1">
+                       <div className="flex items-center gap-3">
+                         <span className="font-medium text-sm">#{ticket.ticketNumber || ticket.id.slice(0, 8)}</span>
+                         <span className={`px-2 py-1 rounded text-xs font-medium ${
+                           ticket.status === 'open' ? 'bg-red-100 text-red-800' :
+                           ticket.status === 'in-progress' ? 'bg-orange-100 text-orange-800' :
+                           ticket.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                           'bg-gray-100 text-gray-800'
+                         }`}>
+                           {ticket.status}
+                         </span>
+                         <span className={`px-2 py-1 rounded text-xs font-medium ${
+                           ticket.priority === 'high' ? 'bg-red-100 text-red-800' :
+                           ticket.priority === 'medium' ? 'bg-orange-100 text-orange-800' :
+                           'bg-blue-100 text-blue-800'
+                         }`}>
+                           {ticket.priority}
+                         </span>
+                       </div>
+                       <h3 className="font-medium mt-1">{ticket.title}</h3>
+                       <p className="text-sm text-muted-foreground line-clamp-2">{ticket.description}</p>
+                       <div className="text-xs text-muted-foreground mt-2">
+                         Created {ticket.createdAt.toLocaleDateString()} • Updated {ticket.updatedAt.toLocaleDateString()}
+                       </div>
+                     </div>
+                     
+                     <div className="flex items-center gap-2 ml-4">
+                       <AlertDialog>
+                         <AlertDialogTrigger asChild>
+                           <Button
+                             variant="outline"
+                             size="sm"
+                             className="text-destructive hover:text-destructive"
+                             disabled={deletingTicket === ticket.id}
+                             onClick={(e) => e.stopPropagation()}
+                           >
+                             <Trash2 className="h-4 w-4" />
+                           </Button>
+                         </AlertDialogTrigger>
+                         <AlertDialogContent>
+                           <AlertDialogHeader>
+                             <AlertDialogTitle>Delete Ticket</AlertDialogTitle>
+                             <AlertDialogDescription>
+                               Are you sure you want to delete ticket "{ticket.title}"? This action cannot be undone.
+                             </AlertDialogDescription>
+                           </AlertDialogHeader>
+                           <AlertDialogFooter>
+                             <AlertDialogCancel>Cancel</AlertDialogCancel>
+                             <AlertDialogAction
+                               onClick={() => handleDeleteTicket(ticket.id)}
+                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                             >
+                               Delete Ticket
+                             </AlertDialogAction>
+                           </AlertDialogFooter>
+                         </AlertDialogContent>
+                       </AlertDialog>
+                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        
+        {ticketsLoading && (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading tickets...</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-gradient-primary text-white shadow-large">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 rounded-lg">
-                <Headphones className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold">BS-HelpDesk</h1>
-                <p className="text-blue-100">Unified Inbox & Support Management</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-3 py-2 bg-white/10 rounded-lg backdrop-blur-sm">
-                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-white" />
-                </div>
-                <span className="text-sm font-medium text-white">{user?.email}</span>
-              </div>
-              
-              {(currentView !== 'tickets' && currentView !== 'inbox') && (
-                <Button 
-                  onClick={() => setCurrentView('tickets')}
-                  variant="outline"
-                  className="border-white/20 text-white hover:bg-white/10"
-                >
-                  <TicketIcon className="h-4 w-4 mr-2" />
-                  Back to Tickets
-                </Button>
-              )}
-              
-              {(currentView === 'tickets' || currentView === 'inbox') && (
-                <>
-                  <Button 
-                    onClick={() => setCurrentView('tickets')}
-                    variant={currentView === 'tickets' ? 'default' : 'outline'}
-                    className={currentView === 'tickets' ? 'bg-white text-primary hover:bg-blue-50' : 'border-white/20 text-white hover:bg-white/10'}
-                  >
-                    <TicketIcon className="h-4 w-4 mr-2" />
-                    Tickets
-                  </Button>
-                  <Button 
-                    onClick={() => setCurrentView('inbox')}
-                    variant={currentView === 'inbox' ? 'default' : 'outline'}
-                    className={currentView === 'inbox' ? 'bg-white text-primary hover:bg-blue-50' : 'border-white/20 text-white hover:bg-white/10'}
-                  >
-                    <Inbox className="h-4 w-4 mr-2" />
-                    Inbox
-                  </Button>
-                  <Button 
-                    onClick={() => setCurrentView('create-ticket')}
-                    className="bg-white text-primary hover:bg-blue-50"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    New Ticket
-                  </Button>
-                  <Button 
-                    onClick={() => setCurrentView('reports')}
-                    variant="outline"
-                    className="border-white/20 text-white hover:bg-white/10"
-                  >
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Reports
-                  </Button>
-                  <Button 
-                    onClick={() => window.location.href = '/portal'}
-                    variant="outline"
-                    className="border-white/20 text-white hover:bg-white/10"
-                  >
-                    <User className="h-4 w-4 mr-2" />
-                    Portal
-                  </Button>
-                  {isAdmin() && (
-                    <Button 
-                      onClick={() => setCurrentView('admin-panel')}
-                      variant="outline"
-                      className="border-white/20 text-white hover:bg-white/10"
-                    >
-                      <Settings className="h-4 w-4 mr-2" />
-                      Admin Panel
-                    </Button>
-                  )}
-                </>
-              )}
-              
-              <Button 
-                onClick={handleSignOut}
-                variant="outline"
-                className="border-white/20 text-white hover:bg-white/10"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <FreshdeskLayout
+      currentView={currentView}
+      onViewChange={setCurrentView}
+      onCreateTicket={() => setCurrentView('create-ticket')}
+    >
+      {currentView === 'tickets' && renderTicketsView()}
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        {currentView === 'tickets' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">All Tickets</h2>
-                <p className="text-muted-foreground">Manage and track all support tickets</p>
-              </div>
-              <Button 
-                onClick={() => setCurrentView('create-ticket')}
-                className="bg-primary text-white hover:bg-primary/90"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                New Ticket
-              </Button>
-            </div>
-            
-            {/* Ticket Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => setStatusFilter('all')}
-                onKeyDown={(e) => e.key === 'Enter' && setStatusFilter('all')}
-                className={`bg-card p-4 rounded-lg border cursor-pointer transition-colors ${statusFilter === 'all' ? 'border-primary ring-2 ring-primary/30' : 'hover:bg-muted/50'}`}
-              >
-                <div className="text-2xl font-bold text-primary">{stats.total}</div>
-                <div className="text-sm text-muted-foreground">Total Tickets</div>
-              </div>
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => setStatusFilter('open')}
-                onKeyDown={(e) => e.key === 'Enter' && setStatusFilter('open')}
-                className={`bg-card p-4 rounded-lg border cursor-pointer transition-colors ${statusFilter === 'open' ? 'border-primary ring-2 ring-primary/30' : 'hover:bg-muted/50'}`}
-              >
-                <div className="text-2xl font-bold text-red-600">{stats.open}</div>
-                <div className="text-sm text-muted-foreground">Open</div>
-              </div>
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => setStatusFilter('in-progress')}
-                onKeyDown={(e) => e.key === 'Enter' && setStatusFilter('in-progress')}
-                className={`bg-card p-4 rounded-lg border cursor-pointer transition-colors ${statusFilter === 'in-progress' ? 'border-primary ring-2 ring-primary/30' : 'hover:bg-muted/50'}`}
-              >
-                <div className="text-2xl font-bold text-orange-600">{stats.inProgress}</div>
-                <div className="text-sm text-muted-foreground">In Progress</div>
-              </div>
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => setStatusFilter('resolved')}
-                onKeyDown={(e) => e.key === 'Enter' && setStatusFilter('resolved')}
-                className={`bg-card p-4 rounded-lg border cursor-pointer transition-colors ${statusFilter === 'resolved' ? 'border-primary ring-2 ring-primary/30' : 'hover:bg-muted/50'}`}
-              >
-                <div className="text-2xl font-bold text-green-600">{stats.resolved}</div>
-                <div className="text-sm text-muted-foreground">Resolved</div>
-              </div>
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => setStatusFilter('closed')}
-                onKeyDown={(e) => e.key === 'Enter' && setStatusFilter('closed')}
-                className={`bg-card p-4 rounded-lg border cursor-pointer transition-colors ${statusFilter === 'closed' ? 'border-primary ring-2 ring-primary/30' : 'hover:bg-muted/50'}`}
-              >
-                <div className="text-2xl font-bold text-gray-600">{stats.closed}</div>
-                <div className="text-sm text-muted-foreground">Closed</div>
-              </div>
-            </div>
+      {currentView === 'inbox' && (
+        <UnifiedInbox />
+      )}
 
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
-                Showing {statusFilter === 'all' ? tickets.length : tickets.filter(t => t.status === statusFilter).length} of {tickets.length}
-                {statusFilter !== 'all' && (
-                  <span> • Filter: <span className="font-medium capitalize">{String(statusFilter).replace('-', ' ')}</span></span>
-                )}
-              </div>
-              {statusFilter !== 'all' && (
-                <Button variant="outline" size="sm" onClick={() => setStatusFilter('all')}>
-                  Clear filter
-                </Button>
-              )}
-            </div>
-
-            {/* Import existing ticket list component */}
-            <div className="bg-card border rounded-lg">
-              {!ticketsLoading && (
-                <div className="p-6">
-                  {tickets.length === 0 ? (
-                    <div className="text-center py-8">
-                      <TicketIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-medium">No tickets yet</h3>
-                      <p className="text-muted-foreground">Create your first ticket to get started</p>
-                      <Button 
-                        onClick={() => setCurrentView('create-ticket')}
-                        className="mt-4"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create Ticket
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {(statusFilter === 'all' ? tickets : tickets.filter(t => t.status === statusFilter)).map((ticket) => (
-                         <div 
-                           key={ticket.id}
-                           className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                         >
-                           <div className="flex-1" onClick={() => handleViewTicket(ticket)}>
-                             <div className="flex items-center gap-3">
-                               <span className="font-medium">#{ticket.ticketNumber || ticket.id.slice(0, 8)}</span>
-                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                 ticket.status === 'open' ? 'bg-red-100 text-red-800' :
-                                 ticket.status === 'in-progress' ? 'bg-orange-100 text-orange-800' :
-                                 ticket.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                                 'bg-gray-100 text-gray-800'
-                               }`}>
-                                 {ticket.status}
-                               </span>
-                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                 ticket.priority === 'high' ? 'bg-red-100 text-red-800' :
-                                 ticket.priority === 'medium' ? 'bg-orange-100 text-orange-800' :
-                                 'bg-blue-100 text-blue-800'
-                               }`}>
-                                 {ticket.priority}
-                               </span>
-                             </div>
-                             <h3 className="font-medium mt-1">{ticket.title}</h3>
-                             <p className="text-sm text-muted-foreground line-clamp-2">{ticket.description}</p>
-                             <div className="text-xs text-muted-foreground mt-2">
-                               Created {ticket.createdAt.toLocaleDateString()} • Updated {ticket.updatedAt.toLocaleDateString()}
-                             </div>
-                           </div>
-                           
-                           <div className="flex items-center gap-2 ml-4">
-                             <AlertDialog>
-                               <AlertDialogTrigger asChild>
-                                 <Button
-                                   variant="outline"
-                                   size="sm"
-                                   className="text-destructive hover:text-destructive"
-                                   disabled={deletingTicket === ticket.id}
-                                   onClick={(e) => e.stopPropagation()}
-                                 >
-                                   <Trash2 className="h-4 w-4" />
-                                 </Button>
-                               </AlertDialogTrigger>
-                               <AlertDialogContent>
-                                 <AlertDialogHeader>
-                                   <AlertDialogTitle>Delete Ticket</AlertDialogTitle>
-                                   <AlertDialogDescription>
-                                     Are you sure you want to delete ticket "{ticket.title}"? This action cannot be undone and will remove all comments and data associated with this ticket.
-                                   </AlertDialogDescription>
-                                 </AlertDialogHeader>
-                                 <AlertDialogFooter>
-                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                   <AlertDialogAction
-                                     onClick={() => handleDeleteTicket(ticket.id)}
-                                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                   >
-                                     Delete Ticket
-                                   </AlertDialogAction>
-                                 </AlertDialogFooter>
-                               </AlertDialogContent>
-                             </AlertDialog>
-                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              {ticketsLoading && (
-                <div className="p-6 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                  <p className="text-muted-foreground">Loading tickets...</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {currentView === 'inbox' && (
-          <UnifiedInbox />
-        )}
-
-        {currentView === 'create-ticket' && (
-          <div className="max-w-2xl mx-auto">
+      {currentView === 'create-ticket' && (
+        <div className="max-w-2xl mx-auto">
+          <div className="freshdesk-card">
             <TicketForm 
               onSubmit={handleCreateTicket}
               onCancel={() => setCurrentView('tickets')}
             />
           </div>
-        )}
+        </div>
+      )}
 
-        {currentView === 'reports' && (
-          <ReportsDashboard tickets={tickets} />
-        )}
+      {currentView === 'reports' && (
+        <ReportsDashboard tickets={tickets} />
+      )}
 
-        {currentView === 'admin-panel' && (
-          <AdminPanel tickets={tickets} onCreateTicket={handleCreateTicket} />
-        )}
+      {currentView === 'admin-panel' && (
+        <AdminPanel tickets={tickets} onCreateTicket={handleCreateTicket} />
+      )}
 
-        {currentView === 'ticket-detail' && selectedTicket && (
-          <EnhancedTicketDetail
-            ticket={selectedTicket}
-            onBack={() => setCurrentView('tickets')}
-            onStatusChange={handleStatusChange}
-          />
-        )}
-      </main>
+      {currentView === 'ticket-detail' && selectedTicket && (
+        <EnhancedTicketDetail
+          ticket={selectedTicket}
+          onBack={() => setCurrentView('tickets')}
+          onStatusChange={handleStatusChange}
+        />
+      )}
 
       {/* Helpdesk Popup Modal */}
       <Dialog open={showHelpdeskPopup} onOpenChange={setShowHelpdeskPopup}>
@@ -731,7 +576,7 @@ const Index = () => {
           />
         </DialogContent>
       </Dialog>
-    </div>
+    </FreshdeskLayout>
   );
 };
 
