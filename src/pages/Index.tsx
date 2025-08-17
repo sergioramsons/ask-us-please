@@ -320,7 +320,7 @@ const Index = () => {
       // Send notification for status change
       if (ticket?.customer.email) {
         await NotificationService.notifyTicketUpdated(
-          ticketId,
+          ticket?.ticketNumber || ticketId,
           ticket.title,
           status,
           ticket.customer.email,
@@ -331,7 +331,7 @@ const Index = () => {
 
       toast({
         title: "Status updated",
-        description: `Ticket #${ticketId} status changed to ${status}. Customer has been notified.`
+        description: `Ticket #${ticket?.ticketNumber || ticketId} status changed to ${status}. Customer has been notified.`
       });
     } catch (error: any) {
       console.error('Error updating ticket status:', error);

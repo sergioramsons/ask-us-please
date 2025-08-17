@@ -372,6 +372,7 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
           {/* Response Form */}
           <TicketResponseForm 
             ticketId={ticket.id}
+            ticketNumber={ticket.ticketNumber}
             customerName={ticket.customer.name}
             customerEmail={ticket.customer.email}
             ticketSubject={ticket.title}

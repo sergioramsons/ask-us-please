@@ -11,7 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 interface TicketResponseFormProps {
-  ticketId: string;
+  ticketId: string; // UUID (internal)
+  ticketNumber?: string; // Human-friendly ticket number like BS00001
   customerName?: string;
   customerEmail?: string;
   ticketSubject?: string;
@@ -21,7 +22,8 @@ interface TicketResponseFormProps {
 }
 
 export function TicketResponseForm({ 
-  ticketId, 
+  ticketId,
+  ticketNumber,
   customerName = 'Customer',
   customerEmail = '',
   ticketSubject = 'Support Request',
@@ -106,7 +108,7 @@ export function TicketResponseForm({
             // Use custom email server
             emailResponse = await supabase.functions.invoke('send-custom-email', {
               body: {
-                ticketId,
+                ticketId: ticketNumber || ticketId,
                 customerName,
                 customerEmail,
                 subject: ticketSubject,
@@ -122,7 +124,7 @@ export function TicketResponseForm({
             // Fallback to Resend
             emailResponse = await supabase.functions.invoke('send-ticket-email', {
               body: {
-                ticketId,
+                ticketId: ticketNumber || ticketId,
                 customerName,
                 customerEmail,
                 subject: ticketSubject,
