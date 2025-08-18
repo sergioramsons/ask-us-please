@@ -107,7 +107,7 @@ fi
 
 # PM2 setup
 log "Configuring PM2"
-cat > ecosystem.config.js <<EOF
+cat > ecosystem.config.cjs <<EOF
 module.exports = {
   apps: [{
     name: 'helpdesk',
@@ -116,7 +116,7 @@ module.exports = {
   }]
 }
 EOF
-pm2 start ecosystem.config.js || pm2 restart helpdesk || true
+pm2 start ecosystem.config.cjs || pm2 restart helpdesk || true
 pm2 save
 # Ensure PM2 starts on boot for current user
 pm2 startup systemd -u "${USER:-$(id -un)}" --hp "$HOME" >/dev/null 2>&1 || true

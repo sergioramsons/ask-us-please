@@ -195,7 +195,7 @@ setup_pm2() {
     cd "$APP_DIR"
     
     # Create PM2 ecosystem file
-    cat > ecosystem.config.js << EOF
+    cat > ecosystem.config.cjs << EOF
 module.exports = {
   apps: [{
     name: 'helpdesk',
@@ -209,7 +209,7 @@ module.exports = {
 EOF
     
     # Start with PM2
-    pm2 start ecosystem.config.js
+    pm2 start ecosystem.config.cjs
     pm2 save
     pm2 startup
     

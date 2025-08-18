@@ -222,7 +222,7 @@ setup_pm2() {
     cd "$HOME/$APP_DIR"
     
     # Create ecosystem file
-    cat > ecosystem.config.js << 'ECOCONF'
+    cat > ecosystem.config.cjs << 'ECOCONF'
 module.exports = {
   apps: [{
     name: '__APP_NAME__',
@@ -250,12 +250,12 @@ module.exports = {
 ECOCONF
     
     # Replace placeholders
-    sed -i "s/__APP_NAME__/$APP_DIR/g" ecosystem.config.js
-    sed -i "s|__APP_PATH__|$HOME/$APP_DIR|g" ecosystem.config.js
-    sed -i "s/__APP_PORT__/$APP_PORT/g" ecosystem.config.js
+sed -i "s/__APP_NAME__/$APP_DIR/g" ecosystem.config.cjs
+sed -i "s|__APP_PATH__|$HOME/$APP_DIR|g" ecosystem.config.cjs
+sed -i "s/__APP_PORT__/$APP_PORT/g" ecosystem.config.cjs
     
     mkdir -p logs
-    pm2 start ecosystem.config.js
+    pm2 start ecosystem.config.cjs
     pm2 save
     sudo env PATH=$PATH:/usr/bin "$(which pm2)" startup systemd -u "$(whoami)" --hp "$(eval echo ~"$(whoami)")"
     
