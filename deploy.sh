@@ -12,7 +12,7 @@ echo "🚀 Deploying helpdesk application..."
 
 # Check if running as root
 if [[ $EUID -eq 0 ]]; then
-   echo "❌ Don't run as root. Use: sudo bash deploy.sh"
+   echo "❌ Don't run as root. Run as regular user: bash deploy.sh"
    exit 1
 fi
 
