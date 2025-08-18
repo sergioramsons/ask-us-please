@@ -71,7 +71,7 @@ EOF
 npm install express --silent
 
 # PM2 setup
-cat > ecosystem.config.js <<EOF
+cat > ecosystem.config.cjs <<EOF
 module.exports = {
   apps: [{
     name: 'helpdesk',
@@ -81,7 +81,7 @@ module.exports = {
 }
 EOF
 
-pm2 start ecosystem.config.js || pm2 restart helpdesk
+pm2 start ecosystem.config.cjs || pm2 restart helpdesk
 pm2 save
 pm2 startup systemd -u $(whoami) --hp $HOME >/dev/null 2>&1 || true
 
