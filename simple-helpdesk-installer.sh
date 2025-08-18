@@ -136,14 +136,14 @@ EOF
     npm run build
     
     # Create simple server
-    cat > server.js << 'EOF'
+cat > server.cjs << 'EOF'
 const express = require('express');
 const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.static('dist'));
-app.get('*', (req, res) => {
+app.get('(.*)', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
@@ -199,7 +199,7 @@ cat > ecosystem.config.cjs << EOF
 module.exports = {
   apps: [{
     name: 'helpdesk',
-    script: 'server.js',
+    script: 'server.cjs',
     cwd: '$APP_DIR',
     env: {
       NODE_ENV: 'production',

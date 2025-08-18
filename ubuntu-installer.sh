@@ -59,8 +59,8 @@ cd "$APP_DIR"
 npm install --silent --no-audit --no-fund
 npm run build
 
-# Create server.js for production
-cat > server.js <<'EOF'
+# Create server.cjs for production
+cat > server.cjs <<'EOF'
 const express = require('express');
 const path = require('path');
 const app = express();
@@ -71,7 +71,7 @@ const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));
 
 // Handle SPA routing
-app.get('*', (req, res) => {
+app.get('(.*)', (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 

@@ -38,8 +38,8 @@ echo "🔧 Installing dependencies..."
 npm install --silent --no-audit --no-fund
 npm run build --silent 2>/dev/null || true
 
-# Create fixed server.js
-cat > server.js <<'EOF'
+# Create fixed server.cjs
+cat > server.cjs <<'EOF'
 const express = require('express');
 const path = require('path');
 const app = express();
@@ -47,7 +47,7 @@ const PORT = process.env.PORT || 3000;
 const distPath = path.join(__dirname, 'dist');
 
 app.use(express.static(distPath));
-app.get('*', (_req, res) => {
+app.get('(.*)', (_req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
@@ -61,7 +61,7 @@ cat > ecosystem.config.cjs <<EOF
 module.exports = {
   apps: [{
     name: 'helpdesk',
-    script: 'server.js',
+    script: 'server.cjs',
     cwd: '$APP_DIR',
     env: { PORT: $APP_PORT, NODE_ENV: 'production' }
   }]
