@@ -188,6 +188,7 @@ module.exports = {
   apps: [{
     name: 'helpdesk',
     script: 'server.js',
+    cwd: '$APP_DIR',
     env: { PORT: $APP_PORT, NODE_ENV: 'production' }
   }]
 }

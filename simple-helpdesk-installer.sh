@@ -195,11 +195,12 @@ setup_pm2() {
     cd "$APP_DIR"
     
     # Create PM2 ecosystem file
-    cat > ecosystem.config.cjs << EOF
+cat > ecosystem.config.cjs << EOF
 module.exports = {
   apps: [{
     name: 'helpdesk',
     script: 'server.js',
+    cwd: '$APP_DIR',
     env: {
       NODE_ENV: 'production',
       PORT: $APP_PORT
