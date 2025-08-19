@@ -196,57 +196,54 @@ export type Database = {
       email_servers: {
         Row: {
           created_at: string
-          encryption: string
-          host: string
           id: string
           is_active: boolean
-          last_sync_at: string | null
           name: string
           organization_id: string
-          password: string
-          port: number
-          protocol: string | null
-          server_type: string
-          settings: Json | null
-          sync_frequency: number | null
+          password_encrypted: boolean
+          reply_to: string | null
+          sender_email: string
+          sender_name: string
+          smtp_host: string
+          smtp_password: string
+          smtp_port: number
+          smtp_username: string
           updated_at: string
-          username: string
+          use_tls: boolean
         }
         Insert: {
           created_at?: string
-          encryption: string
-          host: string
           id?: string
           is_active?: boolean
-          last_sync_at?: string | null
           name: string
           organization_id: string
-          password: string
-          port: number
-          protocol?: string | null
-          server_type: string
-          settings?: Json | null
-          sync_frequency?: number | null
+          password_encrypted?: boolean
+          reply_to?: string | null
+          sender_email: string
+          sender_name: string
+          smtp_host: string
+          smtp_password: string
+          smtp_port?: number
+          smtp_username: string
           updated_at?: string
-          username: string
+          use_tls?: boolean
         }
         Update: {
           created_at?: string
-          encryption?: string
-          host?: string
           id?: string
           is_active?: boolean
-          last_sync_at?: string | null
           name?: string
           organization_id?: string
-          password?: string
-          port?: number
-          protocol?: string | null
-          server_type?: string
-          settings?: Json | null
-          sync_frequency?: number | null
+          password_encrypted?: boolean
+          reply_to?: string | null
+          sender_email?: string
+          sender_name?: string
+          smtp_host?: string
+          smtp_password?: string
+          smtp_port?: number
+          smtp_username?: string
           updated_at?: string
-          username?: string
+          use_tls?: boolean
         }
         Relationships: [
           {
@@ -376,13 +373,6 @@ export type Database = {
           to_email?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "incoming_emails_email_server_id_fkey"
-            columns: ["email_server_id"]
-            isOneToOne: false
-            referencedRelation: "email_servers"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "incoming_emails_organization_id_fkey"
             columns: ["organization_id"]
@@ -681,6 +671,71 @@ export type Database = {
           ts_waiting_seconds: number | null
         }
         Relationships: []
+      }
+      email_servers_secure: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          is_active: boolean | null
+          name: string | null
+          organization_id: string | null
+          password_encrypted: boolean | null
+          password_status: string | null
+          reply_to: string | null
+          sender_email: string | null
+          sender_name: string | null
+          smtp_host: string | null
+          smtp_password: string | null
+          smtp_port: number | null
+          smtp_username: string | null
+          updated_at: string | null
+          use_tls: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          organization_id?: string | null
+          password_encrypted?: boolean | null
+          password_status?: never
+          reply_to?: string | null
+          sender_email?: string | null
+          sender_name?: string | null
+          smtp_host?: string | null
+          smtp_password?: never
+          smtp_port?: number | null
+          smtp_username?: string | null
+          updated_at?: string | null
+          use_tls?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          organization_id?: string | null
+          password_encrypted?: boolean | null
+          password_status?: never
+          reply_to?: string | null
+          sender_email?: string | null
+          sender_name?: string | null
+          smtp_host?: string | null
+          smtp_password?: never
+          smtp_port?: number | null
+          smtp_username?: string | null
+          updated_at?: string | null
+          use_tls?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_servers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
