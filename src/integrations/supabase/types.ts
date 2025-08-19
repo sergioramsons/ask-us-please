@@ -1209,6 +1209,10 @@ export type Database = {
       }
     }
     Functions: {
+      decrypt_server_password: {
+        Args: { encrypted_password: string }
+        Returns: string
+      }
       delete_organization: {
         Args: { org_id: string }
         Returns: boolean
