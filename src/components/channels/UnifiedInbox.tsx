@@ -27,6 +27,8 @@ import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { NotificationService } from '@/services/NotificationService';
 
 interface UnifiedTicket {
   id: string;
@@ -90,6 +92,7 @@ const PriorityColors = {
 export function UnifiedInbox() {
   const { organization } = useOrganization();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [tickets, setTickets] = useState<UnifiedTicket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -97,6 +100,8 @@ export function UnifiedInbox() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [replyText, setReplyText] = useState('');
+  const [sending, setSending] = useState(false);
 
   // Load real tickets from database
   const loadTickets = async () => {
@@ -193,11 +198,57 @@ export function UnifiedInbox() {
     }
   };
 
-  useEffect(() => {
-    if (organization?.id) {
-      loadTickets();
+  const handleSendReply = async () => {
+    if (!selectedTicket) return;
+    const ticket = tickets.find(t => t.id === selectedTicket);
+    if (!ticket) return;
+
+    if (!replyText.trim()) {
+      toast({ title: 'Empty reply', description: 'Please type a message before sending.' });
+      return;
     }
-  }, [organization?.id]);
+
+    try {
+      setSending(true);
+      // Insert comment
+      const { error: commentError } = await supabase
+        .from('ticket_comments')
+        .insert({
+          ticket_id: selectedTicket,
+          user_id: user?.id || null,
+          is_internal: false,
+          content: replyText.trim(),
+        });
+
+      if (commentError) throw commentError;
+
+      // Optimistically update UI
+      setTickets(prev => prev.map(t =>
+        t.id === selectedTicket
+          ? { ...t, responses: (t.responses || 0) + 1, lastActivity: new Date() }
+          : t
+      ));
+
+      // Notify customer via email if available
+      if (ticket.customer.email) {
+        await NotificationService.notifyCommentAdded(
+          ticket.id,
+          ticket.subject,
+          ticket.customer.email,
+          user?.email || 'Support Agent',
+          replyText.trim()
+        );
+      }
+
+      setReplyText('');
+      toast({ title: 'Reply sent', description: 'Your response has been added to the ticket.' });
+    } catch (error: any) {
+      console.error('Failed to send reply:', error);
+      toast({ title: 'Failed to send', description: error.message || 'Please try again.', variant: 'destructive' });
+    } finally {
+      setSending(false);
+    }
+  };
 
   const filteredTickets = tickets.filter(ticket => {
     const matchesSearch = ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -496,8 +547,17 @@ export function UnifiedInbox() {
                         <Input 
                           placeholder="Type your response..." 
                           className="flex-1"
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                              handleSendReply();
+                            }
+                          }}
                         />
-                        <Button>Send</Button>
+                        <Button onClick={handleSendReply} disabled={sending || !replyText.trim()}>
+                          {sending ? 'Sending…' : 'Send'}
+                        </Button>
                       </div>
                     </div>
                   </>
