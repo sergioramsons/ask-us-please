@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUserRoles } from '@/hooks/useUserRoles';
+import { useGroups, Group } from '@/hooks/useGroups';
 import { useDepartments, Department } from '@/hooks/useDepartments';
 import { supabase } from '@/integrations/supabase/client';
 import { Shield, UserPlus, UserMinus, Building2, Plus, Trash2, AlertTriangle, Settings } from 'lucide-react';
@@ -46,6 +47,14 @@ export function UserRoleManager() {
   const [rolePermissions, setRolePermissions] = useState<{id: string, name: string, description?: string, category: string}[]>([]);
   const [selectedPermissions, setSelectedPermissions] = useState<Set<string>>(new Set());
   
+  // Groups state
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupDescription, setNewGroupDescription] = useState('');
+  const [selectedManagerId, setSelectedManagerId] = useState<string>('');
+  const [selectedGroupForMembers, setSelectedGroupForMembers] = useState<string>('');
+  const [groupMembers, setGroupMembers] = useState<any[]>([]);
+  const [selectedUserForGroup, setSelectedUserForGroup] = useState<string>('');
+  
   const { 
     getUsersWithRoles, 
     assignRole, 
@@ -68,6 +77,16 @@ export function UserRoleManager() {
     assignUserToDepartment,
     isLoading: isDepartmentsLoading 
   } = useDepartments();
+  const {
+    groups,
+    createGroup,
+    updateGroup,
+    deleteGroup,
+    getGroupMembers,
+    addUserToGroup,
+    removeUserFromGroup,
+    isLoading: isGroupsLoading
+  } = useGroups();
 
   useEffect(() => {
     loadUsers();
@@ -260,6 +279,55 @@ export function UserRoleManager() {
     return acc;
   }, {} as Record<string, typeof availablePermissions>);
 
+  // Groups management functions
+  const handleCreateGroup = async () => {
+    if (!newGroupName.trim()) return;
+    
+    const success = await createGroup(
+      newGroupName, 
+      newGroupDescription || undefined, 
+      selectedManagerId || undefined
+    );
+    if (success) {
+      setNewGroupName('');
+      setNewGroupDescription('');
+      setSelectedManagerId('');
+    }
+  };
+
+  const handleDeleteGroup = async (groupId: string, groupName: string) => {
+    if (confirm(`Are you sure you want to delete the group "${groupName}"? All members will be removed.`)) {
+      await deleteGroup(groupId);
+    }
+  };
+
+  const handleViewGroupMembers = async (groupId: string) => {
+    setSelectedGroupForMembers(groupId);
+    const members = await getGroupMembers(groupId);
+    setGroupMembers(members);
+  };
+
+  const handleAddUserToGroup = async () => {
+    if (!selectedUserForGroup || !selectedGroupForMembers) return;
+    
+    const success = await addUserToGroup(selectedUserForGroup, selectedGroupForMembers);
+    if (success) {
+      setSelectedUserForGroup('');
+      // Refresh group members
+      const members = await getGroupMembers(selectedGroupForMembers);
+      setGroupMembers(members);
+    }
+  };
+
+  const handleRemoveUserFromGroup = async (userId: string, groupId: string) => {
+    const success = await removeUserFromGroup(userId, groupId);
+    if (success) {
+      // Refresh group members
+      const members = await getGroupMembers(groupId);
+      setGroupMembers(members);
+    }
+  };
+
   if (!isAdmin()) {
     return (
       <Card>
@@ -283,10 +351,11 @@ export function UserRoleManager() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="users">Users & Roles</TabsTrigger>
             <TabsTrigger value="roles">Manage Roles</TabsTrigger>
             <TabsTrigger value="permissions">Role Permissions</TabsTrigger>
+            <TabsTrigger value="groups">Groups</TabsTrigger>
             <TabsTrigger value="create-user">Create User</TabsTrigger>
             <TabsTrigger value="departments">Departments</TabsTrigger>
           </TabsList>
@@ -712,6 +781,178 @@ export function UserRoleManager() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="groups" className="space-y-4">
+            {/* Create Group */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Create New Group
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="group-name">Group Name *</Label>
+                    <Input
+                      id="group-name"
+                      value={newGroupName}
+                      onChange={(e) => setNewGroupName(e.target.value)}
+                      placeholder="e.g., Customer Support, Technical Team"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="group-manager">Group Manager</Label>
+                    <Select value={selectedManagerId} onValueChange={setSelectedManagerId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a manager" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">No Manager</SelectItem>
+                        {users.map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.display_name || user.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="group-description">Description</Label>
+                  <Input
+                    id="group-description"
+                    value={newGroupDescription}
+                    onChange={(e) => setNewGroupDescription(e.target.value)}
+                    placeholder="Group description (optional)"
+                  />
+                </div>
+                
+                <Button 
+                  onClick={handleCreateGroup} 
+                  disabled={!newGroupName.trim() || isGroupsLoading}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Group
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Groups List */}
+            <div className="grid gap-4">
+              {groups.map((group) => (
+                <Card key={group.id}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-lg">{group.name}</CardTitle>
+                        {group.description && (
+                          <p className="text-sm text-muted-foreground mt-1">{group.description}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{group.member_count} members</Badge>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteGroup(group.id, group.name)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm">
+                        <span className="font-medium">Manager: </span>
+                        <span className="text-muted-foreground">
+                          {group.manager_name || 'No manager assigned'}
+                        </span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewGroupMembers(group.id)}
+                      >
+                        Manage Members
+                      </Button>
+                    </div>
+                    
+                    {/* Group Members Management */}
+                    {selectedGroupForMembers === group.id && (
+                      <div className="border-t pt-4 mt-4 space-y-4">
+                        <div className="flex items-center gap-2">
+                          <Select value={selectedUserForGroup} onValueChange={setSelectedUserForGroup}>
+                            <SelectTrigger className="flex-1">
+                              <SelectValue placeholder="Select user to add" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {users
+                                .filter(user => !groupMembers.some(member => member.user_id === user.id))
+                                .map((user) => (
+                                  <SelectItem key={user.id} value={user.id}>
+                                    {user.display_name || user.email}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            onClick={handleAddUserToGroup}
+                            disabled={!selectedUserForGroup}
+                            size="sm"
+                          >
+                            <UserPlus className="h-4 w-4 mr-1" />
+                            Add
+                          </Button>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Current Members:</Label>
+                          {groupMembers.length > 0 ? (
+                            <div className="space-y-2">
+                              {groupMembers.map((member) => (
+                                <div key={member.id} className="flex items-center justify-between p-2 border rounded">
+                                  <div>
+                                    <span className="font-medium">{member.user_name}</span>
+                                    <span className="text-sm text-muted-foreground ml-2">({member.user_email})</span>
+                                    <Badge variant="outline" className="ml-2 text-xs">
+                                      {member.role_in_group}
+                                    </Badge>
+                                  </div>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleRemoveUserFromGroup(member.user_id, group.id)}
+                                    className="text-destructive hover:text-destructive"
+                                  >
+                                    <UserMinus className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">No members in this group</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {groups.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <Shield className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No groups found</p>
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="departments" className="space-y-4">
