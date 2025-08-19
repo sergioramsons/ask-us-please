@@ -193,6 +193,212 @@ export type Database = {
           },
         ]
       }
+      email_servers: {
+        Row: {
+          created_at: string
+          encryption: string
+          host: string
+          id: string
+          is_active: boolean
+          last_sync_at: string | null
+          name: string
+          organization_id: string
+          password: string
+          port: number
+          protocol: string | null
+          server_type: string
+          settings: Json | null
+          sync_frequency: number | null
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          encryption: string
+          host: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          name: string
+          organization_id: string
+          password: string
+          port: number
+          protocol?: string | null
+          server_type: string
+          settings?: Json | null
+          sync_frequency?: number | null
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          encryption?: string
+          host?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          name?: string
+          organization_id?: string
+          password?: string
+          port?: number
+          protocol?: string | null
+          server_type?: string
+          settings?: Json | null
+          sync_frequency?: number | null
+          updated_at?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_servers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_templates: {
+        Row: {
+          body_html: string
+          body_text: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          subject: string
+          template_type: string
+          updated_at: string
+          variables: Json | null
+        }
+        Insert: {
+          body_html: string
+          body_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          subject: string
+          template_type: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Update: {
+          body_html?: string
+          body_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          subject?: string
+          template_type?: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incoming_emails: {
+        Row: {
+          attachments: Json | null
+          body_html: string | null
+          body_text: string | null
+          created_at: string
+          email_server_id: string | null
+          from_email: string
+          from_name: string | null
+          headers: Json | null
+          id: string
+          message_id: string
+          organization_id: string
+          processed: boolean
+          processed_at: string | null
+          processing_error: string | null
+          raw_email: string | null
+          received_at: string
+          subject: string
+          ticket_id: string | null
+          to_email: string
+        }
+        Insert: {
+          attachments?: Json | null
+          body_html?: string | null
+          body_text?: string | null
+          created_at?: string
+          email_server_id?: string | null
+          from_email: string
+          from_name?: string | null
+          headers?: Json | null
+          id?: string
+          message_id: string
+          organization_id: string
+          processed?: boolean
+          processed_at?: string | null
+          processing_error?: string | null
+          raw_email?: string | null
+          received_at: string
+          subject: string
+          ticket_id?: string | null
+          to_email: string
+        }
+        Update: {
+          attachments?: Json | null
+          body_html?: string | null
+          body_text?: string | null
+          created_at?: string
+          email_server_id?: string | null
+          from_email?: string
+          from_name?: string | null
+          headers?: Json | null
+          id?: string
+          message_id?: string
+          organization_id?: string
+          processed?: boolean
+          processed_at?: string | null
+          processing_error?: string | null
+          raw_email?: string | null
+          received_at?: string
+          subject?: string
+          ticket_id?: string | null
+          to_email?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incoming_emails_email_server_id_fkey"
+            columns: ["email_server_id"]
+            isOneToOne: false
+            referencedRelation: "email_servers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incoming_emails_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incoming_emails_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_admins: {
         Row: {
           created_at: string
