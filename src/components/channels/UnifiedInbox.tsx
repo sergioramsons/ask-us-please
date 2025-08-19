@@ -99,7 +99,7 @@ export function UnifiedInbox() {
   const [channelFilter, setChannelFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
 
