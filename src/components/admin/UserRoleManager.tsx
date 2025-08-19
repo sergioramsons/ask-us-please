@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUserRoles, AppRole } from '@/hooks/useUserRoles';
 import { useDepartments, Department } from '@/hooks/useDepartments';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, UserPlus, UserMinus, Building2, Plus, Trash2 } from 'lucide-react';
+import { Shield, UserPlus, UserMinus, Building2, Plus, Trash2, AlertTriangle } from 'lucide-react';
 
 interface UserWithRole {
   id: string;
@@ -141,6 +141,57 @@ export function UserRoleManager() {
     }
   };
 
+  const handleDeleteUser = async (userId: string, userEmail: string) => {
+    if (!confirm(`Are you sure you want to delete user "${userEmail}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
+      // First remove all user roles
+      const { error: rolesError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (rolesError) {
+        console.error('Error removing user roles:', rolesError);
+      }
+
+      // Remove user profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (profileError) {
+        console.error('Error removing user profile:', profileError);
+      }
+
+      // Try to delete the auth user (requires admin privileges)
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+      
+      if (authError) {
+        console.error('Error deleting auth user:', authError);
+        // Continue even if auth deletion fails - the user data is cleaned up
+      }
+
+      console.log('User deleted successfully');
+      
+      // Reload users list
+      await loadUsers();
+      
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      alert('Failed to delete user: ' + (error.message || 'Unknown error'));
+    }
+  };
+
   if (!isAdmin()) {
     return (
       <Card>
@@ -238,45 +289,57 @@ export function UserRoleManager() {
                       )}
                     </div>
                   </div>
-                  
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleAssignRole(user.id)}
-                      disabled={isLoading || user.roles.includes(selectedRole)}
-                      title={`Assign ${selectedRole} role`}
-                    >
-                      <UserPlus className="h-4 w-4 mr-1" />
-                      Add {selectedRole}
-                    </Button>
-                    
-                    {selectedDepartment && selectedDepartment !== 'none' && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleAssignDepartment(user.id, selectedDepartment === 'none' ? null : selectedDepartment)}
-                        disabled={isDepartmentsLoading || user.department_id === selectedDepartment}
-                        title="Assign to department"
-                      >
-                        <Building2 className="h-4 w-4 mr-1" />
-                        {selectedDepartment === 'none' ? 'Remove Dept' : 'Assign Dept'}
-                      </Button>
-                    )}
-                    
-                    {selectedDepartment === 'none' && user.department_id && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleAssignDepartment(user.id, null)}
-                        disabled={isDepartmentsLoading}
-                        title="Remove from department"
-                      >
-                        <Building2 className="h-4 w-4 mr-1" />
-                        Remove Dept
-                      </Button>
-                    )}
-                  </div>
+                   
+                   <div className="flex flex-col gap-2">
+                     <Button
+                       size="sm"
+                       variant="outline"
+                       onClick={() => handleAssignRole(user.id)}
+                       disabled={isLoading || user.roles.includes(selectedRole)}
+                       title={`Assign ${selectedRole} role`}
+                     >
+                       <UserPlus className="h-4 w-4 mr-1" />
+                       Add {selectedRole}
+                     </Button>
+                     
+                     {selectedDepartment && selectedDepartment !== 'none' && (
+                       <Button
+                         size="sm"
+                         variant="outline"
+                         onClick={() => handleAssignDepartment(user.id, selectedDepartment === 'none' ? null : selectedDepartment)}
+                         disabled={isDepartmentsLoading || user.department_id === selectedDepartment}
+                         title="Assign to department"
+                       >
+                         <Building2 className="h-4 w-4 mr-1" />
+                         {selectedDepartment === 'none' ? 'Remove Dept' : 'Assign Dept'}
+                       </Button>
+                     )}
+                     
+                     {selectedDepartment === 'none' && user.department_id && (
+                       <Button
+                         size="sm"
+                         variant="outline"
+                         onClick={() => handleAssignDepartment(user.id, null)}
+                         disabled={isDepartmentsLoading}
+                         title="Remove from department"
+                       >
+                         <Building2 className="h-4 w-4 mr-1" />
+                         Remove Dept
+                       </Button>
+                     )}
+                     
+                     <Button
+                       size="sm"
+                       variant="destructive"
+                       onClick={() => handleDeleteUser(user.id, user.email)}
+                       disabled={isLoading}
+                       title="Delete user permanently"
+                       className="mt-2"
+                     >
+                       <Trash2 className="h-4 w-4 mr-1" />
+                       Delete User
+                     </Button>
+                   </div>
                 </div>
               ))}
             </div>
