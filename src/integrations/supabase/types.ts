@@ -612,6 +612,7 @@ export type Database = {
       incoming_mail_servers: {
         Row: {
           auto_create_tickets: boolean
+          auto_process: boolean
           check_interval_minutes: number
           created_at: string
           host: string
@@ -631,6 +632,7 @@ export type Database = {
         }
         Insert: {
           auto_create_tickets?: boolean
+          auto_process?: boolean
           check_interval_minutes?: number
           created_at?: string
           host: string
@@ -650,6 +652,7 @@ export type Database = {
         }
         Update: {
           auto_create_tickets?: boolean
+          auto_process?: boolean
           check_interval_minutes?: number
           created_at?: string
           host?: string
