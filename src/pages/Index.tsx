@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TicketForm } from "@/components/helpdesk/ticket-form";
 import { TicketDetail } from "@/components/helpdesk/ticket-detail";
@@ -16,7 +17,7 @@ import { useOrganization } from "@/contexts/OrganizationContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationService } from "@/services/NotificationService";
-import { Plus, Trash2, Ticket as TicketIcon, Headphones } from "lucide-react";
+import { Plus, Trash2, Ticket as TicketIcon, Headphones, CheckSquare, Square } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 type View = 'tickets' | 'inbox' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports';
@@ -34,6 +35,9 @@ const Index = () => {
   const [ticketsLoading, setTicketsLoading] = useState(true);
   const [deletingTicket, setDeletingTicket] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'all'>('all');
+  const [selectedTicketIds, setSelectedTicketIds] = useState<Set<string>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [deletingMultiple, setDeletingMultiple] = useState(false);
 
   // Load tickets from database
 const loadTickets = async () => {
@@ -338,6 +342,71 @@ const loadTickets = async () => {
     }
   };
 
+  // Handle bulk deletion
+  const handleBulkDelete = async () => {
+    if (selectedTicketIds.size === 0) return;
+    
+    setDeletingMultiple(true);
+    try {
+      const { data, error } = await supabase
+        .rpc('delete_multiple_tickets', { 
+          ticket_ids: Array.from(selectedTicketIds) 
+        });
+
+      if (error) throw error;
+
+      const result = data as { success: boolean; deleted_count: number; total_requested: number };
+      
+      await loadTickets();
+      setSelectedTicketIds(new Set());
+      setIsSelectionMode(false);
+
+      toast({
+        title: "Success",
+        description: `${result.deleted_count} of ${result.total_requested} tickets deleted successfully`,
+      });
+    } catch (error: any) {
+      console.error('Error deleting tickets:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete selected tickets",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingMultiple(false);
+    }
+  };
+
+  // Toggle selection mode
+  const toggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode);
+    setSelectedTicketIds(new Set());
+  };
+
+  // Toggle ticket selection
+  const toggleTicketSelection = (ticketId: string) => {
+    setSelectedTicketIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(ticketId)) {
+        newSet.delete(ticketId);
+      } else {
+        newSet.add(ticketId);
+      }
+      return newSet;
+    });
+  };
+
+  // Select all visible tickets
+  const selectAllTickets = () => {
+    const visibleTickets = statusFilter === 'all' ? tickets : tickets.filter(t => t.status === statusFilter);
+    setSelectedTicketIds(new Set(visibleTickets.map(t => t.id)));
+  };
+
+  // Deselect all tickets
+  const deselectAllTickets = () => {
+    setSelectedTicketIds(new Set());
+  };
+
   const handleViewTicket = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setCurrentView('ticket-detail');
@@ -434,18 +503,85 @@ const loadTickets = async () => {
         ))}
       </div>
 
+      {/* Selection Mode Controls */}
       <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          Showing {statusFilter === 'all' ? tickets.length : tickets.filter(t => t.status === statusFilter).length} of {tickets.length}
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {statusFilter === 'all' ? tickets.length : tickets.filter(t => t.status === statusFilter).length} of {tickets.length}
+            {statusFilter !== 'all' && (
+              <span> • Filter: <span className="font-medium capitalize">{String(statusFilter).replace('-', ' ')}</span></span>
+            )}
+          </div>
           {statusFilter !== 'all' && (
-            <span> • Filter: <span className="font-medium capitalize">{String(statusFilter).replace('-', ' ')}</span></span>
+            <Button variant="outline" size="sm" onClick={() => setStatusFilter('all')}>
+              Clear filter
+            </Button>
           )}
         </div>
-        {statusFilter !== 'all' && (
-          <Button variant="outline" size="sm" onClick={() => setStatusFilter('all')}>
-            Clear filter
+        
+        <div className="flex items-center gap-2">
+          {isSelectionMode && (
+            <>
+              <span className="text-sm text-muted-foreground">
+                {selectedTicketIds.size} selected
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={selectedTicketIds.size > 0 ? deselectAllTickets : selectAllTickets}
+              >
+                {selectedTicketIds.size > 0 ? (
+                  <>
+                    <Square className="h-4 w-4 mr-1" />
+                    Deselect All
+                  </>
+                ) : (
+                  <>
+                    <CheckSquare className="h-4 w-4 mr-1" />
+                    Select All
+                  </>
+                )}
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    disabled={selectedTicketIds.size === 0 || deletingMultiple}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete Selected ({selectedTicketIds.size})
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Multiple Tickets</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete {selectedTicketIds.size} tickets? This action cannot be undone and will remove all comments and data associated with these tickets.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleBulkDelete}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete {selectedTicketIds.size} Tickets
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
+          )}
+          
+          <Button
+            variant={isSelectionMode ? "default" : "outline"}
+            size="sm"
+            onClick={toggleSelectionMode}
+          >
+            {isSelectionMode ? "Exit Selection" : "Select Multiple"}
           </Button>
-        )}
+        </div>
       </div>
 
       {/* Tickets List */}
@@ -471,9 +607,18 @@ const loadTickets = async () => {
                    <div 
                      key={ticket.id}
                      className="flex items-center justify-between p-4 border border-border rounded hover:bg-accent/50 transition-colors cursor-pointer"
-                     onClick={() => handleViewTicket(ticket)}
+                     onClick={() => !isSelectionMode && handleViewTicket(ticket)}
                    >
-                     <div className="flex-1">
+                     <div className="flex items-start gap-3 flex-1">
+                       {isSelectionMode && (
+                         <Checkbox
+                           checked={selectedTicketIds.has(ticket.id)}
+                           onCheckedChange={() => toggleTicketSelection(ticket.id)}
+                           onClick={(e) => e.stopPropagation()}
+                           className="mt-1"
+                         />
+                       )}
+                       <div className="flex-1">
                        <div className="flex items-center gap-3">
                          <span className="font-medium text-sm">#{ticket.ticketNumber || ticket.id.slice(0, 8)}</span>
                          <span className={`px-2 py-1 rounded text-xs font-medium ${
@@ -497,41 +642,42 @@ const loadTickets = async () => {
                        <div className="text-xs text-muted-foreground mt-2">
                          Created {ticket.createdAt.toLocaleDateString()} • Updated {ticket.updatedAt.toLocaleDateString()}
                        </div>
-                     </div>
-                     
-                     <div className="flex items-center gap-2 ml-4">
-                       <AlertDialog>
-                         <AlertDialogTrigger asChild>
-                           <Button
-                             variant="outline"
-                             size="sm"
-                             className="text-destructive hover:text-destructive"
-                             disabled={deletingTicket === ticket.id}
-                             onClick={(e) => e.stopPropagation()}
-                           >
-                             <Trash2 className="h-4 w-4" />
-                           </Button>
-                         </AlertDialogTrigger>
-                         <AlertDialogContent>
-                           <AlertDialogHeader>
-                             <AlertDialogTitle>Delete Ticket</AlertDialogTitle>
-                             <AlertDialogDescription>
-                               Are you sure you want to delete ticket "{ticket.title}"? This action cannot be undone.
-                             </AlertDialogDescription>
-                           </AlertDialogHeader>
-                           <AlertDialogFooter>
-                             <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={(e) => { e.stopPropagation(); handleDeleteTicket(ticket.id); }}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Delete Ticket
-                              </AlertDialogAction>
-                           </AlertDialogFooter>
-                         </AlertDialogContent>
-                       </AlertDialog>
-                     </div>
-                  </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 ml-4">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              disabled={deletingTicket === ticket.id}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Ticket</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete ticket "{ticket.title}"? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
+                               <AlertDialogAction
+                                 onClick={(e) => { e.stopPropagation(); handleDeleteTicket(ticket.id); }}
+                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                               >
+                                 Delete Ticket
+                               </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
                 ))}
               </div>
             )}

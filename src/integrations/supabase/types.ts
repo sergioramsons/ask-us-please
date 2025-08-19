@@ -1217,6 +1217,10 @@ export type Database = {
         Args: { encrypted_password: string }
         Returns: string
       }
+      delete_multiple_tickets: {
+        Args: { ticket_ids: string[] }
+        Returns: Json
+      }
       delete_organization: {
         Args: { org_id: string }
         Returns: boolean
