@@ -153,35 +153,21 @@ export function UserRoleManager() {
         throw new Error('No active session');
       }
 
-      // First remove all user roles
-      const { error: rolesError } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId);
+      // Invoke secure edge function to delete the user with service role
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { userId },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
 
-      if (rolesError) {
-        console.error('Error removing user roles:', rolesError);
+      if (error) {
+        throw new Error(error.message || 'Failed to delete user');
       }
 
-      // Remove user profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('user_id', userId);
-
-      if (profileError) {
-        console.error('Error removing user profile:', profileError);
+      if ((data as any)?.errors?.length) {
+        console.warn('Partial deletion with warnings:', (data as any).errors);
       }
 
-      // Try to delete the auth user (requires admin privileges)
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-      
-      if (authError) {
-        console.error('Error deleting auth user:', authError);
-        // Continue even if auth deletion fails - the user data is cleaned up
-      }
-
-      console.log('User deleted successfully');
+      console.info('User deleted successfully');
       
       // Reload users list
       await loadUsers();
