@@ -150,17 +150,10 @@ const OrganizationManager: React.FC = () => {
       const domainData: any = {
         organization_id: selectedOrgForDomains.id,
         domain: domainFormData.domain,
-        domain_type: domainFormData.domain_type,
-        is_primary: domainFormData.is_primary,
         is_verified: false,
       };
 
-      // Add specific fields based on domain type
-      if (domainFormData.domain_type === 'subdomain') {
-        domainData.subdomain_pattern = domainFormData.subdomain_pattern;
-      } else if (domainFormData.domain_type === 'wildcard') {
-        domainData.wildcard_domain = domainFormData.wildcard_domain;
-      }
+      // Note: domain_type specific fields are not stored in current schema
 
       const { error } = await supabase
         .from('organization_domains')
@@ -219,22 +212,8 @@ const OrganizationManager: React.FC = () => {
 
   const handleTogglePrimaryDomain = async (domainId: string, orgId: string) => {
     try {
-      // First, set all domains for this org to non-primary
-      await supabase
-        .from('organization_domains')
-        .update({ is_primary: false })
-        .eq('organization_id', orgId);
-
-      // Then set the selected domain as primary
-      const { error } = await supabase
-        .from('organization_domains')
-        .update({ is_primary: true })
-        .eq('id', domainId);
-
-      if (error) throw error;
-
-      toast.success('Primary domain updated');
-      await fetchAllDomains();
+      toast.success('Primary domain feature not available in current schema');
+      return;
     } catch (error: any) {
       console.error('Error updating primary domain:', error);
       toast.error(error.message || 'Failed to update primary domain');

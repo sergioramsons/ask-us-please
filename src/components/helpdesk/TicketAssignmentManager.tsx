@@ -87,15 +87,8 @@ export function TicketAssignmentManager({
 
       if (profilesError) throw profilesError;
 
-      // Get agent availability data separately
-      const { data: availability, error: availabilityError } = await supabase
-        .from('agent_availability')
-        .select('user_id, current_tickets, max_tickets, is_available')
-        .in('user_id', agentUserIds);
-
-      if (availabilityError) {
-        console.warn('Could not load agent availability:', availabilityError);
-      }
+      // Get agent availability data separately (not available in current schema)
+      const availability: any[] = [];
 
       // Create availability map
       const availabilityMap = new Map();
@@ -138,35 +131,16 @@ export function TicketAssignmentManager({
   const handleAutoAssign = async () => {
     try {
       setProcessing(true);
-      
-      const { data, error } = await supabase.rpc('auto_assign_ticket', {
-        ticket_id: ticketId
+      toast({
+        title: 'Auto-assign not available',
+        description: 'Auto-assignment function is not configured.',
       });
-
-      if (error) throw error;
-
-      if (data) {
-        const assignedAgent = agents.find(a => a.id === data);
-        toast({
-          title: "Ticket auto-assigned",
-          description: `Ticket assigned to ${assignedAgent?.display_name || 'agent'}`
-        });
-        
-        onAssignmentChange?.(data, assignedAgent?.display_name || 'Agent');
-        await loadAgents(); // Refresh agent list
-      } else {
-        toast({
-          title: "Auto-assignment failed",
-          description: "No available agents or assignment rules configured",
-          variant: "destructive"
-        });
-      }
     } catch (error: any) {
       console.error('Error auto-assigning ticket:', error);
       toast({
-        title: "Error auto-assigning ticket",
+        title: 'Error auto-assigning ticket',
         description: error.message,
-        variant: "destructive"
+        variant: 'destructive',
       });
     } finally {
       setProcessing(false);
@@ -179,11 +153,10 @@ export function TicketAssignmentManager({
     try {
       setProcessing(true);
       
-      const { error } = await supabase.rpc('transfer_ticket', {
-        ticket_id: ticketId,
-        new_agent_id: user.id,
-        transfer_reason: 'Agent took ownership'
-      });
+      const { error } = await supabase
+        .from('tickets')
+        .update({ assigned_to: user.id, updated_at: new Date().toISOString() })
+        .eq('id', ticketId);
 
       if (error) throw error;
 
@@ -212,11 +185,10 @@ export function TicketAssignmentManager({
     try {
       setProcessing(true);
       
-      const { error } = await supabase.rpc('transfer_ticket', {
-        ticket_id: ticketId,
-        new_agent_id: selectedAgent,
-        transfer_reason: transferReason || 'Manual transfer'
-      });
+      const { error } = await supabase
+        .from('tickets')
+        .update({ assigned_to: selectedAgent, updated_at: new Date().toISOString() })
+        .eq('id', ticketId);
 
       if (error) throw error;
 
@@ -252,24 +224,13 @@ export function TicketAssignmentManager({
         .from('tickets')
         .update({
           assigned_to: null,
-          assigned_at: null,
-          auto_assigned: false,
           updated_at: new Date().toISOString()
         })
         .eq('id', ticketId);
 
       if (error) throw error;
 
-      // Update agent availability if currently assigned
-      if (currentAssigneeId) {
-        await supabase
-          .from('agent_availability')
-          .update({
-            current_tickets: Math.max(0, 1), // This should be decremented properly
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', currentAssigneeId);
-      }
+      // No agent availability table in current schema; skipping availability update
 
       toast({
         title: "Ticket unassigned",

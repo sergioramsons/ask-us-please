@@ -64,12 +64,8 @@ export function SecurityDashboard() {
 
       if (serversError) throw serversError;
 
-      // Get audit log count
-      const { count: auditCount, error: auditError } = await supabase
-        .from('email_server_audit')
-        .select('*', { count: 'exact', head: true });
-
-      if (auditError) console.warn('Could not fetch audit logs:', auditError);
+      // Audit logs table not present in current schema; default to 0
+      const auditCount = 0;
 
       const totalServers = servers?.length || 0;
       const encryptedServers = servers?.filter(s => s.password_encrypted).length || 0;

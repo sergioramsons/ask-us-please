@@ -27,7 +27,7 @@ export function TicketList({ tickets, onViewTicket, onTicketDeleted }: TicketLis
     try {
       // Use the secure delete function instead of direct SQL
       const { error } = await supabase
-        .rpc('delete_ticket', { p_ticket_id: ticketId });
+        .rpc('delete_ticket', { ticket_id_param: ticketId });
 
       if (error) throw error;
 

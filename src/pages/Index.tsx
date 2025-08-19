@@ -215,6 +215,7 @@ const loadTickets = async () => {
           const { data: newContact, error: contactError } = await supabase
             .from('contacts')
             .insert({
+              name: ticketData.customerName || (callerInfo?.phone ? `Caller ${callerInfo.phone}` : 'Customer'),
               first_name: ticketData.customerName?.split(' ')[0] || '',
               last_name: ticketData.customerName?.split(' ').slice(1).join(' ') || '',
               email: ticketData.customerEmail,
@@ -294,7 +295,7 @@ const loadTickets = async () => {
     setDeletingTicket(ticketId);
     try {
       const { error } = await supabase
-        .rpc('delete_ticket', { p_ticket_id: ticketId });
+        .rpc('delete_ticket', { ticket_id_param: ticketId });
 
       if (error) throw error;
 

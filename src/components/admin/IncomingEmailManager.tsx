@@ -65,13 +65,12 @@ const IncomingEmailManager = () => {
     queryKey: ['email-attachments', selectedEmail?.id],
     queryFn: async () => {
       if (!selectedEmail?.id) return [];
-      // Note: email_attachments table exists but types haven't regenerated yet
-      const { data, error } = await supabase
-        .from('email_attachments' as any)
+      const { data, error } = await (supabase as any)
+        .from('email_attachments')
         .select('*')
         .eq('email_id', selectedEmail.id);
       if (error) throw error;
-      return (data || []) as EmailAttachment[];
+      return (data as any[]) as EmailAttachment[];
     },
     enabled: !!selectedEmail?.id,
   });

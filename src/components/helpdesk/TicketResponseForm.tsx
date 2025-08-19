@@ -93,7 +93,7 @@ export function TicketResponseForm({
           ticket_id: ticketId,
           content: response,
           is_internal: isInternal,
-          created_by: (await supabase.auth.getUser()).data.user?.id
+          user_id: (await supabase.auth.getUser()).data.user?.id
         })
         .select('*')
         .single();
@@ -106,8 +106,7 @@ export function TicketResponseForm({
       const { error: ticketError } = await supabase
         .from('tickets')
         .update({ 
-          last_activity_at: new Date().toISOString(),
-          ...(ticketStatus !== 'resolved' && !isInternal && { first_response_at: new Date().toISOString() })
+          updated_at: new Date().toISOString(),
         })
         .eq('id', ticketId);
 

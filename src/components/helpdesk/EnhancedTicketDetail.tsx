@@ -56,7 +56,7 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
       }
 
       // Get unique user IDs
-      const userIds = [...new Set(comments.map(comment => comment.created_by).filter(Boolean))];
+      const userIds = [...new Set(comments.map(comment => comment.user_id).filter(Boolean))];
       
       if (userIds.length === 0) {
         setComments(comments.map(comment => ({ ...comment, profile: null })));
@@ -72,7 +72,7 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
       // Merge profiles with comments
       const commentsWithProfiles = comments.map(comment => ({
         ...comment,
-        profile: profiles?.find(p => p.user_id === comment.created_by) || null
+        profile: profiles?.find(p => p.user_id === comment.user_id) || null
       }));
 
       setComments(commentsWithProfiles);
@@ -159,7 +159,7 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
         ticket_id: ticket.id,
         content: response,
         is_internal: isInternal,
-        created_by: null,
+        user_id: null,
         created_at: new Date().toISOString(),
         profile: null
       }
