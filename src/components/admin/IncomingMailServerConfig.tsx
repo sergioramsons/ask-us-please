@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from 'sonner';
 import { Mail, Plus, Settings, Trash2, Play, Pause, TestTube } from 'lucide-react';
 import { encryptPassword, decryptPassword } from '@/lib/secureEncryption';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 interface IncomingMailServer {
   id: string;
@@ -39,6 +40,7 @@ interface IncomingMailServer {
 }
 
 const IncomingMailServerConfig = () => {
+  const { organization } = useOrganization();
   const [selectedServer, setSelectedServer] = useState<IncomingMailServer | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<Partial<IncomingMailServer>>({
@@ -102,6 +104,7 @@ const IncomingMailServerConfig = () => {
 
       const dataToSave = {
         ...serverData,
+        organization_id: organization?.id, // Ensure organization_id is set
         password: encryptedPassword,
         password_encrypted: true,
       } as any; // Type assertion to handle database schema mismatch
