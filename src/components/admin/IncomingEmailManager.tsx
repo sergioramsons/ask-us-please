@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { ProcessEmailsButton } from './ProcessEmailsButton';
 import { Mail, Ticket, User, Clock, AlertCircle, CheckCircle } from 'lucide-react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 
@@ -236,23 +237,26 @@ const IncomingEmailManager = () => {
               <Mail className="h-5 w-5" />
               Incoming Email Management
             </CardTitle>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => processPendingMutation.mutate()}
-                size="sm"
-                disabled={processPendingMutation.isPending}
-                className="gap-2"
-              >
-                {processPendingMutation.isPending ? 'Processing…' : 'Process Pending'}
-              </Button>
-              <Button
-                variant={showProcessed ? "default" : "outline"}
-                onClick={() => setShowProcessed(!showProcessed)}
-                size="sm"
-              >
-                {showProcessed ? 'Show Unprocessed' : 'Show All'}
-              </Button>
+            <div className="flex items-center justify-between">
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => processPendingMutation.mutate()}
+                  size="sm"
+                  disabled={processPendingMutation.isPending}
+                  className="gap-2"
+                >
+                  {processPendingMutation.isPending ? 'Processing…' : 'Process Pending'}
+                </Button>
+                <Button
+                  variant={showProcessed ? "default" : "outline"}
+                  onClick={() => setShowProcessed(!showProcessed)}
+                  size="sm"
+                >
+                  {showProcessed ? 'Show Unprocessed' : 'Show All'}
+                </Button>
+              </div>
+              <ProcessEmailsButton />
             </div>
           </div>
         </CardHeader>
