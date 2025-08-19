@@ -54,13 +54,16 @@ for (const email of pendingEmails) {
                         subject.includes('vacation');
 
     if (!isAutoReply) {
-      // Check if this is a reply to an existing ticket
-      const ticketNumberMatch = email.subject.match(/\[?ticket\s*#?([A-Z]{2}\d{5})\]?/i) || 
-                                email.subject.match(/\[?#?([A-Z]{2}\d{5})\]?/i);
+      // Check if this is a reply to an existing ticket (our format: TICKET-00001)
+      const subjectText = email.subject || '';
+      const ticketNumberMatch =
+        subjectText.match(/\b(TICKET-\d{5,})\b/i) ||
+        subjectText.match(/\[(TICKET-\d{5,})\]/i) ||
+        subjectText.match(/#(TICKET-\d{5,})/i);
       
       if (ticketNumberMatch) {
         // This is a reply to an existing ticket
-        const ticketNumber = ticketNumberMatch[1];
+        const ticketNumber = (ticketNumberMatch[1] || ticketNumberMatch[0]).toUpperCase();
         const handled = await handleTicketReply(email, ticketNumber);
         if (handled) {
           markedProcessed++;
@@ -244,8 +247,16 @@ async function handleTicketReply(emailRecord: any, ticketNumber: string) {
 
 async function createTicketFromEmail(emailRecord: any) {
   try {
+    // Determine organization (use the first org as default)
+    const { data: defaultOrg } = await supabase
+      .from('organizations')
+      .select('id')
+      .limit(1)
+      .single();
+    const orgId = defaultOrg?.id;
+
     // Generate ticket number
-    const { data: ticketNumber } = await supabase.rpc('generate_ticket_number');
+    const { data: ticketNumber } = await supabase.rpc('generate_ticket_number', { org_id: orgId });
 
     // Check if contact exists
     let contactId = null;
@@ -296,6 +307,7 @@ async function createTicketFromEmail(emailRecord: any) {
         priority: priority,
         status: 'open',
         contact_id: contactId,
+        organization_id: orgId,
       })
       .select()
       .single();

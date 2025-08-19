@@ -344,6 +344,59 @@ async function processIncomingEmail(emailData: any, server: any) {
 
   console.log('Email stored successfully:', emailRecord.id);
 
+  // First, try to detect if this email is a reply to an existing ticket
+  try {
+    const subjectText = emailData.subject || '';
+    const match =
+      subjectText.match(/\b(TICKET-\d{5,})\b/i) ||
+      subjectText.match(/\[(TICKET-\d{5,})\]/i) ||
+      subjectText.match(/#(TICKET-\d{5,})/i);
+
+    if (match) {
+      const ticketNumber = (match[1] || match[0]).toUpperCase();
+      const { data: existingTicket } = await supabase
+        .from('tickets')
+        .select('id, contact_id')
+        .eq('ticket_number', ticketNumber)
+        .maybeSingle();
+
+      if (existingTicket) {
+        const { data: contact } = await supabase
+          .from('contacts')
+          .select('email')
+          .eq('id', existingTicket.contact_id)
+          .maybeSingle();
+
+        if (!contact || (contact.email || '').toLowerCase() !== (emailData.from.email || '').toLowerCase()) {
+          console.log('Reply email not from original contact; will treat as new ticket if configured');
+        } else {
+          // Add comment to existing ticket
+          const { error: commentError } = await supabase
+            .from('ticket_comments')
+            .insert({
+              ticket_id: existingTicket.id,
+              content: emailData.text || emailData.html || 'Email content not available',
+              email_id: emailRecord.id,
+              is_internal: false,
+            });
+
+          if (commentError) {
+            console.error('Error creating comment for existing ticket:', commentError);
+          } else {
+            await supabase
+              .from('incoming_emails')
+              .update({ ticket_id: existingTicket.id, processed: true })
+              .eq('id', emailRecord.id);
+            console.log('Added comment to existing ticket and marked email processed');
+            return; // Done handling this email
+          }
+        }
+      }
+    }
+  } catch (replyCheckError) {
+    console.warn('Error checking for existing ticket reply:', replyCheckError);
+  }
+
   // Auto-create ticket if configured
   if (server.auto_create_tickets) {
     const shouldCreateTicket = await checkAutoTicketCreation(emailData);
@@ -378,8 +431,8 @@ async function checkAutoTicketCreation(emailData: any): Promise<boolean> {
 
 async function createTicketFromEmail(emailRecord: any, emailData: any, server: any) {
   try {
-    // Generate ticket number
-    const { data: ticketNumber } = await supabase.rpc('generate_ticket_number');
+    // Generate ticket number for this server's organization
+    const { data: ticketNumber } = await supabase.rpc('generate_ticket_number', { org_id: server.organization_id });
 
     // Check if contact exists
     let contactId = null;
@@ -431,6 +484,7 @@ async function createTicketFromEmail(emailRecord: any, emailData: any, server: a
         status: 'open',
         contact_id: contactId,
         department_id: server.auto_assign_department,
+        organization_id: server.organization_id,
       })
       .select()
       .single();
