@@ -11,6 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Mail, Ticket, User, Clock, AlertCircle, CheckCircle } from 'lucide-react';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 interface IncomingEmail {
   id: string;
@@ -35,6 +36,7 @@ interface EmailAttachment {
 }
 
 const IncomingEmailManager = () => {
+  const { organization } = useOrganization();
   const [selectedEmail, setSelectedEmail] = useState<IncomingEmail | null>(null);
   const [showProcessed, setShowProcessed] = useState(false);
   const queryClient = useQueryClient();
@@ -63,12 +65,13 @@ const IncomingEmailManager = () => {
     queryKey: ['email-attachments', selectedEmail?.id],
     queryFn: async () => {
       if (!selectedEmail?.id) return [];
+      // Note: email_attachments table exists but types haven't regenerated yet
       const { data, error } = await supabase
-        .from('email_attachments')
+        .from('email_attachments' as any)
         .select('*')
         .eq('email_id', selectedEmail.id);
       if (error) throw error;
-      return data as EmailAttachment[];
+      return (data || []) as EmailAttachment[];
     },
     enabled: !!selectedEmail?.id,
   });
@@ -96,9 +99,11 @@ const IncomingEmailManager = () => {
         const { data: newContact, error: contactError } = await supabase
           .from('contacts')
           .insert({
-            email: email.sender_email,
+            name: `${email.sender_name || 'Unknown User'}`,
             first_name: email.sender_name?.split(' ')[0] || 'Unknown',
             last_name: email.sender_name?.split(' ').slice(1).join(' ') || 'User',
+            email: email.sender_email,
+            organization_id: organization?.id
           })
           .select()
           .single();

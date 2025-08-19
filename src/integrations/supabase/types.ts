@@ -70,6 +70,7 @@ export type Database = {
           agent_extension: string | null
           completed_calls: number
           created_at: string
+          current_index: number
           delay_seconds: number
           failed_calls: number
           id: string
@@ -79,6 +80,7 @@ export type Database = {
           phone_numbers: string[]
           status: string
           successful_calls: number
+          total_calls: number
           total_numbers: number
           updated_at: string
         }
@@ -86,6 +88,7 @@ export type Database = {
           agent_extension?: string | null
           completed_calls?: number
           created_at?: string
+          current_index?: number
           delay_seconds?: number
           failed_calls?: number
           id?: string
@@ -95,6 +98,7 @@ export type Database = {
           phone_numbers?: string[]
           status?: string
           successful_calls?: number
+          total_calls?: number
           total_numbers?: number
           updated_at?: string
         }
@@ -102,6 +106,7 @@ export type Database = {
           agent_extension?: string | null
           completed_calls?: number
           created_at?: string
+          current_index?: number
           delay_seconds?: number
           failed_calls?: number
           id?: string
@@ -111,6 +116,7 @@ export type Database = {
           phone_numbers?: string[]
           status?: string
           successful_calls?: number
+          total_calls?: number
           total_numbers?: number
           updated_at?: string
         }
@@ -413,6 +419,36 @@ export type Database = {
           },
         ]
       }
+      email_attachments: {
+        Row: {
+          content_type: string
+          created_at: string
+          email_id: string
+          file_path: string | null
+          filename: string
+          id: string
+          size_bytes: number
+        }
+        Insert: {
+          content_type: string
+          created_at?: string
+          email_id: string
+          file_path?: string | null
+          filename: string
+          id?: string
+          size_bytes?: number
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          email_id?: string
+          file_path?: string | null
+          filename?: string
+          id?: string
+          size_bytes?: number
+        }
+        Relationships: []
+      }
       email_servers: {
         Row: {
           created_at: string
@@ -546,6 +582,8 @@ export type Database = {
           processing_error: string | null
           raw_email: string | null
           received_at: string
+          recipient_email: string | null
+          sender_email: string | null
           subject: string
           ticket_id: string | null
           to_email: string
@@ -567,6 +605,8 @@ export type Database = {
           processing_error?: string | null
           raw_email?: string | null
           received_at: string
+          recipient_email?: string | null
+          sender_email?: string | null
           subject: string
           ticket_id?: string | null
           to_email: string
@@ -588,6 +628,8 @@ export type Database = {
           processing_error?: string | null
           raw_email?: string | null
           received_at?: string
+          recipient_email?: string | null
+          sender_email?: string | null
           subject?: string
           ticket_id?: string | null
           to_email?: string
@@ -719,32 +761,71 @@ export type Database = {
           },
         ]
       }
+      organization_domains: {
+        Row: {
+          created_at: string
+          domain: string
+          id: string
+          is_verified: boolean
+          organization_id: string
+          updated_at: string
+          verification_token: string | null
+        }
+        Insert: {
+          created_at?: string
+          domain: string
+          id?: string
+          is_verified?: boolean
+          organization_id: string
+          updated_at?: string
+          verification_token?: string | null
+        }
+        Update: {
+          created_at?: string
+          domain?: string
+          id?: string
+          is_verified?: boolean
+          organization_id?: string
+          updated_at?: string
+          verification_token?: string | null
+        }
+        Relationships: []
+      }
       organizations: {
         Row: {
           created_at: string
           domain: string | null
           id: string
+          max_users: number | null
           name: string
           settings: Json | null
+          slug: string | null
           subdomain: string | null
+          subscription_status: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           domain?: string | null
           id?: string
+          max_users?: number | null
           name: string
           settings?: Json | null
+          slug?: string | null
           subdomain?: string | null
+          subscription_status?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           domain?: string | null
           id?: string
+          max_users?: number | null
           name?: string
           settings?: Json | null
+          slug?: string | null
           subdomain?: string | null
+          subscription_status?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1128,6 +1209,10 @@ export type Database = {
       }
     }
     Functions: {
+      delete_organization: {
+        Args: { org_id: string }
+        Returns: boolean
+      }
       delete_ticket: {
         Args: { ticket_id_param: string }
         Returns: boolean

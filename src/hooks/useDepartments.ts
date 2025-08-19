@@ -39,11 +39,15 @@ export function useDepartments() {
     }
   }, [toast]);
 
-  const createDepartment = useCallback(async (name: string, description?: string) => {
+  const createDepartment = useCallback(async (name: string, description?: string, organization_id?: string) => {
     try {
       const { data, error } = await supabase
         .from('departments')
-        .insert({ name, description })
+        .insert({ 
+          name, 
+          description,
+          organization_id: organization_id || '' // Will be set by the calling component
+        })
         .select()
         .single();
 
