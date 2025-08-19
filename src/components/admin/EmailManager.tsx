@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Mail, Send, Edit, Trash2, TestTube, Check, X } from 'lucide-react';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { encryptPassword } from '@/lib/encryption';
 
 interface EmailServer {
   id: string;
@@ -180,6 +181,20 @@ export function EmailManager() {
           toast({
             title: "Password required",
             description: "Please enter the SMTP password for the new server.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Encrypt the password before saving
+        try {
+          payload.smtp_password = await encryptPassword(serverForm.smtp_password);
+          payload.password_encrypted = true;
+        } catch (encryptError) {
+          console.error('Password encryption failed:', encryptError);
+          toast({
+            title: "Failed to encrypt password",
+            description: "Please try again or contact support if the issue persists.",
             variant: "destructive"
           });
           return;
