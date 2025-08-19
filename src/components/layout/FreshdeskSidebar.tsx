@@ -13,12 +13,13 @@ import {
   FileText,
   Phone,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Building2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserRoles } from "@/hooks/useUserRoles";
 
-type View = 'tickets' | 'inbox' | 'contacts' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports';
+type View = 'tickets' | 'inbox' | 'contacts' | 'companies' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports';
 
 interface SidebarProps {
   currentView: View;
@@ -49,6 +50,12 @@ const navigationItems: Array<{
     label: "Contacts",
     icon: Users,
     description: "Manage customer contacts"
+  },
+  {
+    id: "companies",
+    label: "Companies",
+    icon: Building2,
+    description: "Manage company records"
   },
   {
     id: "reports",

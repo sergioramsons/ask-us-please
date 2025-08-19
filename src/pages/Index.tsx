@@ -8,6 +8,7 @@ import { TicketDetail } from "@/components/helpdesk/ticket-detail";
 import { Ticket, TicketStats, TicketStatus } from "@/types/ticket";
 import { AdminPanel } from "@/components/admin/AdminPanel";
 import { ContactsManager } from "@/components/admin/ContactsManager";
+import { CompaniesManager } from "@/components/admin/CompaniesManager";
 import { ReportsDashboard } from "@/components/reports/ReportsDashboard";
 import { EnhancedTicketDetail } from "@/components/helpdesk/EnhancedTicketDetail";
 import { UnifiedInbox } from "@/components/channels/UnifiedInbox";
@@ -21,7 +22,7 @@ import { NotificationService } from "@/services/NotificationService";
 import { Plus, Trash2, Ticket as TicketIcon, Headphones, CheckSquare, Square } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
-type View = 'tickets' | 'inbox' | 'contacts' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports';
+type View = 'tickets' | 'inbox' | 'contacts' | 'companies' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -709,6 +710,10 @@ const loadTickets = async () => {
 
       {currentView === 'contacts' && (
         <ContactsManager />
+      )}
+
+      {currentView === 'companies' && (
+        <CompaniesManager />
       )}
 
       {currentView === 'create-ticket' && (

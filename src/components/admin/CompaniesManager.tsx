@@ -27,7 +27,7 @@ interface Company {
   notes?: string;
   created_at: string;
   updated_at: string;
-  contact_count?: number;
+  organization_id: string;
 }
 
 export function CompaniesManager() {
@@ -61,23 +61,16 @@ export function CompaniesManager() {
   const loadCompanies = async () => {
     try {
       setLoading(true);
+      
+      // Use a direct query without complex joins for now
       const { data, error } = await supabase
         .from('companies')
-        .select(`
-          *,
-          contacts(count)
-        `)
+        .select('*')
         .eq('organization_id', organization?.id)
         .order('name');
 
       if (error) throw error;
-
-      const companiesWithCounts = data?.map(company => ({
-        ...company,
-        contact_count: company.contacts?.[0]?.count || 0
-      })) || [];
-
-      setCompanies(companiesWithCounts);
+      setCompanies(data || []);
     } catch (error) {
       console.error('Error loading companies:', error);
       toast({
@@ -417,7 +410,6 @@ export function CompaniesManager() {
                   <TableHead>Company</TableHead>
                   <TableHead>Industry</TableHead>
                   <TableHead>Contact Info</TableHead>
-                  <TableHead>Contacts</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -465,12 +457,6 @@ export function CompaniesManager() {
                             </a>
                           </div>
                         )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        {company.contact_count || 0}
                       </div>
                     </TableCell>
                     <TableCell>
