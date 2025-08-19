@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 export type AppRole = 'agent' | 'supervisor' | 'admin' | 'account_admin';
 
@@ -28,6 +29,7 @@ export function useUserRoles() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { organization } = useOrganization();
 
   const fetchCurrentUserRoles = useCallback(async () => {
     if (!user) return;
@@ -169,9 +171,19 @@ export function useUserRoles() {
 
   const assignRole = useCallback(async (userId: string, role: AppRole) => {
     try {
+      const orgId = organization?.id;
+      if (!orgId) {
+        toast({
+          title: "Organization not found",
+          description: "Cannot assign role without an organization context.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('user_roles')
-        .insert({ user_id: userId, role });
+        .insert({ user_id: userId, role, organization_id: orgId });
 
       if (error) throw error;
 
@@ -193,7 +205,7 @@ export function useUserRoles() {
         variant: "destructive",
       });
     }
-  }, [fetchAllUserRoles, fetchCurrentUserRoles, user?.id, toast]);
+  }, [fetchAllUserRoles, fetchCurrentUserRoles, user?.id, toast, organization?.id]);
 
   const removeRole = useCallback(async (userId: string, role: AppRole) => {
     try {
