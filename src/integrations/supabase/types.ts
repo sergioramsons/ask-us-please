@@ -1209,6 +1209,10 @@ export type Database = {
       }
     }
     Functions: {
+      auto_assign_ticket: {
+        Args: { org_id: string; ticket_id_param: string }
+        Returns: string
+      }
       decrypt_server_password: {
         Args: { encrypted_password: string }
         Returns: string

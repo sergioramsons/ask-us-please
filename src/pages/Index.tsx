@@ -260,6 +260,27 @@ const loadTickets = async () => {
         throw error;
       }
 
+      // Auto-assign the ticket if assignment rules are configured
+      try {
+        const { data: assignedAgent, error: assignError } = await supabase.rpc('auto_assign_ticket', {
+          ticket_id_param: newTicket.id,
+          org_id: organization?.id
+        });
+        
+        if (assignError) {
+          console.warn('Auto-assignment failed:', assignError);
+        } else if (assignedAgent) {
+          console.log('Ticket auto-assigned to:', assignedAgent);
+          toast({
+            title: "Ticket Auto-Assigned",
+            description: `Ticket has been automatically assigned to ${assignedAgent}`,
+          });
+        }
+      } catch (autoAssignError) {
+        console.warn('Auto-assignment error:', autoAssignError);
+        // Don't fail ticket creation if auto-assignment fails
+      }
+
       // Refresh tickets list from database
       await loadTickets();
       
