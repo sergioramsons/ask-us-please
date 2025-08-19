@@ -24,7 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-type View = 'tickets' | 'inbox' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports';
+type View = 'tickets' | 'inbox' | 'contacts' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports';
 
 interface HeaderProps {
   currentView: View;
@@ -63,6 +63,7 @@ export function FreshdeskHeader({
     switch (currentView) {
       case 'tickets': return 'Tickets';
       case 'inbox': return 'Inbox';
+      case 'contacts': return 'Contacts';
       case 'reports': return 'Reports';
       case 'admin-panel': return 'Admin Panel';
       case 'create-ticket': return 'New Ticket';

@@ -18,7 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useUserRoles } from "@/hooks/useUserRoles";
 
-type View = 'tickets' | 'inbox' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports';
+type View = 'tickets' | 'inbox' | 'contacts' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports';
 
 interface SidebarProps {
   currentView: View;
@@ -43,6 +43,12 @@ const navigationItems: Array<{
     label: "Inbox",
     icon: Inbox,
     description: "Unified communications"
+  },
+  {
+    id: "contacts",
+    label: "Contacts",
+    icon: Users,
+    description: "Manage customer contacts"
   },
   {
     id: "reports",
