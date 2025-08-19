@@ -609,6 +609,63 @@ export type Database = {
           },
         ]
       }
+      incoming_mail_servers: {
+        Row: {
+          check_interval_minutes: number
+          created_at: string
+          host: string
+          id: string
+          is_active: boolean
+          last_check: string | null
+          name: string
+          organization_id: string
+          password: string
+          password_encrypted: boolean
+          port: number
+          server_type: string
+          updated_at: string
+          use_ssl: boolean
+          use_tls: boolean
+          username: string
+        }
+        Insert: {
+          check_interval_minutes?: number
+          created_at?: string
+          host: string
+          id?: string
+          is_active?: boolean
+          last_check?: string | null
+          name: string
+          organization_id: string
+          password: string
+          password_encrypted?: boolean
+          port?: number
+          server_type?: string
+          updated_at?: string
+          use_ssl?: boolean
+          use_tls?: boolean
+          username: string
+        }
+        Update: {
+          check_interval_minutes?: number
+          created_at?: string
+          host?: string
+          id?: string
+          is_active?: boolean
+          last_check?: string | null
+          name?: string
+          organization_id?: string
+          password?: string
+          password_encrypted?: boolean
+          port?: number
+          server_type?: string
+          updated_at?: string
+          use_ssl?: boolean
+          use_tls?: boolean
+          username?: string
+        }
+        Relationships: []
+      }
       organization_admins: {
         Row: {
           created_at: string
