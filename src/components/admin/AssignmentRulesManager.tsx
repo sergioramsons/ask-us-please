@@ -114,7 +114,7 @@ export function AssignmentRulesManager() {
     try {
       const ruleData = {
         ...formData,
-        department_id: formData.department_id || null
+        department_id: formData.department_id === 'all' ? null : formData.department_id || null
       };
 
       if (editingRule) {
@@ -319,8 +319,8 @@ export function AssignmentRulesManager() {
                       <SelectTrigger>
                         <SelectValue placeholder="Select department" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">All Departments</SelectItem>
+                       <SelectContent>
+                         <SelectItem value="all">All Departments</SelectItem>
                         {departments.map(dept => (
                           <SelectItem key={dept.id} value={dept.id}>
                             {dept.name}

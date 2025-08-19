@@ -286,7 +286,7 @@ export function UserRoleManager() {
     const success = await createGroup(
       newGroupName, 
       newGroupDescription || undefined, 
-      selectedManagerId || undefined
+      selectedManagerId === 'none' ? undefined : selectedManagerId || undefined
     );
     if (success) {
       setNewGroupName('');
@@ -809,8 +809,8 @@ export function UserRoleManager() {
                       <SelectTrigger>
                         <SelectValue placeholder="Select a manager" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">No Manager</SelectItem>
+                       <SelectContent>
+                         <SelectItem value="none">No Manager</SelectItem>
                         {users.map((user) => (
                           <SelectItem key={user.id} value={user.id}>
                             {user.display_name || user.email}
