@@ -24,6 +24,9 @@ import {
   MoreHorizontal
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { useOrganization } from '@/contexts/OrganizationContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface UnifiedTicket {
   id: string;
@@ -85,104 +88,116 @@ const PriorityColors = {
 };
 
 export function UnifiedInbox() {
+  const { organization } = useOrganization();
+  const { toast } = useToast();
   const [tickets, setTickets] = useState<UnifiedTicket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [channelFilter, setChannelFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
 
-  // Mock data - in real implementation this would come from your database
-  useEffect(() => {
-    const mockTickets: UnifiedTicket[] = [
-      {
-        id: '1',
-        channel: 'email',
-        subject: 'Cannot access my account',
-        content: 'I have been trying to log into my account but keep getting an error message...',
-        customer: {
-          name: 'John Smith',
-          email: 'john@example.com',
-          avatar: '/placeholder.svg'
-        },
-        status: 'new',
-        priority: 'high',
-        assignee: 'Sarah Wilson',
-        lastActivity: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-        unread: true,
-        tags: ['account', 'login'],
-        responses: 0
-      },
-      {
-        id: '2',
-        channel: 'chat',
-        subject: 'Live Chat Session',
-        content: 'Hi, I need help with my recent order. The delivery status shows...',
-        customer: {
-          name: 'Emma Davis',
-          email: 'emma@example.com'
-        },
-        status: 'open',
-        priority: 'medium',
-        assignee: 'Mike Johnson',
-        lastActivity: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
-        unread: false,
-        tags: ['order', 'delivery'],
-        responses: 3
-      },
-      {
-        id: '3',
-        channel: 'facebook',
-        subject: 'Facebook Message',
-        content: 'Your product quality has decreased recently. Very disappointed...',
-        customer: {
-          name: 'Robert Brown',
-          avatar: '/placeholder.svg'
-        },
-        status: 'pending',
-        priority: 'urgent',
-        lastActivity: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
-        unread: true,
-        tags: ['complaint', 'quality'],
-        responses: 1
-      },
-      {
-        id: '4',
-        channel: 'phone',
-        subject: 'Phone Call - Billing Issue',
-        content: 'Customer called regarding incorrect charges on their bill...',
-        customer: {
-          name: 'Lisa Johnson',
-          phone: '+1234567890'
-        },
-        status: 'resolved',
-        priority: 'medium',
-        assignee: 'David Lee',
-        lastActivity: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6 hours ago
-        unread: false,
-        tags: ['billing', 'phone'],
-        responses: 2
-      },
-      {
-        id: '5',
-        channel: 'twitter',
-        subject: '@customer_tweet',
-        content: '@yourcompany Why is your service down? This is the third time this month!',
-        customer: {
-          name: 'Alex Miller',
-          avatar: '/placeholder.svg'
-        },
-        status: 'open',
-        priority: 'high',
-        assignee: 'Social Media Team',
-        lastActivity: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
-        unread: true,
-        tags: ['social', 'outage'],
-        responses: 0
+  // Load real tickets from database
+  const loadTickets = async () => {
+    try {
+      setLoading(true);
+      
+      // Build query with organization filter
+      let query = supabase
+        .from('tickets')
+        .select(`
+          *,
+          contacts (
+            id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            company
+          ),
+          ticket_comments (
+            id,
+            content,
+            created_at
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (organization?.id) {
+        query = query.eq('organization_id', organization.id);
       }
-    ];
-    setTickets(mockTickets);
-  }, []);
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      // Get assigned agents for tickets that have them
+      const assignedUserIds = (data || [])
+        .filter(ticket => ticket.assigned_to)
+        .map(ticket => ticket.assigned_to);
+
+      let assigneeMap = new Map();
+      if (assignedUserIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, display_name')
+          .in('user_id', assignedUserIds);
+        
+        if (profiles) {
+          assigneeMap = new Map(profiles.map(p => [p.user_id, p.display_name]));
+        }
+      }
+
+      // Transform database tickets to UnifiedTicket format
+      const transformedTickets: UnifiedTicket[] = (data || []).map(ticket => {
+        const contact = ticket.contacts;
+        const assigneeName = ticket.assigned_to ? assigneeMap.get(ticket.assigned_to) : undefined;
+        
+        // Determine channel based on ticket source or default to portal
+        let channel: UnifiedTicket['channel'] = 'portal';
+        if (ticket.category?.toLowerCase().includes('email')) channel = 'email';
+        else if (ticket.category?.toLowerCase().includes('phone')) channel = 'phone';
+        else if (ticket.category?.toLowerCase().includes('chat')) channel = 'chat';
+
+        return {
+          id: ticket.id,
+          channel,
+          subject: ticket.subject,
+          content: ticket.description || '',
+          customer: {
+            name: contact ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim() : 'Customer',
+            email: contact?.email || '',
+            phone: contact?.phone || '',
+          },
+          status: ticket.status as UnifiedTicket['status'],
+          priority: ticket.priority as UnifiedTicket['priority'],
+          assignee: assigneeName || undefined,
+          lastActivity: new Date(ticket.updated_at),
+          unread: ticket.status === 'open' && !ticket.assigned_to, // Consider unread if open and unassigned
+          tags: ticket.tags || [],
+          responses: ticket.ticket_comments?.length || 0
+        };
+      });
+
+      setTickets(transformedTickets);
+    } catch (error: any) {
+      console.error('Error loading tickets:', error);
+      toast({
+        title: "Error loading tickets",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (organization?.id) {
+      loadTickets();
+    }
+  }, [organization?.id]);
 
   const filteredTickets = tickets.filter(ticket => {
     const matchesSearch = ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -307,7 +322,17 @@ export function UnifiedInbox() {
           </div>
 
           <div className="overflow-y-auto">
-            {filteredTickets.map((ticket) => {
+            {loading ? (
+              <div className="p-4 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                <p className="text-sm text-muted-foreground">Loading tickets...</p>
+              </div>
+            ) : filteredTickets.length === 0 ? (
+              <div className="p-4 text-center">
+                <p className="text-muted-foreground">No tickets found</p>
+              </div>
+            ) : (
+              filteredTickets.map((ticket) => {
               const ChannelIcon = ChannelIcons[ticket.channel];
               return (
                 <div
@@ -377,7 +402,8 @@ export function UnifiedInbox() {
                   </div>
                 </div>
               );
-            })}
+            })
+            )}
           </div>
         </div>
 
