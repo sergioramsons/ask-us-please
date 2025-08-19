@@ -193,6 +193,38 @@ export type Database = {
           },
         ]
       }
+      organization_admins: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_admins_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string
@@ -452,6 +484,10 @@ export type Database = {
       }
       generate_ticket_number: {
         Args: { org_id: string }
+        Returns: string
+      }
+      resolve_organization_by_subdomain: {
+        Args: { hostname: string }
         Returns: string
       }
     }
