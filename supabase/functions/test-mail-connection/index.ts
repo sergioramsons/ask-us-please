@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0';
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -51,39 +52,46 @@ const handler = async (req: Request): Promise<Response> => {
       username: server.smtp_username
     });
 
-    // Basic SMTP connection test simulation
-    // In a real implementation, you would use an SMTP library like nodemailer
-    // For now, we'll simulate the test based on common configurations
-    
     let success = false;
     let errorMessage = "";
 
     try {
-      // Simulate SMTP connection test
-      const isValidHost = server.smtp_host && server.smtp_host.length > 0;
-      const isValidPort = server.smtp_port > 0 && server.smtp_port <= 65535;
-      const hasCredentials = server.smtp_username && server.smtp_password;
+      // Create SMTP client for real connection testing
+      const client = new SMTPClient({
+        connection: {
+          hostname: server.smtp_host,
+          port: server.smtp_port,
+          tls: server.use_tls,
+          auth: {
+            username: server.smtp_username,
+            password: server.smtp_password,
+          },
+        },
+      });
 
-      if (!isValidHost) {
-        errorMessage = "Invalid SMTP host configuration";
-      } else if (!isValidPort) {
-        errorMessage = "Invalid SMTP port configuration";
-      } else if (!hasCredentials) {
-        errorMessage = "Missing SMTP username or password";
-      } else {
-        // Common SMTP ports validation
-        const validSmtpPorts = [25, 465, 587, 2525];
-        const isValidSmtpPort = validSmtpPorts.includes(server.smtp_port);
-        
-        if (!isValidSmtpPort) {
-          errorMessage = `Port ${server.smtp_port} is not a standard SMTP port. Common ports are: 25, 465, 587, 2525`;
-        } else {
-          // Simulate successful connection for demo purposes
-          success = true;
-        }
-      }
+      // Try to connect and authenticate
+      await client.connect();
+      console.log('SMTP connection established successfully');
+      
+      // Close the connection
+      await client.close();
+      
+      success = true;
     } catch (error: any) {
-      errorMessage = `SMTP connection error: ${error.message}`;
+      console.error('SMTP connection failed:', error);
+      
+      // Provide helpful error messages based on common issues
+      if (error.message?.includes('ENOTFOUND')) {
+        errorMessage = `Cannot resolve hostname: ${server.smtp_host}. Please check the SMTP server address.`;
+      } else if (error.message?.includes('ECONNREFUSED')) {
+        errorMessage = `Connection refused on port ${server.smtp_port}. Please check the port number and firewall settings.`;
+      } else if (error.message?.includes('Authentication failed')) {
+        errorMessage = 'Authentication failed. Please check your username and password.';
+      } else if (error.message?.includes('certificate')) {
+        errorMessage = 'SSL/TLS certificate error. Try disabling TLS or check certificate settings.';
+      } else {
+        errorMessage = `SMTP connection error: ${error.message}`;
+      }
     }
 
     // Update last check timestamp for SMTP server
