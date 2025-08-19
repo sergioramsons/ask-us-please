@@ -347,19 +347,19 @@ export function useUserRoles() {
   }, [currentUserRoles]);
 
   const isAdmin = useCallback((): boolean => {
-    return hasRole('admin');
+    return hasRole('Administrator') || hasRole('Account Administrator');
   }, [hasRole]);
 
   const isSupervisor = useCallback((): boolean => {
-    return hasRole('supervisor');
+    return hasRole('Team Lead');
   }, [hasRole]);
 
   const isAgent = useCallback((): boolean => {
-    return hasRole('agent');
+    return hasRole('Full Agent') || hasRole('Occasional Agent');
   }, [hasRole]);
 
   const isAccountAdmin = useCallback((): boolean => {
-    return hasRole('account_admin');
+    return hasRole('Account Administrator');
   }, [hasRole]);
 
   useEffect(() => {
