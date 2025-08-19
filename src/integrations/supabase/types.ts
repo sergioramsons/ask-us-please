@@ -65,6 +65,101 @@ export type Database = {
           },
         ]
       }
+      auto_dialer_campaigns: {
+        Row: {
+          agent_extension: string | null
+          completed_calls: number
+          created_at: string
+          delay_seconds: number
+          failed_calls: number
+          id: string
+          max_attempts: number
+          name: string
+          organization_id: string
+          phone_numbers: string[]
+          status: string
+          successful_calls: number
+          total_numbers: number
+          updated_at: string
+        }
+        Insert: {
+          agent_extension?: string | null
+          completed_calls?: number
+          created_at?: string
+          delay_seconds?: number
+          failed_calls?: number
+          id?: string
+          max_attempts?: number
+          name: string
+          organization_id: string
+          phone_numbers?: string[]
+          status?: string
+          successful_calls?: number
+          total_numbers?: number
+          updated_at?: string
+        }
+        Update: {
+          agent_extension?: string | null
+          completed_calls?: number
+          created_at?: string
+          delay_seconds?: number
+          failed_calls?: number
+          id?: string
+          max_attempts?: number
+          name?: string
+          organization_id?: string
+          phone_numbers?: string[]
+          status?: string
+          successful_calls?: number
+          total_numbers?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      auto_dialer_results: {
+        Row: {
+          attempt_number: number
+          campaign_id: string
+          completed_at: string | null
+          created_at: string
+          dialed_at: string | null
+          id: string
+          phone_number: string
+          result_data: Json | null
+          status: string
+        }
+        Insert: {
+          attempt_number?: number
+          campaign_id: string
+          completed_at?: string | null
+          created_at?: string
+          dialed_at?: string | null
+          id?: string
+          phone_number: string
+          result_data?: Json | null
+          status?: string
+        }
+        Update: {
+          attempt_number?: number
+          campaign_id?: string
+          completed_at?: string | null
+          created_at?: string
+          dialed_at?: string | null
+          id?: string
+          phone_number?: string
+          result_data?: Json | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_auto_dialer_results_campaign"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "auto_dialer_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_daily_metrics: {
         Row: {
           answered: number
@@ -205,33 +300,69 @@ export type Database = {
       }
       contacts: {
         Row: {
+          address: string | null
+          city: string | null
           company: string | null
+          country: string | null
           created_at: string
+          created_by: string | null
           email: string | null
+          first_name: string | null
           id: string
+          job_title: string | null
+          last_name: string | null
           name: string
+          notes: string | null
           organization_id: string | null
           phone: string | null
+          postal_code: string | null
+          state: string | null
+          status: string
+          tags: string[] | null
           updated_at: string
         }
         Insert: {
+          address?: string | null
+          city?: string | null
           company?: string | null
+          country?: string | null
           created_at?: string
+          created_by?: string | null
           email?: string | null
+          first_name?: string | null
           id?: string
+          job_title?: string | null
+          last_name?: string | null
           name: string
+          notes?: string | null
           organization_id?: string | null
           phone?: string | null
+          postal_code?: string | null
+          state?: string | null
+          status?: string
+          tags?: string[] | null
           updated_at?: string
         }
         Update: {
+          address?: string | null
+          city?: string | null
           company?: string | null
+          country?: string | null
           created_at?: string
+          created_by?: string | null
           email?: string | null
+          first_name?: string | null
           id?: string
+          job_title?: string | null
+          last_name?: string | null
           name?: string
+          notes?: string | null
           organization_id?: string | null
           phone?: string | null
+          postal_code?: string | null
+          state?: string | null
+          status?: string
+          tags?: string[] | null
           updated_at?: string
         }
         Relationships: [
@@ -848,6 +979,14 @@ export type Database = {
       generate_ticket_number: {
         Args: { org_id: string }
         Returns: string
+      }
+      migrate_email_server_passwords: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          migration_status: string
+          organization_id: string
+        }[]
       }
       resolve_organization_by_subdomain: {
         Args: { hostname: string }

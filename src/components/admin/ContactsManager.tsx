@@ -12,12 +12,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useOrganization } from "@/contexts/OrganizationContext";
 import { Contact } from "@/types/contact";
 import { Users, Plus, Search, Edit, Trash2, Mail, Phone, Building, MapPin, Loader2 } from "lucide-react";
 
 export function ContactsManager() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { organization } = useOrganization();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -97,7 +99,21 @@ export function ContactsManager() {
       const { error } = await supabase
         .from('contacts')
         .insert([{
-          ...formData,
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          name: `${formData.first_name} ${formData.last_name}`,
+          email: formData.email,
+          phone: formData.phone,
+          company: formData.company,
+          job_title: formData.job_title,
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          postal_code: formData.postal_code,
+          country: formData.country,
+          notes: formData.notes,
+          status: formData.status,
+          organization_id: organization?.id,
           created_by: user?.id
         }]);
 

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { 
   Settings, 
   Plus, 
@@ -37,6 +38,7 @@ interface Department {
 
 export function AssignmentRulesManager() {
   const { toast } = useToast();
+  const { organization } = useOrganization();
   const [rules, setRules] = useState<AssignmentRule[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,7 +132,10 @@ export function AssignmentRulesManager() {
       } else {
         const { error } = await supabase
           .from('assignment_rules')
-          .insert([ruleData]);
+          .insert([{
+            ...ruleData,
+            organization_id: organization?.id || ''
+          }]);
         
         if (error) throw error;
         
