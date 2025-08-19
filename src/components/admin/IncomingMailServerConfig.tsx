@@ -107,6 +107,9 @@ const IncomingMailServerConfig = () => {
         organization_id: organization?.id, // Ensure organization_id is set
         password: encryptedPassword,
         password_encrypted: true,
+        // Ensure required fields have defaults
+        check_interval: serverData.check_interval || 5,
+        check_interval_minutes: serverData.check_interval || 5,
       } as any; // Type assertion to handle database schema mismatch
 
       // Enforce sensible defaults for POP3 over 995 (implicit SSL)
