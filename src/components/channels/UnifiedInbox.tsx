@@ -282,7 +282,7 @@ export function UnifiedInbox() {
           ticket.id,
           ticket.subject,
           ticket.customer.email,
-          user?.email || 'Support Agent',
+          user?.user_metadata?.display_name || user?.email || 'Support Agent',
           replyText.trim()
         );
       }
