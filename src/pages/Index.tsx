@@ -520,13 +520,13 @@ const loadTickets = async () => {
                              </AlertDialogDescription>
                            </AlertDialogHeader>
                            <AlertDialogFooter>
-                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                             <AlertDialogAction
-                               onClick={() => handleDeleteTicket(ticket.id)}
-                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                             >
-                               Delete Ticket
-                             </AlertDialogAction>
+                             <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={(e) => { e.stopPropagation(); handleDeleteTicket(ticket.id); }}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete Ticket
+                              </AlertDialogAction>
                            </AlertDialogFooter>
                          </AlertDialogContent>
                        </AlertDialog>
