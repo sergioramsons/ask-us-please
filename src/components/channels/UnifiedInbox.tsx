@@ -103,31 +103,37 @@ export function UnifiedInbox() {
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
 
-  // Load real tickets from database
+  // Load real tickets from database with optimized query
   const loadTickets = async () => {
     try {
       setLoading(true);
       
-      // Build query with organization filter
+      // Optimized query - only load what we need for the list view
       let query = supabase
         .from('tickets')
         .select(`
-          *,
+          id,
+          ticket_number,
+          subject,
+          description,
+          status,
+          priority,
+          category,
+          contact_id,
+          assigned_to,
+          tags,
+          created_at,
+          updated_at,
           contacts (
             id,
             first_name,
             last_name,
             email,
-            phone,
-            company
-          ),
-          ticket_comments (
-            id,
-            content,
-            created_at
+            phone
           )
         `)
-        .order('created_at', { ascending: false });
+        .order('updated_at', { ascending: false })
+        .limit(50); // Limit to 50 most recent tickets
 
       if (organization?.id) {
         query = query.eq('organization_id', organization.id);
@@ -136,6 +142,24 @@ export function UnifiedInbox() {
       const { data, error } = await query;
 
       if (error) throw error;
+
+      // Get comment counts separately for better performance
+      const ticketIds = (data || []).map(ticket => ticket.id);
+      let commentCounts = new Map();
+      
+      if (ticketIds.length > 0) {
+        const { data: commentData } = await supabase
+          .from('ticket_comments')
+          .select('ticket_id')
+          .in('ticket_id', ticketIds);
+        
+        if (commentData) {
+          commentCounts = commentData.reduce((acc, comment) => {
+            acc.set(comment.ticket_id, (acc.get(comment.ticket_id) || 0) + 1);
+            return acc;
+          }, new Map());
+        }
+      }
 
       // Get assigned agents for tickets that have them
       const assignedUserIds = (data || [])
@@ -181,7 +205,7 @@ export function UnifiedInbox() {
           lastActivity: new Date(ticket.updated_at),
           unread: ticket.status === 'open' && !ticket.assigned_to, // Consider unread if open and unassigned
           tags: ticket.tags || [],
-          responses: ticket.ticket_comments?.length || 0
+          responses: commentCounts.get(ticket.id) || 0
         };
       });
 
