@@ -3,7 +3,7 @@ import { FreshdeskHeader } from "./FreshdeskHeader";
 import { FreshdeskSidebar } from "./FreshdeskSidebar";
 import { cn } from "@/lib/utils";
 
-type View = 'tickets' | 'inbox' | 'contacts' | 'companies' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports';
+type View = 'tickets' | 'inbox' | 'contacts-companies' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports';
 
 interface LayoutProps {
   children: React.ReactNode;
