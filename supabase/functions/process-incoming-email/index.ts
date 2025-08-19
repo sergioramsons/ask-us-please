@@ -60,18 +60,36 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Determine organization for this email (match POP3 server username or fallback)
+    const { data: serverMatch } = await supabase
+      .from('incoming_mail_servers')
+      .select('organization_id')
+      .eq('username', emailData.to.email)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    let orgId = serverMatch?.organization_id;
+    if (!orgId) {
+      const { data: defaultOrg } = await supabase
+        .from('organizations')
+        .select('id')
+        .limit(1)
+        .single();
+      orgId = defaultOrg?.id;
+    }
+
     // Store the incoming email
     const { data: emailRecord, error: emailError } = await supabase
       .from('incoming_emails')
       .insert({
         message_id: emailData.messageId,
         sender_email: emailData.from.email,
-        sender_name: emailData.from.name,
         recipient_email: emailData.to.email,
         subject: emailData.subject,
         body_text: emailData.text,
         body_html: emailData.html,
         received_at: emailData.date ? new Date(emailData.date).toISOString() : new Date().toISOString(),
+        organization_id: orgId,
       })
       .select()
       .single();
