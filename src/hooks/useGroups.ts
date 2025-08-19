@@ -39,31 +39,50 @@ export function useGroups() {
     
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      // First get the groups
+      const { data: groupsData, error: groupsError } = await supabase
         .from('groups')
-        .select(`
-          *,
-          manager:profiles!groups_manager_id_fkey(display_name),
-          user_groups(count)
-        `)
+        .select('*')
         .eq('organization_id', organization.id)
         .eq('is_active', true)
         .order('name');
 
-      if (error) throw error;
+      if (groupsError) throw groupsError;
 
-      const groupsWithCounts: Group[] = (data || []).map(group => ({
-        id: group.id,
-        name: group.name,
-        description: group.description,
-        organization_id: group.organization_id,
-        manager_id: group.manager_id,
-        manager_name: (group as any).manager?.display_name,
-        is_active: group.is_active,
-        member_count: (group as any).user_groups?.length || 0,
-        created_at: group.created_at,
-        updated_at: group.updated_at,
-      }));
+      // Get manager info and member counts separately
+      const groupsWithCounts: Group[] = [];
+      
+      for (const group of groupsData || []) {
+        // Get manager info if manager_id exists
+        let managerName = undefined;
+        if (group.manager_id) {
+          const { data: managerData } = await supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('user_id', group.manager_id)
+            .single();
+          managerName = managerData?.display_name;
+        }
+
+        // Get member count
+        const { count } = await supabase
+          .from('user_groups')
+          .select('*', { count: 'exact', head: true })
+          .eq('group_id', group.id);
+
+        groupsWithCounts.push({
+          id: group.id,
+          name: group.name,
+          description: group.description,
+          organization_id: group.organization_id,
+          manager_id: group.manager_id,
+          manager_name: managerName,
+          is_active: group.is_active,
+          member_count: count || 0,
+          created_at: group.created_at,
+          updated_at: group.updated_at,
+        });
+      }
 
       setGroups(groupsWithCounts);
     } catch (error: any) {
@@ -188,26 +207,37 @@ export function useGroups() {
 
   const getGroupMembers = useCallback(async (groupId: string): Promise<GroupMember[]> => {
     try {
-      const { data, error } = await supabase
+      // Get user_groups records
+      const { data: userGroupsData, error: userGroupsError } = await supabase
         .from('user_groups')
-        .select(`
-          *,
-          profiles!user_groups_user_id_fkey(display_name, email)
-        `)
+        .select('*')
         .eq('group_id', groupId)
         .order('created_at');
 
-      if (error) throw error;
+      if (userGroupsError) throw userGroupsError;
 
-      return (data || []).map(member => ({
-        id: member.id,
-        user_id: member.user_id,
-        group_id: member.group_id,
-        role_in_group: member.role_in_group,
-        user_name: (member as any).profiles?.display_name || 'Unknown User',
-        user_email: (member as any).profiles?.email || '',
-        created_at: member.created_at,
-      }));
+      // Get profile info for each user
+      const members: GroupMember[] = [];
+      
+      for (const userGroup of userGroupsData || []) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('display_name, email')
+          .eq('user_id', userGroup.user_id)
+          .single();
+
+        members.push({
+          id: userGroup.id,
+          user_id: userGroup.user_id,
+          group_id: userGroup.group_id,
+          role_in_group: userGroup.role_in_group,
+          user_name: profileData?.display_name || 'Unknown User',
+          user_email: profileData?.email || '',
+          created_at: userGroup.created_at,
+        });
+      }
+
+      return members;
     } catch (error: any) {
       console.error('Error fetching group members:', error);
       return [];
