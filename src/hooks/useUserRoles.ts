@@ -4,7 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 
-export type AppRole = 'agent' | 'supervisor' | 'admin' | 'account_admin';
+export type AppRole = string; // Now supports any custom role
 
 interface UserRole {
   id: string;
@@ -20,12 +20,13 @@ interface UserWithRole {
   display_name?: string;
   department_id?: string;
   department_name?: string;
-  roles: AppRole[];
+  roles: string[];
 }
 
 export function useUserRoles() {
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
-  const [currentUserRoles, setCurrentUserRoles] = useState<AppRole[]>([]);
+  const [currentUserRoles, setCurrentUserRoles] = useState<string[]>([]);
+  const [availableRoles, setAvailableRoles] = useState<{id: string, role_name: string, description?: string, is_admin_role: boolean, is_default?: boolean}[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -42,10 +43,10 @@ export function useUserRoles() {
 
       if (error) throw error;
 
-      // Filter and map roles to ensure they match our current AppRole type
+      // Filter and map roles to ensure they are valid strings
       const validRoles = data
-        .filter(item => ['agent', 'supervisor', 'admin', 'account_admin'].includes(item.role))
-        .map(item => item.role as AppRole);
+        .filter(item => item.role && typeof item.role === 'string')
+        .map(item => item.role as string);
       
       setCurrentUserRoles(validRoles);
     } catch (error) {
@@ -68,9 +69,9 @@ export function useUserRoles() {
 
       if (error) throw error;
 
-      // Filter and map roles to ensure they match our current AppRole type
+      // Filter and map roles to ensure they are valid strings
       const validRoles = (data || []).filter(item => 
-        ['agent', 'supervisor', 'admin', 'account_admin'].includes(item.role)
+        item.role && typeof item.role === 'string'
       );
 
       setUserRoles(validRoles as UserRole[]);
@@ -85,6 +86,110 @@ export function useUserRoles() {
       setIsLoading(false);
     }
   }, [toast]);
+
+  const fetchAvailableRoles = useCallback(async () => {
+    try {
+      const orgId = organization?.id;
+      if (!orgId) return;
+
+      const { data, error } = await supabase
+        .from('organization_roles')
+        .select('id, role_name, description, is_admin_role, is_default')
+        .eq('organization_id', orgId)
+        .order('role_name');
+
+      if (error) throw error;
+      setAvailableRoles(data || []);
+    } catch (error) {
+      console.error('Error fetching available roles:', error);
+    }
+  }, [organization?.id]);
+
+  const createCustomRole = useCallback(async (roleName: string, description?: string, isAdminRole: boolean = false) => {
+    try {
+      const orgId = organization?.id;
+      if (!orgId) {
+        toast({
+          title: "Organization not found",
+          description: "Cannot create role without an organization context.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      const { error } = await supabase
+        .from('organization_roles')
+        .insert({
+          organization_id: orgId,
+          role_name: roleName.toLowerCase().trim(),
+          description,
+          is_admin_role: isAdminRole,
+          created_by: user?.id
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Role "${roleName}" created successfully`,
+      });
+
+      await fetchAvailableRoles();
+      return true;
+    } catch (error: any) {
+      console.error('Error creating role:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create role",
+        variant: "destructive",
+      });
+      return false;
+    }
+  }, [organization?.id, user?.id, toast, fetchAvailableRoles]);
+
+  const deleteCustomRole = useCallback(async (roleId: string, roleName: string) => {
+    try {
+      // First check if any users have this role
+      const { data: usersWithRole, error: checkError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', roleName);
+
+      if (checkError) throw checkError;
+
+      if (usersWithRole && usersWithRole.length > 0) {
+        toast({
+          title: "Cannot delete role",
+          description: `Role "${roleName}" is assigned to ${usersWithRole.length} user(s). Remove the role from all users first.`,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      const { error } = await supabase
+        .from('organization_roles')
+        .delete()
+        .eq('id', roleId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Role "${roleName}" deleted successfully`,
+      });
+
+      await fetchAvailableRoles();
+      return true;
+    } catch (error: any) {
+      console.error('Error deleting role:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete role",
+        variant: "destructive",
+      });
+      return false;
+    }
+  }, [toast, fetchAvailableRoles]);
 
   const getUsersWithRoles = useCallback(async (): Promise<UserWithRole[]> => {
     try {
@@ -130,8 +235,8 @@ export function useUserRoles() {
 
          roles?.forEach(role => {
            const user = usersMap.get(role.user_id);
-           if (user && ['agent', 'supervisor', 'admin', 'account_admin'].includes(role.role)) {
-             user.roles.push(role.role as AppRole);
+           if (user && role.role && typeof role.role === 'string') {
+             user.roles.push(role.role);
            }
          });
 
@@ -154,13 +259,13 @@ export function useUserRoles() {
         });
       });
 
-      // Add roles to users
-       roles?.forEach(role => {
-         const user = usersMap.get(role.user_id);
-         if (user && ['agent', 'supervisor', 'admin', 'account_admin'].includes(role.role)) {
-           user.roles.push(role.role as AppRole);
-         }
-       });
+       // Add roles to users
+        roles?.forEach(role => {
+          const user = usersMap.get(role.user_id);
+          if (user && role.role && typeof role.role === 'string') {
+            user.roles.push(role.role);
+          }
+        });
 
       return Array.from(usersMap.values());
     } catch (error) {
@@ -169,7 +274,7 @@ export function useUserRoles() {
     }
   }, []);
 
-  const assignRole = useCallback(async (userId: string, role: AppRole) => {
+  const assignRole = useCallback(async (userId: string, role: string) => {
     try {
       const orgId = organization?.id;
       if (!orgId) {
@@ -207,7 +312,7 @@ export function useUserRoles() {
     }
   }, [fetchAllUserRoles, fetchCurrentUserRoles, user?.id, toast, organization?.id]);
 
-  const removeRole = useCallback(async (userId: string, role: AppRole) => {
+  const removeRole = useCallback(async (userId: string, role: string) => {
     try {
       const { error } = await supabase
         .from('user_roles')
@@ -237,7 +342,7 @@ export function useUserRoles() {
     }
   }, [fetchAllUserRoles, fetchCurrentUserRoles, user?.id, toast]);
 
-  const hasRole = useCallback((role: AppRole): boolean => {
+  const hasRole = useCallback((role: string): boolean => {
     return currentUserRoles.includes(role);
   }, [currentUserRoles]);
 
@@ -258,17 +363,22 @@ export function useUserRoles() {
   }, [hasRole]);
 
   useEffect(() => {
-    if (user) {
+    if (user && organization?.id) {
       fetchCurrentUserRoles();
+      fetchAvailableRoles();
     }
-  }, [user, fetchCurrentUserRoles]);
+  }, [user, organization?.id, fetchCurrentUserRoles, fetchAvailableRoles]);
 
   return {
     userRoles,
     currentUserRoles,
+    availableRoles,
     isLoading,
     fetchAllUserRoles,
     getUsersWithRoles,
+    fetchAvailableRoles,
+    createCustomRole,
+    deleteCustomRole,
     assignRole,
     removeRole,
     hasRole,

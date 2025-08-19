@@ -855,6 +855,42 @@ export type Database = {
         }
         Relationships: []
       }
+      organization_roles: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_admin_role: boolean | null
+          is_default: boolean | null
+          organization_id: string
+          role_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_admin_role?: boolean | null
+          is_default?: boolean | null
+          organization_id: string
+          role_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_admin_role?: boolean | null
+          is_default?: boolean | null
+          organization_id?: string
+          role_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       organizations: {
         Row: {
           created_at: string

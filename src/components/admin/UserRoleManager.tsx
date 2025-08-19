@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useUserRoles, AppRole } from '@/hooks/useUserRoles';
+import { useUserRoles } from '@/hooks/useUserRoles';
 import { useDepartments, Department } from '@/hooks/useDepartments';
 import { supabase } from '@/integrations/supabase/client';
 import { Shield, UserPlus, UserMinus, Building2, Plus, Trash2, AlertTriangle } from 'lucide-react';
@@ -17,12 +17,12 @@ interface UserWithRole {
   display_name?: string;
   department_id?: string;
   department_name?: string;
-  roles: AppRole[];
+  roles: string[];
 }
 
 export function UserRoleManager() {
   const [users, setUsers] = useState<UserWithRole[]>([]);
-  const [selectedRole, setSelectedRole] = useState<AppRole>('agent');
+  const [selectedRole, setSelectedRole] = useState<string>('agent');
   const [selectedDepartment, setSelectedDepartment] = useState<string>('');
   const [newDepartmentName, setNewDepartmentName] = useState('');
   const [newDepartmentDesc, setNewDepartmentDesc] = useState('');
@@ -32,10 +32,25 @@ export function UserRoleManager() {
   const [newUserPassword, setNewUserPassword] = useState('');
   const [newUserDisplayName, setNewUserDisplayName] = useState('');
   const [newUserDepartment, setNewUserDepartment] = useState<string>('');
-  const [newUserRole, setNewUserRole] = useState<AppRole>('agent');
+  const [newUserRole, setNewUserRole] = useState<string>('agent');
   const [isCreatingUser, setIsCreatingUser] = useState(false);
+
+  // Custom role form state
+  const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleDescription, setNewRoleDescription] = useState('');
+  const [newRoleIsAdmin, setNewRoleIsAdmin] = useState(false);
   
-  const { getUsersWithRoles, assignRole, removeRole, isLoading, isAdmin } = useUserRoles();
+  const { 
+    getUsersWithRoles, 
+    assignRole, 
+    removeRole, 
+    isLoading, 
+    isAdmin, 
+    availableRoles, 
+    fetchAvailableRoles, 
+    createCustomRole, 
+    deleteCustomRole 
+  } = useUserRoles();
   const { 
     departments, 
     fetchDepartments, 
@@ -48,7 +63,8 @@ export function UserRoleManager() {
   useEffect(() => {
     loadUsers();
     fetchDepartments();
-  }, []);
+    fetchAvailableRoles();
+  }, [fetchAvailableRoles]);
 
   const loadUsers = async () => {
     const usersWithRoles = await getUsersWithRoles();
@@ -60,7 +76,7 @@ export function UserRoleManager() {
     await loadUsers();
   };
 
-  const handleRemoveRole = async (userId: string, role: AppRole) => {
+  const handleRemoveRole = async (userId: string, role: string) => {
     await removeRole(userId, role);
     await loadUsers();
   };
@@ -141,6 +157,23 @@ export function UserRoleManager() {
     }
   };
 
+  const handleCreateCustomRole = async () => {
+    if (!newRoleName.trim()) return;
+    
+    const success = await createCustomRole(newRoleName, newRoleDescription, newRoleIsAdmin);
+    if (success) {
+      setNewRoleName('');
+      setNewRoleDescription('');
+      setNewRoleIsAdmin(false);
+    }
+  };
+
+  const handleDeleteCustomRole = async (roleId: string, roleName: string) => {
+    if (confirm(`Are you sure you want to delete the role "${roleName}"? This action cannot be undone.`)) {
+      await deleteCustomRole(roleId, roleName);
+    }
+  };
+
   const handleDeleteUser = async (userId: string, userEmail: string) => {
     if (!confirm(`Are you sure you want to delete user "${userEmail}"? This action cannot be undone.`)) {
       return;
@@ -201,8 +234,9 @@ export function UserRoleManager() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="users">Users & Roles</TabsTrigger>
+            <TabsTrigger value="roles">Manage Roles</TabsTrigger>
             <TabsTrigger value="create-user">Create User</TabsTrigger>
             <TabsTrigger value="departments">Departments</TabsTrigger>
           </TabsList>
@@ -210,15 +244,17 @@ export function UserRoleManager() {
           <TabsContent value="users" className="space-y-4">
             {/* Role Assignment Controls */}
             <div className="flex gap-2 items-center p-4 bg-muted/50 rounded-lg">
-              <Select value={selectedRole} onValueChange={(value: AppRole) => setSelectedRole(value)}>
+              <Select value={selectedRole} onValueChange={(value: string) => setSelectedRole(value)}>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="agent">Agent</SelectItem>
-                  <SelectItem value="supervisor">Supervisor</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="account_admin">Account Admin</SelectItem>
+                  {availableRoles.map((role) => (
+                    <SelectItem key={role.id} value={role.role_name}>
+                      {role.role_name}
+                      {role.is_admin_role && ' (Admin)'}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
@@ -403,15 +439,17 @@ export function UserRoleManager() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="new-user-role">Initial Role</Label>
-                    <Select value={newUserRole} onValueChange={(value: AppRole) => setNewUserRole(value)}>
+                    <Select value={newUserRole} onValueChange={(value: string) => setNewUserRole(value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="agent">Agent</SelectItem>
-                        <SelectItem value="supervisor">Supervisor</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="account_admin">Account Admin</SelectItem>
+                        {availableRoles.map((role) => (
+                          <SelectItem key={role.id} value={role.role_name}>
+                            {role.role_name}
+                            {role.is_admin_role && ' (Admin)'}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -431,6 +469,103 @@ export function UserRoleManager() {
                 <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
                   <strong>Note:</strong> The user will be created with email verification automatically confirmed. 
                   They can log in immediately with the provided credentials and should change their password on first login.
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="roles" className="space-y-4">
+            {/* Create Custom Role */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Create Custom Role
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="role-name">Role Name *</Label>
+                    <Input
+                      id="role-name"
+                      value={newRoleName}
+                      onChange={(e) => setNewRoleName(e.target.value)}
+                      placeholder="e.g., manager, technician"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="role-description">Description</Label>
+                    <Input
+                      id="role-description"
+                      value={newRoleDescription}
+                      onChange={(e) => setNewRoleDescription(e.target.value)}
+                      placeholder="Role description (optional)"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="role-admin"
+                    checked={newRoleIsAdmin}
+                    onChange={(e) => setNewRoleIsAdmin(e.target.checked)}
+                    className="rounded"
+                  />
+                  <Label htmlFor="role-admin">Admin role (has administrative privileges)</Label>
+                </div>
+                
+                <Button 
+                  onClick={handleCreateCustomRole} 
+                  disabled={!newRoleName.trim()}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Custom Role
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Available Roles List */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Available Roles</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {availableRoles.map((role) => (
+                    <div 
+                      key={role.id} 
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
+                      <div>
+                        <div className="font-medium flex items-center gap-2">
+                          {role.role_name}
+                          {role.is_admin_role && (
+                            <Badge variant="destructive" className="text-xs">Admin</Badge>
+                          )}
+                          {role.is_default && (
+                            <Badge variant="outline" className="text-xs">Default</Badge>
+                          )}
+                        </div>
+                        {role.description && (
+                          <p className="text-sm text-muted-foreground">{role.description}</p>
+                        )}
+                      </div>
+                      
+                      {!role.is_default && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteCustomRole(role.id, role.role_name)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
