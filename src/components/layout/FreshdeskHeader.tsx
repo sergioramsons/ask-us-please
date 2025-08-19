@@ -24,7 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-type View = 'tickets' | 'inbox' | 'contacts-companies' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports';
+type View = 'tickets' | 'inbox' | 'contacts-companies' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports' | 'account';
 
 interface HeaderProps {
   currentView: View;
@@ -160,11 +160,17 @@ export function FreshdeskHeader({
             <DropdownMenuContent align="end" className="w-64 glass-effect">
               <DropdownMenuLabel className="text-base font-semibold">My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="gap-3 py-3 cursor-pointer hover:bg-accent/80">
+              <DropdownMenuItem 
+                className="gap-3 py-3 cursor-pointer hover:bg-accent/80"
+                onClick={() => onViewChange('account')}
+              >
                 <User className="h-4 w-4" />
                 <span>Profile Settings</span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="gap-3 py-3 cursor-pointer hover:bg-accent/80">
+              <DropdownMenuItem 
+                className="gap-3 py-3 cursor-pointer hover:bg-accent/80"
+                onClick={() => onViewChange('account')}
+              >
                 <Settings className="h-4 w-4" />
                 <span>Preferences</span>
               </DropdownMenuItem>

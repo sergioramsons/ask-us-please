@@ -19,7 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useUserRoles } from "@/hooks/useUserRoles";
 
-type View = 'tickets' | 'inbox' | 'contacts-companies' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports';
+type View = 'tickets' | 'inbox' | 'contacts-companies' | 'create-ticket' | 'ticket-detail' | 'admin-panel' | 'reports' | 'account';
 
 interface SidebarProps {
   currentView: View;
