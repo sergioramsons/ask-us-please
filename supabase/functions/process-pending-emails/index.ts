@@ -172,7 +172,7 @@ async function handleTicketReply(emailRecord: any, ticketNumber: string) {
     // Find the existing ticket
     const { data: existingTicket } = await supabase
       .from('tickets')
-      .select('id, contact_id')
+      .select('id, contact_id, organization_id')
       .eq('ticket_number', ticketNumber)
       .maybeSingle();
 
@@ -195,10 +195,12 @@ async function handleTicketReply(emailRecord: any, ticketNumber: string) {
       // Create new contact
       const { data: newContact, error: contactError } = await supabase
         .from('contacts')
-      .insert({
+        .insert({
           email: getSenderEmail(emailRecord),
           first_name: getSenderName(emailRecord)?.split(' ')[0] || 'Unknown',
           last_name: getSenderName(emailRecord)?.split(' ').slice(1).join(' ') || 'User',
+          name: getSenderName(emailRecord) || (getSenderEmail(emailRecord)?.split('@')[0] || 'Unknown User'),
+          organization_id: existingTicket.organization_id,
         })
         .select()
         .single();
@@ -284,6 +286,8 @@ async function createTicketFromEmail(emailRecord: any) {
           email: getSenderEmail(emailRecord),
           first_name: getSenderName(emailRecord)?.split(' ')[0] || 'Unknown',
           last_name: getSenderName(emailRecord)?.split(' ').slice(1).join(' ') || 'User',
+          name: getSenderName(emailRecord) || (getSenderEmail(emailRecord)?.split('@')[0] || 'Unknown User'),
+          organization_id: orgId,
         })
         .select()
         .single();

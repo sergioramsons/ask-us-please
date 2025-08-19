@@ -264,7 +264,7 @@ async function createTicketFromEmail(emailRecord: any, emailData: IncomingEmailD
       .from('contacts')
       .select('id')
       .eq('email', emailData.from.email)
-      .single();
+      .maybeSingle();
 
     if (existingContact) {
       contactId = existingContact.id;
@@ -276,6 +276,8 @@ async function createTicketFromEmail(emailRecord: any, emailData: IncomingEmailD
           email: emailData.from.email,
           first_name: emailData.from.name?.split(' ')[0] || 'Unknown',
           last_name: emailData.from.name?.split(' ').slice(1).join(' ') || 'User',
+          name: emailData.from.name || (emailData.from.email?.split('@')[0] || 'Unknown User'),
+          organization_id: orgId,
         })
         .select()
         .single();

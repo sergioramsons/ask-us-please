@@ -455,6 +455,8 @@ async function createTicketFromEmail(emailRecord: any, emailData: any, server: a
           email: emailData.from.email,
           first_name: emailData.from.name?.split(' ')[0] || 'Unknown',
           last_name: emailData.from.name?.split(' ').slice(1).join(' ') || 'User',
+          name: emailData.from.name || (emailData.from.email?.split('@')[0] || 'Unknown User'),
+          organization_id: server.organization_id,
         })
         .select()
         .single();
