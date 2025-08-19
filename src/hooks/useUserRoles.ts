@@ -26,7 +26,9 @@ interface UserWithRole {
 export function useUserRoles() {
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [currentUserRoles, setCurrentUserRoles] = useState<string[]>([]);
+  const [currentUserPermissions, setCurrentUserPermissions] = useState<string[]>([]);
   const [availableRoles, setAvailableRoles] = useState<{id: string, role_name: string, description?: string, is_admin_role: boolean, is_default?: boolean}[]>([]);
+  const [availablePermissions, setAvailablePermissions] = useState<{id: string, name: string, description?: string, category: string}[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -104,6 +106,138 @@ export function useUserRoles() {
       console.error('Error fetching available roles:', error);
     }
   }, [organization?.id]);
+
+  const fetchAvailablePermissions = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('permissions')
+        .select('id, name, description, category')
+        .order('category, name');
+
+      if (error) throw error;
+      setAvailablePermissions(data || []);
+    } catch (error) {
+      console.error('Error fetching available permissions:', error);
+    }
+  }, []);
+
+  const fetchCurrentUserPermissions = useCallback(async () => {
+    if (!user || !organization?.id) return;
+
+    try {
+      // Get user's roles
+      const { data: userRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('organization_id', organization.id);
+
+      if (rolesError) throw rolesError;
+
+      // Get role IDs from organization_roles
+      const roleNames = userRoles.map(ur => ur.role);
+      if (roleNames.length === 0) {
+        setCurrentUserPermissions([]);
+        return;
+      }
+
+      const { data: orgRoles, error: orgRolesError } = await supabase
+        .from('organization_roles')
+        .select('id')
+        .in('role_name', roleNames)
+        .eq('organization_id', organization.id);
+
+      if (orgRolesError) throw orgRolesError;
+
+      const roleIds = orgRoles.map(or => or.id);
+      if (roleIds.length === 0) {
+        setCurrentUserPermissions([]);
+        return;
+      }
+
+      // Get permissions for these roles
+      const { data: rolePermissions, error: permissionsError } = await supabase
+        .from('role_permissions')
+        .select('permissions(name)')
+        .in('role_id', roleIds);
+
+      if (permissionsError) throw permissionsError;
+
+      const permissions = rolePermissions
+        .map(rp => (rp as any).permissions?.name)
+        .filter(Boolean);
+
+      setCurrentUserPermissions([...new Set(permissions)]);
+    } catch (error) {
+      console.error('Error fetching current user permissions:', error);
+    }
+  }, [user, organization?.id]);
+
+  const getRolePermissions = useCallback(async (roleId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('role_permissions')
+        .select('permissions(id, name, description, category)')
+        .eq('role_id', roleId);
+
+      if (error) throw error;
+      return data.map(rp => (rp as any).permissions).filter(Boolean);
+    } catch (error) {
+      console.error('Error fetching role permissions:', error);
+      return [];
+    }
+  }, []);
+
+  const updateRolePermissions = useCallback(async (roleId: string, permissionIds: string[]) => {
+    try {
+      const orgId = organization?.id;
+      if (!orgId) return false;
+
+      // First, delete existing permissions for this role
+      const { error: deleteError } = await supabase
+        .from('role_permissions')
+        .delete()
+        .eq('role_id', roleId);
+
+      if (deleteError) throw deleteError;
+
+      // Then insert new permissions
+      if (permissionIds.length > 0) {
+        const { error: insertError } = await supabase
+          .from('role_permissions')
+          .insert(
+            permissionIds.map(permissionId => ({
+              role_id: roleId,
+              permission_id: permissionId,
+              organization_id: orgId
+            }))
+          );
+
+        if (insertError) throw insertError;
+      }
+
+      toast({
+        title: "Success",
+        description: "Role permissions updated successfully",
+      });
+
+      // Refresh current user permissions if they have this role
+      await fetchCurrentUserPermissions();
+      return true;
+    } catch (error: any) {
+      console.error('Error updating role permissions:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update role permissions",
+        variant: "destructive",
+      });
+      return false;
+    }
+  }, [organization?.id, toast, fetchCurrentUserPermissions]);
+
+  const hasPermission = useCallback((permission: string): boolean => {
+    return currentUserPermissions.includes(permission);
+  }, [currentUserPermissions]);
 
   const createCustomRole = useCallback(async (roleName: string, description?: string, isAdminRole: boolean = false) => {
     try {
@@ -365,23 +499,31 @@ export function useUserRoles() {
   useEffect(() => {
     if (user && organization?.id) {
       fetchCurrentUserRoles();
+      fetchCurrentUserPermissions();
       fetchAvailableRoles();
+      fetchAvailablePermissions();
     }
-  }, [user, organization?.id, fetchCurrentUserRoles, fetchAvailableRoles]);
+  }, [user, organization?.id, fetchCurrentUserRoles, fetchCurrentUserPermissions, fetchAvailableRoles, fetchAvailablePermissions]);
 
   return {
     userRoles,
     currentUserRoles,
+    currentUserPermissions,
     availableRoles,
+    availablePermissions,
     isLoading,
     fetchAllUserRoles,
     getUsersWithRoles,
     fetchAvailableRoles,
+    fetchAvailablePermissions,
+    getRolePermissions,
+    updateRolePermissions,
     createCustomRole,
     deleteCustomRole,
     assignRole,
     removeRole,
     hasRole,
+    hasPermission,
     isAdmin,
     isSupervisor,
     isAgent,

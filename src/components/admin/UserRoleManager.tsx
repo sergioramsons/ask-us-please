@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useDepartments, Department } from '@/hooks/useDepartments';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, UserPlus, UserMinus, Building2, Plus, Trash2, AlertTriangle } from 'lucide-react';
+import { Shield, UserPlus, UserMinus, Building2, Plus, Trash2, AlertTriangle, Settings } from 'lucide-react';
 
 interface UserWithRole {
   id: string;
@@ -40,6 +41,11 @@ export function UserRoleManager() {
   const [newRoleDescription, setNewRoleDescription] = useState('');
   const [newRoleIsAdmin, setNewRoleIsAdmin] = useState(false);
   
+  // Permissions state
+  const [selectedRoleForPermissions, setSelectedRoleForPermissions] = useState<string>('');
+  const [rolePermissions, setRolePermissions] = useState<{id: string, name: string, description?: string, category: string}[]>([]);
+  const [selectedPermissions, setSelectedPermissions] = useState<Set<string>>(new Set());
+  
   const { 
     getUsersWithRoles, 
     assignRole, 
@@ -47,7 +53,10 @@ export function UserRoleManager() {
     isLoading, 
     isAdmin, 
     availableRoles, 
+    availablePermissions,
     fetchAvailableRoles, 
+    getRolePermissions,
+    updateRolePermissions,
     createCustomRole, 
     deleteCustomRole 
   } = useUserRoles();
@@ -211,6 +220,46 @@ export function UserRoleManager() {
     }
   };
 
+  // Permissions management functions
+  const handleRolePermissionsChange = async (roleId: string) => {
+    setSelectedRoleForPermissions(roleId);
+    const permissions = await getRolePermissions(roleId);
+    setRolePermissions(permissions);
+    setSelectedPermissions(new Set(permissions.map(p => p.id)));
+  };
+
+  const handlePermissionChange = (permissionId: string, checked: boolean) => {
+    setSelectedPermissions(prev => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(permissionId);
+      } else {
+        newSet.delete(permissionId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSavePermissions = async () => {
+    if (!selectedRoleForPermissions) return;
+    
+    const success = await updateRolePermissions(selectedRoleForPermissions, Array.from(selectedPermissions));
+    if (success) {
+      // Refresh role permissions
+      const permissions = await getRolePermissions(selectedRoleForPermissions);
+      setRolePermissions(permissions);
+    }
+  };
+
+  // Group permissions by category
+  const groupedPermissions = availablePermissions.reduce((acc, permission) => {
+    if (!acc[permission.category]) {
+      acc[permission.category] = [];
+    }
+    acc[permission.category].push(permission);
+    return acc;
+  }, {} as Record<string, typeof availablePermissions>);
+
   if (!isAdmin()) {
     return (
       <Card>
@@ -234,9 +283,10 @@ export function UserRoleManager() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="users">Users & Roles</TabsTrigger>
             <TabsTrigger value="roles">Manage Roles</TabsTrigger>
+            <TabsTrigger value="permissions">Role Permissions</TabsTrigger>
             <TabsTrigger value="create-user">Create User</TabsTrigger>
             <TabsTrigger value="departments">Departments</TabsTrigger>
           </TabsList>
@@ -567,6 +617,99 @@ export function UserRoleManager() {
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="permissions" className="space-y-4">
+            {/* Role Permissions Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Role Permissions
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="role-select">Select Role to Edit Permissions</Label>
+                  <Select value={selectedRoleForPermissions} onValueChange={handleRolePermissionsChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a role to edit permissions" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableRoles.map((role) => (
+                        <SelectItem key={role.id} value={role.id}>
+                          {role.role_name}
+                          {role.is_admin_role && ' (Admin)'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {selectedRoleForPermissions && (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-medium">
+                        Permissions for: {availableRoles.find(r => r.id === selectedRoleForPermissions)?.role_name}
+                      </h3>
+                      <Button onClick={handleSavePermissions} variant="default">
+                        Save Permissions
+                      </Button>
+                    </div>
+
+                    {Object.entries(groupedPermissions).map(([category, permissions]) => (
+                      <Card key={category}>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base">{category}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          {permissions.map((permission) => (
+                            <div key={permission.id} className="flex items-start space-x-3">
+                              <Checkbox
+                                id={permission.id}
+                                checked={selectedPermissions.has(permission.id)}
+                                onCheckedChange={(checked) => 
+                                  handlePermissionChange(permission.id, checked as boolean)
+                                }
+                              />
+                              <div className="grid gap-1.5 leading-none">
+                                <Label
+                                  htmlFor={permission.id}
+                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                >
+                                  {permission.name.replace(/^\w+\./, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                </Label>
+                                {permission.description && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {permission.description}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </CardContent>
+                      </Card>
+                    ))}
+
+                    <div className="flex justify-between items-center pt-4">
+                      <div className="text-sm text-muted-foreground">
+                        {selectedPermissions.size} permissions selected
+                      </div>
+                      <Button onClick={handleSavePermissions} variant="default">
+                        Save Permissions
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {!selectedRoleForPermissions && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Select a role above to manage its permissions</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
