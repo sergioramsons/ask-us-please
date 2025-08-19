@@ -108,22 +108,60 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Check if we should auto-create a ticket
-    const shouldCreateTicket = await checkAutoTicketCreation(emailData);
+    // Check if this is a response to an existing ticket
+    const existingTicket = await findExistingTicket(emailData);
+    let autoTicketCreated = false;
+    let commentAdded = false;
     
-    if (shouldCreateTicket) {
-      const ticket = await createTicketFromEmail(emailRecord, emailData);
-      if (ticket) {
-        console.log('Auto-created ticket:', ticket.ticket_number);
+    if (existingTicket) {
+      // This is a customer response to an existing ticket
+      console.log('Adding comment to existing ticket:', existingTicket.ticket_number);
+      
+      // Create a comment on the existing ticket
+      const { error: commentError } = await supabase
+        .from('ticket_comments')
+        .insert({
+          ticket_id: existingTicket.id,
+          content: emailData.text || emailData.html || 'Email content not available',
+          email_id: emailRecord.id,
+          is_internal: false,
+          contact_id: existingTicket.contact_id,
+        });
+
+      if (commentError) {
+        console.error('Error creating comment:', commentError);
+      } else {
+        console.log('Comment added successfully to ticket:', existingTicket.ticket_number);
+        commentAdded = true;
         
         // Update email record with ticket reference
         await supabase
           .from('incoming_emails')
           .update({ 
-            ticket_id: ticket.id,
+            ticket_id: existingTicket.id,
             processed: true 
           })
           .eq('id', emailRecord.id);
+      }
+    } else {
+      // Check if we should auto-create a new ticket
+      const shouldCreateTicket = await checkAutoTicketCreation(emailData);
+      
+      if (shouldCreateTicket) {
+        const ticket = await createTicketFromEmail(emailRecord, emailData);
+        if (ticket) {
+          console.log('Auto-created ticket:', ticket.ticket_number);
+          autoTicketCreated = true;
+          
+          // Update email record with ticket reference
+          await supabase
+            .from('incoming_emails')
+            .update({ 
+              ticket_id: ticket.id,
+              processed: true 
+            })
+            .eq('id', emailRecord.id);
+        }
       }
     }
 
@@ -132,7 +170,8 @@ const handler = async (req: Request): Promise<Response> => {
         success: true, 
         message: "Email processed successfully",
         emailId: emailRecord.id,
-        autoTicketCreated: shouldCreateTicket
+        autoTicketCreated,
+        commentAdded
       }),
       {
         status: 200,
@@ -182,9 +221,22 @@ async function checkAutoTicketCreation(emailData: IncomingEmailData): Promise<bo
 
 async function createTicketFromEmail(emailRecord: any, emailData: IncomingEmailData) {
   try {
+    // Get default organization for now - in a real setup, you'd determine this from the email domain
+    const { data: defaultOrg } = await supabase
+      .from('organizations')
+      .select('id')
+      .limit(1)
+      .single();
+    
+    const orgId = defaultOrg?.id;
+    if (!orgId) {
+      console.error('No organization found');
+      return null;
+    }
+    
     // Generate ticket number
     const { data: ticketNumber } = await supabase
-      .rpc('generate_ticket_number');
+      .rpc('generate_ticket_number', { org_id: orgId });
 
     // Check if contact exists
     let contactId = null;
@@ -235,6 +287,7 @@ async function createTicketFromEmail(emailRecord: any, emailData: IncomingEmailD
         priority: priority,
         status: 'open',
         contact_id: contactId,
+        organization_id: orgId,
       })
       .select()
       .single();
@@ -259,6 +312,90 @@ async function createTicketFromEmail(emailRecord: any, emailData: IncomingEmailD
     console.error('Error in createTicketFromEmail:', error);
     return null;
   }
+}
+
+async function findExistingTicket(emailData: IncomingEmailData) {
+  try {
+    // Extract ticket number from subject line
+    // Common patterns: "Re: TICKET-00001", "[TICKET-00001]", "#TICKET-00001"
+    const ticketNumberRegex = /(?:re:\s*)?(?:\[|\#)?(TICKET-\d+)/i;
+    const match = emailData.subject.match(ticketNumberRegex);
+    
+    if (match) {
+      const ticketNumber = match[1];
+      console.log('Found ticket number in subject:', ticketNumber);
+      
+      // Look up the ticket by ticket number
+      const { data: ticket, error } = await supabase
+        .from('tickets')
+        .select('id, ticket_number, contact_id, status')
+        .eq('ticket_number', ticketNumber)
+        .single();
+      
+      if (error) {
+        console.log('No ticket found with number:', ticketNumber);
+        return null;
+      }
+      
+      // Verify the email is from the same contact or related
+      const { data: contact } = await supabase
+        .from('contacts')
+        .select('email')
+        .eq('id', ticket.contact_id)
+        .single();
+      
+      if (contact && contact.email.toLowerCase() === emailData.from.email.toLowerCase()) {
+        console.log('Email from ticket contact, this is a customer response');
+        return ticket;
+      } else {
+        console.log('Email not from original contact, treating as new inquiry');
+        return null;
+      }
+    }
+    
+    // Alternative: look for tickets from the same contact with similar subject
+    const { data: recentTickets } = await supabase
+      .from('tickets')
+      .select('id, ticket_number, contact_id, subject, created_at')
+      .eq('contact_id', (await getContactByEmail(emailData.from.email))?.id)
+      .eq('status', 'open')
+      .order('created_at', { ascending: false })
+      .limit(3);
+    
+    if (recentTickets && recentTickets.length > 0) {
+      // Check if subject is similar to any recent ticket
+      const cleanSubject = (subject: string) => 
+        subject.toLowerCase()
+          .replace(/^(re:|fwd?:)\s*/i, '')
+          .replace(/\[.*?\]/g, '')
+          .trim();
+      
+      const incomingSubject = cleanSubject(emailData.subject);
+      
+      for (const ticket of recentTickets) {
+        const ticketSubject = cleanSubject(ticket.subject);
+        if (incomingSubject === ticketSubject) {
+          console.log('Found matching ticket by subject:', ticket.ticket_number);
+          return ticket;
+        }
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error finding existing ticket:', error);
+    return null;
+  }
+}
+
+async function getContactByEmail(email: string) {
+  const { data: contact } = await supabase
+    .from('contacts')
+    .select('id, email')
+    .eq('email', email.toLowerCase())
+    .single();
+  
+  return contact;
 }
 
 serve(handler);
