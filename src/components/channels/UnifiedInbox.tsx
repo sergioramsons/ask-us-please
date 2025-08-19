@@ -103,6 +103,29 @@ export function UnifiedInbox() {
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
 
+  // Reset all filters and reload data
+  const resetFiltersAndReload = () => {
+    setSearchQuery('');
+    setChannelFilter('all');
+    setStatusFilter('all');
+    setPriorityFilter('all');
+    loadTickets();
+  };
+
+  // Auto-clear filters when component mounts
+  useEffect(() => {
+    setSearchQuery('');
+    setChannelFilter('all');
+    setStatusFilter('all');
+    setPriorityFilter('all');
+  }, []);
+
+  useEffect(() => {
+    if (organization?.id) {
+      loadTickets();
+    }
+  }, [organization?.id]);
+
   // Load real tickets from database with optimized query
   const loadTickets = async () => {
     try {
@@ -322,6 +345,14 @@ export function UnifiedInbox() {
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">Unified Inbox</h1>
           <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={resetFiltersAndReload}
+              className="text-xs"
+            >
+              Reset Filters & Reload
+            </Button>
             <Badge variant="secondary">{stats.total} total</Badge>
             <Badge variant="destructive">{stats.unread} unread</Badge>
             <Badge variant="outline">{stats.urgent} urgent</Badge>
