@@ -264,7 +264,7 @@ const loadTickets = async () => {
       try {
         const { data: assignedAgent, error: assignError } = await supabase.rpc('auto_assign_ticket', {
           ticket_id_param: newTicket.id,
-          org_id: organization?.id
+          org_id: organization?.id as string
         });
         
         if (assignError) {

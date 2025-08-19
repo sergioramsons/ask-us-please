@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { 
   UserCheck, 
   UserX, 
@@ -44,6 +45,7 @@ export function TicketAssignmentManager({
   onAssignmentChange
 }: TicketAssignmentManagerProps) {
   const { user } = useAuth();
+  const { organization } = useOrganization();
   const { toast } = useToast();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -131,10 +133,52 @@ export function TicketAssignmentManager({
   const handleAutoAssign = async () => {
     try {
       setProcessing(true);
-      toast({
-        title: 'Auto-assign not available',
-        description: 'Auto-assignment function is not configured.',
+      const orgId = organization?.id;
+      if (!orgId) {
+        toast({
+          title: 'Auto-assignment unavailable',
+          description: 'No organization detected. Please select an organization.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const { data: assignedAgentName, error: rpcError } = await supabase.rpc('auto_assign_ticket', {
+        ticket_id_param: ticketId,
+        org_id: orgId,
       });
+
+      if (rpcError) {
+        throw rpcError;
+      }
+
+      if (!assignedAgentName) {
+        toast({
+          title: 'Auto-assignment not configured',
+          description: 'Add agents with roles and ensure profiles belong to this organization.',
+        });
+        return;
+      }
+
+      const { data: updatedTicket, error: ticketErr } = await supabase
+        .from('tickets')
+        .select('assigned_to')
+        .eq('id', ticketId)
+        .maybeSingle();
+
+      if (ticketErr) {
+        console.warn('Could not fetch updated ticket:', ticketErr);
+      }
+
+      const newAssigneeId = (updatedTicket as any)?.assigned_to || null;
+      onAssignmentChange?.(newAssigneeId, assignedAgentName as string);
+
+      toast({
+        title: 'Ticket auto-assigned',
+        description: `Assigned to ${assignedAgentName}`,
+      });
+
+      await loadAgents();
     } catch (error: any) {
       console.error('Error auto-assigning ticket:', error);
       toast({

@@ -121,11 +121,29 @@ const IncomingEmailManager = () => {
           priority: 'medium',
           status: 'open',
           contact_id: contactId,
+          organization_id: organization?.id,
         })
         .select()
         .single();
 
       if (ticketError) throw ticketError;
+
+      // Auto-assign the ticket
+      try {
+        const { data: assignedAgent, error: assignError } = await supabase.rpc('auto_assign_ticket', {
+          ticket_id_param: ticket.id,
+          org_id: organization?.id
+        });
+        if (assignError) {
+          console.warn('Auto-assignment failed:', assignError);
+        } else if (assignedAgent) {
+          toast.success(`Ticket auto-assigned to ${assignedAgent}`);
+        } else {
+          console.warn('Auto-assignment returned no agent. Ensure agents and roles are set for this organization.');
+        }
+      } catch (autoAssignError) {
+        console.warn('Auto-assignment error:', autoAssignError);
+      }
 
       // Create initial comment
       await supabase
