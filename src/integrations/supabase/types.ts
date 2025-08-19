@@ -1297,6 +1297,10 @@ export type Database = {
         Args: { org_id: string }
         Returns: string
       }
+      is_organization_admin: {
+        Args: { check_org_id: string; check_user_id: string }
+        Returns: boolean
+      }
       migrate_email_server_passwords: {
         Args: Record<PropertyKey, never>
         Returns: {
