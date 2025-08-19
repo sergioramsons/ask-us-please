@@ -70,6 +70,7 @@ export interface Ticket {
   // Assignment
   assignee?: TicketAssignee;
   department?: string;
+  department_id?: string;
   
   // Timing
   createdAt: Date;

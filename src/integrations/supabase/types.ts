@@ -1138,6 +1138,7 @@ export type Database = {
           contact_id: string | null
           created_at: string
           created_by: string | null
+          department_id: string | null
           description: string | null
           id: string
           organization_id: string | null
@@ -1155,6 +1156,7 @@ export type Database = {
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          department_id?: string | null
           description?: string | null
           id?: string
           organization_id?: string | null
@@ -1172,6 +1174,7 @@ export type Database = {
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          department_id?: string | null
           description?: string | null
           id?: string
           organization_id?: string | null
@@ -1189,6 +1192,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
             referencedColumns: ["id"]
           },
           {

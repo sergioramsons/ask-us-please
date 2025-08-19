@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useDepartments } from '@/hooks/useDepartments';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,6 +32,7 @@ interface EnhancedTicketFormData {
   escalationLevel: number;
   slaBreached: boolean;
   customFields: Record<string, any>;
+  department_id?: string;
 }
 
 interface EnhancedTicketFormProps {
@@ -39,6 +41,7 @@ interface EnhancedTicketFormProps {
 }
 
 export function EnhancedTicketForm({ onSubmit, onCancel }: EnhancedTicketFormProps) {
+  const { departments, fetchDepartments } = useDepartments();
   const { toast } = useToast();
   const [formData, setFormData] = useState<EnhancedTicketFormData>({
     title: '',
@@ -55,11 +58,17 @@ export function EnhancedTicketForm({ onSubmit, onCancel }: EnhancedTicketFormPro
     tags: [],
     escalationLevel: 0,
     slaBreached: false,
-    customFields: {}
+    customFields: {},
+    department_id: undefined
   });
 
   const [newTag, setNewTag] = useState('');
   const [dueDate, setDueDate] = useState<Date | undefined>();
+
+  // Load departments on mount
+  useEffect(() => {
+    fetchDepartments();
+  }, [fetchDepartments]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -243,6 +252,26 @@ export function EnhancedTicketForm({ onSubmit, onCancel }: EnhancedTicketFormPro
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="department">Department</Label>
+              <Select 
+                value={formData.department_id || ""} 
+                onValueChange={(value) => updateField('department_id', value || undefined)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select department (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">No Department</SelectItem>
+                  {departments.map(dept => (
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

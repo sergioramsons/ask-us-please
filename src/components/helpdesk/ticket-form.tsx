@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TicketPriority, TicketCategory } from "@/types/ticket";
 import { useToast } from "@/hooks/use-toast";
 import { useContacts } from "@/hooks/useContacts";
+import { useDepartments } from "@/hooks/useDepartments";
 import { Contact } from "@/types/contact";
 
 interface TicketFormData {
@@ -17,6 +18,7 @@ interface TicketFormData {
   category: TicketCategory;
   customerName: string;
   customerEmail: string;
+  departmentId?: string;
 }
 
 interface TicketFormProps {
@@ -30,6 +32,7 @@ interface TicketFormProps {
 export function TicketForm({ onSubmit, onCancel, defaultPhone, defaultName, defaultEmail }: TicketFormProps) {
   const { toast } = useToast();
   const { contacts, getContactByEmail } = useContacts();
+  const { departments, fetchDepartments } = useDepartments();
   const [customerSuggestions, setCustomerSuggestions] = useState<Contact[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [formData, setFormData] = useState<TicketFormData>({
@@ -38,11 +41,17 @@ export function TicketForm({ onSubmit, onCancel, defaultPhone, defaultName, defa
     priority: 'medium',
     category: 'general',
     customerName: defaultName || '',
-    customerEmail: defaultEmail || ''
+    customerEmail: defaultEmail || '',
+    departmentId: undefined
   });
 
   // Add phone field to show caller info
   const [phoneNumber, setPhoneNumber] = useState(defaultPhone || '');
+
+  // Load departments on mount
+  useEffect(() => {
+    fetchDepartments();
+  }, [fetchDepartments]);
 
   // Sync defaults if they change after mount (e.g., async contact lookup)
   useEffect(() => {
@@ -111,7 +120,8 @@ export function TicketForm({ onSubmit, onCancel, defaultPhone, defaultName, defa
       priority: 'medium',
       category: 'general',
       customerName: '',
-      customerEmail: ''
+      customerEmail: '',
+      departmentId: undefined
     });
 
     toast({
@@ -240,6 +250,23 @@ export function TicketForm({ onSubmit, onCancel, defaultPhone, defaultName, defa
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="department">Department</Label>
+            <Select value={formData.departmentId || ""} onValueChange={(value) => setFormData({ ...formData, departmentId: value || undefined })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select department (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">No Department</SelectItem>
+                {departments.map(dept => (
+                  <SelectItem key={dept.id} value={dept.id}>
+                    {dept.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex gap-3 pt-4">

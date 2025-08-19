@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,6 +7,7 @@ import { StatusBadge, PriorityBadge } from "@/components/ui/status-badge";
 import { Ticket, TicketStatus } from "@/types/ticket";
 import { ArrowLeft, User, Mail, Calendar, Tag, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useDepartments } from "@/hooks/useDepartments";
 
 interface TicketDetailProps {
   ticket: Ticket;
@@ -16,7 +17,13 @@ interface TicketDetailProps {
 
 export function TicketDetail({ ticket, onBack, onStatusChange }: TicketDetailProps) {
   const { toast } = useToast();
+  const { departments, fetchDepartments } = useDepartments();
   const [currentStatus, setCurrentStatus] = useState<TicketStatus>(ticket.status);
+
+  // Load departments on mount
+  useEffect(() => {
+    fetchDepartments();
+  }, [fetchDepartments]);
 
   const handleStatusChange = (newStatus: TicketStatus) => {
     setCurrentStatus(newStatus);
@@ -58,6 +65,9 @@ export function TicketDetail({ ticket, onBack, onStatusChange }: TicketDetailPro
                 <PriorityBadge priority={ticket.priority} />
                 <Badge variant="outline" className="capitalize">
                   {ticket.category.replace('-', ' ')}
+                </Badge>
+                <Badge variant="secondary" className="capitalize">
+                  {departments.find(d => d.id === (ticket as any).department_id)?.name || 'No Department'}
                 </Badge>
               </div>
             </div>

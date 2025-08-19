@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TicketForm } from "@/components/helpdesk/ticket-form";
 import { TicketDetail } from "@/components/helpdesk/ticket-detail";
-import { Ticket, TicketStats, TicketStatus } from "@/types/ticket";
+import { Ticket, TicketStats, TicketStatus, TicketCategory } from "@/types/ticket";
 import { AdminPanel } from "@/components/admin/AdminPanel";
 import { CombinedContactsCompanies } from "@/components/admin/CombinedContactsCompanies";
 import { ReportsDashboard } from "@/components/reports/ReportsDashboard";
@@ -89,7 +89,8 @@ const loadTickets = async () => {
           status: ticket.status as any,
           priority: ticket.priority as any,
           severity: 'minor' as any,
-          category: 'general',
+          category: (ticket.category as TicketCategory) || 'general',
+          department_id: ticket.department_id,
           source: 'portal' as any,
           customer: {
             name: contact ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim() : 'Customer',
@@ -256,6 +257,8 @@ const loadTickets = async () => {
           description: ticketData.description,
           status: 'open',
           priority: ticketData.priority,
+          category: ticketData.category || 'general',
+          department_id: ticketData.departmentId === 'unassigned' ? null : ticketData.departmentId || null,
           contact_id: contactId,
           created_by: user?.id
         })
