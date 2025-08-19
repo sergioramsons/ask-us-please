@@ -80,7 +80,7 @@ const IncomingEmailManager = () => {
     mutationFn: async (email: IncomingEmail) => {
       // Generate ticket number
       const { data: ticketNumber, error: rpcError } = await supabase
-        .rpc('generate_ticket_number');
+        .rpc('generate_ticket_number', { org_id: organization?.id });
       
       if (rpcError) throw rpcError;
 

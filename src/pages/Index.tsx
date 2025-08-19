@@ -236,7 +236,7 @@ const loadTickets = async () => {
       }
 
       // Create the ticket in the database
-      const { data: generatedNumber, error: genError } = await supabase.rpc('generate_ticket_number');
+      const { data: generatedNumber, error: genError } = await supabase.rpc('generate_ticket_number', { org_id: organization?.id });
       if (genError) {
         throw genError;
       }
