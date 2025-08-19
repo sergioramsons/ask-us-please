@@ -10,6 +10,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function getSenderEmail(record: any): string {
+  return record.from_email || record.sender_email || '';
+}
+
+function getSenderName(record: any): string {
+  return record.from_name || record.sender_name || '';
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -175,10 +183,10 @@ async function handleTicketReply(emailRecord: any, ticketNumber: string) {
 
     // Check if contact exists for the sender
     let contactId = null;
-    const { data: existingContact } = await supabase
+  const { data: existingContact } = await supabase
       .from('contacts')
       .select('id')
-      .eq('email', emailRecord.sender_email)
+      .eq('email', getSenderEmail(emailRecord))
       .maybeSingle();
 
     if (existingContact) {
@@ -187,10 +195,10 @@ async function handleTicketReply(emailRecord: any, ticketNumber: string) {
       // Create new contact
       const { data: newContact, error: contactError } = await supabase
         .from('contacts')
-        .insert({
-          email: emailRecord.sender_email,
-          first_name: emailRecord.sender_name?.split(' ')[0] || 'Unknown',
-          last_name: emailRecord.sender_name?.split(' ').slice(1).join(' ') || 'User',
+      .insert({
+          email: getSenderEmail(emailRecord),
+          first_name: getSenderName(emailRecord)?.split(' ')[0] || 'Unknown',
+          last_name: getSenderName(emailRecord)?.split(' ').slice(1).join(' ') || 'User',
         })
         .select()
         .single();
@@ -261,9 +269,9 @@ async function createTicketFromEmail(emailRecord: any) {
     // Check if contact exists
     let contactId = null;
     const { data: existingContact } = await supabase
-      .from('contacts')
+  .from('contacts')
       .select('id')
-      .eq('email', emailRecord.sender_email)
+      .eq('email', getSenderEmail(emailRecord))
       .maybeSingle();
 
     if (existingContact) {
@@ -273,9 +281,9 @@ async function createTicketFromEmail(emailRecord: any) {
       const { data: newContact, error: contactError } = await supabase
         .from('contacts')
         .insert({
-          email: emailRecord.sender_email,
-          first_name: emailRecord.sender_name?.split(' ')[0] || 'Unknown',
-          last_name: emailRecord.sender_name?.split(' ').slice(1).join(' ') || 'User',
+          email: getSenderEmail(emailRecord),
+          first_name: getSenderName(emailRecord)?.split(' ')[0] || 'Unknown',
+          last_name: getSenderName(emailRecord)?.split(' ').slice(1).join(' ') || 'User',
         })
         .select()
         .single();

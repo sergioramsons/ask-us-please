@@ -327,13 +327,16 @@ async function processIncomingEmail(emailData: any, server: any) {
     .from('incoming_emails')
     .insert({
       message_id: emailData.messageId,
-      sender_email: emailData.from.email,
-      recipient_email: emailData.to.email,
+      from_email: emailData.from.email,
+      from_name: emailData.from.name,
+      to_email: emailData.to.email,
       subject: emailData.subject,
       body_text: emailData.text,
       body_html: emailData.html,
       received_at: emailData.date ? new Date(emailData.date).toISOString() : new Date().toISOString(),
       organization_id: server.organization_id,
+      email_server_id: server.id,
+      headers: emailData.headers || {}
     })
     .select()
     .single();
