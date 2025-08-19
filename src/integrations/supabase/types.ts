@@ -611,11 +611,14 @@ export type Database = {
       }
       incoming_mail_servers: {
         Row: {
+          auto_assign_department: string | null
           auto_create_tickets: boolean
           auto_process: boolean
           check_interval: number
           check_interval_minutes: number
           created_at: string
+          delete_after_process: boolean
+          folder_name: string | null
           host: string
           id: string
           is_active: boolean
@@ -624,6 +627,7 @@ export type Database = {
           organization_id: string
           password: string
           password_encrypted: boolean
+          password_status: string | null
           port: number
           server_type: string
           updated_at: string
@@ -632,11 +636,14 @@ export type Database = {
           username: string
         }
         Insert: {
+          auto_assign_department?: string | null
           auto_create_tickets?: boolean
           auto_process?: boolean
           check_interval?: number
           check_interval_minutes?: number
           created_at?: string
+          delete_after_process?: boolean
+          folder_name?: string | null
           host: string
           id?: string
           is_active?: boolean
@@ -645,6 +652,7 @@ export type Database = {
           organization_id: string
           password: string
           password_encrypted?: boolean
+          password_status?: string | null
           port?: number
           server_type?: string
           updated_at?: string
@@ -653,11 +661,14 @@ export type Database = {
           username: string
         }
         Update: {
+          auto_assign_department?: string | null
           auto_create_tickets?: boolean
           auto_process?: boolean
           check_interval?: number
           check_interval_minutes?: number
           created_at?: string
+          delete_after_process?: boolean
+          folder_name?: string | null
           host?: string
           id?: string
           is_active?: boolean
@@ -666,6 +677,7 @@ export type Database = {
           organization_id?: string
           password?: string
           password_encrypted?: boolean
+          password_status?: string | null
           port?: number
           server_type?: string
           updated_at?: string
@@ -1035,6 +1047,84 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      incoming_mail_servers_secure: {
+        Row: {
+          auto_assign_department: string | null
+          auto_create_tickets: boolean | null
+          auto_process: boolean | null
+          check_interval: number | null
+          check_interval_minutes: number | null
+          created_at: string | null
+          delete_after_process: boolean | null
+          folder_name: string | null
+          host: string | null
+          id: string | null
+          is_active: boolean | null
+          last_check: string | null
+          name: string | null
+          organization_id: string | null
+          password: string | null
+          password_encrypted: boolean | null
+          password_status: string | null
+          port: number | null
+          server_type: string | null
+          updated_at: string | null
+          use_ssl: boolean | null
+          use_tls: boolean | null
+          username: string | null
+        }
+        Insert: {
+          auto_assign_department?: string | null
+          auto_create_tickets?: boolean | null
+          auto_process?: boolean | null
+          check_interval?: number | null
+          check_interval_minutes?: number | null
+          created_at?: string | null
+          delete_after_process?: boolean | null
+          folder_name?: string | null
+          host?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          last_check?: string | null
+          name?: string | null
+          organization_id?: string | null
+          password?: never
+          password_encrypted?: boolean | null
+          password_status?: string | null
+          port?: number | null
+          server_type?: string | null
+          updated_at?: string | null
+          use_ssl?: boolean | null
+          use_tls?: boolean | null
+          username?: string | null
+        }
+        Update: {
+          auto_assign_department?: string | null
+          auto_create_tickets?: boolean | null
+          auto_process?: boolean | null
+          check_interval?: number | null
+          check_interval_minutes?: number | null
+          created_at?: string | null
+          delete_after_process?: boolean | null
+          folder_name?: string | null
+          host?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          last_check?: string | null
+          name?: string | null
+          organization_id?: string | null
+          password?: never
+          password_encrypted?: boolean | null
+          password_status?: string | null
+          port?: number | null
+          server_type?: string | null
+          updated_at?: string | null
+          use_ssl?: boolean | null
+          use_tls?: boolean | null
+          username?: string | null
+        }
+        Relationships: []
       }
     }
     Functions: {
