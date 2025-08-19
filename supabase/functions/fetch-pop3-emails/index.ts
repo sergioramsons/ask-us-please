@@ -241,11 +241,11 @@ async function connectAndFetchEmails(config: any) {
 
     const emails: any[] = [];
 
-    // Fetch emails (limit to recent 10 to avoid timeout)
-    const limit = Math.min(messageCount, 10);
-    for (let i = 1; i <= limit; i++) {
+    // Fetch most recent emails first (limit to recent 20 to avoid timeout)
+    const limit = Math.min(messageCount, 20);
+    for (let idx = messageCount; idx > Math.max(0, messageCount - limit); idx--) {
       try {
-        await writeCommand(`RETR ${i}`);
+        await writeCommand(`RETR ${idx}`);
         const emailResponse = await readMultiline();
         if (emailResponse.startsWith("+OK")) {
           const email = parseEmail(emailResponse);
@@ -254,7 +254,7 @@ async function connectAndFetchEmails(config: any) {
           }
         }
       } catch (emailError) {
-        console.warn(`Failed to fetch email ${i}:`, emailError);
+        console.warn(`Failed to fetch email ${idx}:`, emailError);
       }
     }
 
