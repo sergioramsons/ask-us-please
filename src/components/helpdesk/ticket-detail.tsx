@@ -8,6 +8,7 @@ import { Ticket, TicketStatus } from "@/types/ticket";
 import { ArrowLeft, User, Mail, Calendar, Tag, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useDepartments } from "@/hooks/useDepartments";
+import { TicketAssignmentManager } from "./TicketAssignmentManager";
 
 interface TicketDetailProps {
   ticket: Ticket;
@@ -189,23 +190,17 @@ export function TicketDetail({ ticket, onBack, onStatusChange, onDepartmentChang
             </div>
           )}
 
-          {ticket.assignee && (
-            <div className="border-t pt-6">
-              <div className="flex items-center gap-2 mb-3">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <h3 className="font-semibold">Assigned To</h3>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
-                  {ticket.assignee.name.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <p className="font-medium">{ticket.assignee.name}</p>
-                  <p className="text-sm text-muted-foreground">{ticket.assignee.email}</p>
-                </div>
-              </div>
+          <div className="border-t pt-6">
+            <div className="flex items-center gap-2 mb-3">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <h3 className="font-semibold">Assignment Management</h3>
             </div>
-          )}
+            <TicketAssignmentManager 
+              ticketId={ticket.id}
+              currentAssigneeId={ticket.assignee?.id || null}
+              currentAssigneeName={ticket.assignee?.name || null}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>
