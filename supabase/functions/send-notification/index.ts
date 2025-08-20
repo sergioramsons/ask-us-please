@@ -23,6 +23,7 @@ interface NotificationRequest {
   senderName?: string;
   message?: string;
   ticketUrl?: string;
+  cc?: string[]; // optional CC recipients
 }
 
 const getEmailTemplate = (notification: NotificationRequest) => {
@@ -188,7 +189,8 @@ const handler = async (req: Request): Promise<Response> => {
         ticketStatus: notification.ticketStatus || 'open',
         priority: notification.ticketPriority || 'medium',
         isResolution: false,
-        emailServerId: activeServer.id
+        emailServerId: activeServer.id,
+        cc: notification.cc || []
       };
 
       const res = await fetch(funcUrl, {
@@ -218,6 +220,7 @@ const handler = async (req: Request): Promise<Response> => {
             const emailResponse = await resend.emails.send({
               from: fromEmail,
               to: [notification.recipientEmail],
+              cc: notification.cc && notification.cc.length ? notification.cc : undefined,
               subject: template.subject,
               html: template.html,
             });
@@ -324,6 +327,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResponse = await resend.emails.send({
       from: fromEmail,
       to: [notification.recipientEmail],
+      cc: notification.cc && notification.cc.length ? notification.cc : undefined,
       subject: template.subject,
       html: template.html,
     });

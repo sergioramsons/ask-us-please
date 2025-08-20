@@ -10,6 +10,7 @@ export interface NotificationRequest {
   recipientName?: string;
   senderName?: string;
   message?: string;
+  cc?: string[];
 }
 
 export interface SMSRequest {
@@ -46,7 +47,7 @@ export class NotificationService {
   }
 
   // Helper methods for common notification types
-  static async notifyTicketCreated(
+static async notifyTicketCreated(
     ticketId: string,
     ticketTitle: string,
     ticketPriority: string,
@@ -54,37 +55,23 @@ export class NotificationService {
     recipientName?: string,
     ccRecipients?: Array<{ email: string; name: string; }>
   ): Promise<boolean> {
-    // Send notification to main recipient
-    const mainResult = await this.sendNotification({
+    // Send single notification with CC list (handled by edge function)
+    const cc = (ccRecipients || [])
+      .map(r => (r?.email || '').trim())
+      .filter(e => e && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))
+      .filter((e, idx, arr) => arr.indexOf(e) === idx && e.toLowerCase() !== recipientEmail.toLowerCase());
+
+    return this.sendNotification({
       type: 'ticket_created',
       ticketId,
       ticketTitle,
       ticketPriority,
       ticketStatus: 'open',
       recipientEmail,
-      recipientName
-    });
-
-    // Send notifications to CC recipients
-    if (ccRecipients && ccRecipients.length > 0) {
-      const ccResults = await Promise.all(
-        ccRecipients.map(cc => 
-          this.sendNotification({
-            type: 'ticket_created',
-            ticketId,
-            ticketTitle,
-            ticketPriority,
-            ticketStatus: 'open',
-            recipientEmail: cc.email,
-            recipientName: cc.name
-          })
-        )
-      );
-      
-      console.log(`Sent notifications to ${ccResults.filter(r => r).length}/${ccRecipients.length} CC recipients`);
-    }
-
-    return mainResult;
+      recipientName,
+      // New: pass cc to edge function
+      cc
+    } as any);
   }
 
   static async notifyTicketUpdated(

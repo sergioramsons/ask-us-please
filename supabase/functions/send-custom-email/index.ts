@@ -21,6 +21,7 @@ interface CustomEmailRequest {
   priority: string;
   isResolution?: boolean;
   emailServerId?: string;
+  cc?: string[];
 }
 
 // Email configuration interface
@@ -105,7 +106,8 @@ const handler = async (req: Request): Promise<Response> => {
       ticketStatus,
       priority,
       isResolution = false,
-      emailServerId
+      emailServerId,
+      cc
     }: CustomEmailRequest = await req.json();
 
     console.log("Email request data:", { ticketId, customerEmail, subject, emailServerId });
@@ -254,6 +256,7 @@ const handler = async (req: Request): Promise<Response> => {
     await client.send({
       from: `${senderName} <${senderEmail}>`,
       to: customerEmail,
+      cc: cc && cc.length ? cc : undefined,
       replyTo: replyTo,
       subject: `[Ticket #${ticketId}] ${isResolution ? 'Resolved: ' : ''}${subject}`,
       html: emailHtml,
