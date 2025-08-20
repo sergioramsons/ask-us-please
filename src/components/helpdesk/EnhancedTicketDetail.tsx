@@ -5,9 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Ticket, TicketComment, TicketAttachment } from '@/types/ticket';
 import { TicketResponseForm } from './TicketResponseForm';
 import { TicketAssignmentManager } from './TicketAssignmentManager';
+import { useDepartments } from '@/hooks/useDepartments';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   ArrowLeft, 
@@ -32,11 +35,20 @@ interface EnhancedTicketDetailProps {
   ticket: Ticket;
   onBack: () => void;
   onStatusChange: (ticketId: string, newStatus: string) => void;
+  onDepartmentChange?: (ticketId: string, departmentId: string | null) => void;
 }
 
-export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: EnhancedTicketDetailProps) {
+export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartmentChange }: EnhancedTicketDetailProps) {
+  const { toast } = useToast();
+  const { departments, fetchDepartments } = useDepartments();
   const [comments, setComments] = useState<any[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(true);
+  const [currentDepartment, setCurrentDepartment] = useState<string | null>((ticket as any).department_id || null);
+
+  // Load departments on mount
+  useEffect(() => {
+    fetchDepartments();
+  }, [fetchDepartments]);
 
   // Load comments from database
   const loadComments = async () => {
@@ -132,6 +144,22 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
     console.log('Assignment changed:', newAssigneeId, newAssigneeName);
   };
 
+  const handleDepartmentChange = async (newDepartmentId: string) => {
+    const departmentId = newDepartmentId === 'unassigned' ? null : newDepartmentId;
+    setCurrentDepartment(departmentId);
+    
+    if (onDepartmentChange) {
+      onDepartmentChange(ticket.id, departmentId);
+    }
+    
+    toast({
+      title: "Department Updated",
+      description: departmentId 
+        ? `Ticket transferred to ${departments.find(d => d.id === departmentId)?.name}`
+        : "Ticket removed from department"
+    });
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'open': return 'bg-blue-500 text-white';
@@ -212,6 +240,9 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
                 )}
                 <Badge variant="secondary">
                   {ticket.category.charAt(0).toUpperCase() + ticket.category.slice(1).replace('-', ' ')}
+                </Badge>
+                <Badge variant="outline">
+                  Department: {departments.find(d => d.id === currentDepartment)?.name || 'Unassigned'}
                 </Badge>
                 {ticket.source && (
                   <Badge variant="outline">
@@ -486,6 +517,28 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange }: Enhance
               </CardContent>
             </Card>
           )}
+
+          {/* Department Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Department</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Select value={currentDepartment || 'unassigned'} onValueChange={handleDepartmentChange}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">No Department</SelectItem>
+                  {departments.map(dept => (
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
 
           {/* Timeline */}
           <Card>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useDepartments } from "@/hooks/useDepartments";
+import { Badge } from "@/components/ui/badge";
 
 interface TicketListProps {
   tickets: Ticket[];
@@ -30,10 +32,16 @@ export function TicketList({
   onToggleSelection,
   onBulkDelete 
 }: TicketListProps) {
+  const { toast } = useToast();
+  const { departments, fetchDepartments } = useDepartments();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'all'>('all');
   const [deletingTicket, setDeletingTicket] = useState<string | null>(null);
-  const { toast } = useToast();
+
+  // Load departments on mount
+  useEffect(() => {
+    fetchDepartments();
+  }, [fetchDepartments]);
 
   const handleDeleteTicket = async (ticketId: string) => {
     setDeletingTicket(ticketId);
@@ -159,8 +167,15 @@ export function TicketList({
                         <h3 className="font-medium text-foreground truncate">
                           {ticket.title}
                         </h3>
-                        <StatusBadge status={ticket.status} />
-                        <PriorityBadge priority={ticket.priority} />
+                        <div className="flex items-center gap-2">
+                          <StatusBadge status={ticket.status} />
+                          <PriorityBadge priority={ticket.priority} />
+                          {(ticket as any).department_id && (
+                            <Badge variant="outline" className="text-xs">
+                              {departments.find(d => d.id === (ticket as any).department_id)?.name || 'Department'}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                       
                       <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">

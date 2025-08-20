@@ -347,6 +347,38 @@ const loadTickets = async () => {
     }
   };
 
+  const handleDepartmentChange = async (ticketId: string, departmentId: string | null) => {
+    try {
+      const { error } = await supabase
+        .from('tickets')
+        .update({ department_id: departmentId })
+        .eq('id', ticketId);
+
+      if (error) throw error;
+
+      // Update local state
+      setTickets(prevTickets => 
+        prevTickets.map(ticket => 
+          ticket.id === ticketId 
+            ? { ...ticket, department_id: departmentId }
+            : ticket
+        )
+      );
+
+      toast({
+        title: "Success",
+        description: "Ticket department updated successfully"
+      });
+    } catch (error: any) {
+      console.error('Error updating ticket department:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update ticket department",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Handle bulk deletion
   const handleBulkDelete = async () => {
     if (selectedTicketIds.size === 0) return;
@@ -743,6 +775,7 @@ const loadTickets = async () => {
           ticket={selectedTicket}
           onBack={() => setCurrentView('tickets')}
           onStatusChange={handleStatusChange}
+          onDepartmentChange={handleDepartmentChange}
         />
       )}
 

@@ -13,12 +13,14 @@ interface TicketDetailProps {
   ticket: Ticket;
   onBack: () => void;
   onStatusChange: (ticketId: string, status: TicketStatus) => void;
+  onDepartmentChange?: (ticketId: string, departmentId: string | null) => void;
 }
 
-export function TicketDetail({ ticket, onBack, onStatusChange }: TicketDetailProps) {
+export function TicketDetail({ ticket, onBack, onStatusChange, onDepartmentChange }: TicketDetailProps) {
   const { toast } = useToast();
   const { departments, fetchDepartments } = useDepartments();
   const [currentStatus, setCurrentStatus] = useState<TicketStatus>(ticket.status);
+  const [currentDepartment, setCurrentDepartment] = useState<string | null>((ticket as any).department_id || null);
 
   // Load departments on mount
   useEffect(() => {
@@ -31,6 +33,22 @@ export function TicketDetail({ ticket, onBack, onStatusChange }: TicketDetailPro
     toast({
       title: "Status Updated",
       description: `Ticket status changed to ${newStatus.replace('-', ' ')}.`
+    });
+  };
+
+  const handleDepartmentChange = async (newDepartmentId: string) => {
+    const departmentId = newDepartmentId === 'unassigned' ? null : newDepartmentId;
+    setCurrentDepartment(departmentId);
+    
+    if (onDepartmentChange) {
+      onDepartmentChange(ticket.id, departmentId);
+    }
+    
+    toast({
+      title: "Department Updated",
+      description: departmentId 
+        ? `Ticket transferred to ${departments.find(d => d.id === departmentId)?.name}`
+        : "Ticket removed from department"
     });
   };
 
@@ -67,22 +85,39 @@ export function TicketDetail({ ticket, onBack, onStatusChange }: TicketDetailPro
                   {ticket.category.replace('-', ' ')}
                 </Badge>
                 <Badge variant="secondary" className="capitalize">
-                  {departments.find(d => d.id === (ticket as any).department_id)?.name || 'No Department'}
+                  {departments.find(d => d.id === currentDepartment)?.name || 'No Department'}
                 </Badge>
               </div>
             </div>
-            <div className="shrink-0">
-              <Select value={currentStatus} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
+            <div className="shrink-0 flex gap-2">
+              <div className="min-w-[140px]">
+                <Select value={currentDepartment || 'unassigned'} onValueChange={handleDepartmentChange}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">No Department</SelectItem>
+                    {departments.map(dept => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="min-w-[140px]">
+                <Select value={currentStatus} onValueChange={handleStatusChange}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
                   <SelectItem value="open">Open</SelectItem>
                   <SelectItem value="in-progress">In Progress</SelectItem>
                   <SelectItem value="resolved">Resolved</SelectItem>
                   <SelectItem value="closed">Closed</SelectItem>
-                </SelectContent>
-              </Select>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </CardHeader>
