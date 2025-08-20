@@ -190,6 +190,29 @@ export function TicketDetail({ ticket, onBack, onStatusChange, onDepartmentChang
             </div>
           )}
 
+          {/* CC Recipients */}
+          {ticket.cc_recipients && ticket.cc_recipients.length > 0 && (
+            <div className="border-t pt-6">
+              <div className="flex items-center gap-2 mb-3">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                <h3 className="font-semibold">CC Recipients</h3>
+              </div>
+              <div className="space-y-2">
+                {ticket.cc_recipients.map((recipient, index) => (
+                  <div key={index} className="flex items-center gap-3 text-sm">
+                    <div className="w-6 h-6 bg-secondary text-secondary-foreground rounded-full flex items-center justify-center text-xs font-medium">
+                      {recipient.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-medium">{recipient.name}</p>
+                      <p className="text-muted-foreground">{recipient.email}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="border-t pt-6">
             <div className="flex items-center gap-2 mb-3">
               <User className="h-4 w-4 text-muted-foreground" />

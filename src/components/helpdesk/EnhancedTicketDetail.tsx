@@ -489,7 +489,34 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
             currentAssigneeId={ticket.assignee?.id}
             currentAssigneeName={ticket.assignee?.name}
             onAssignmentChange={handleAssignmentChange}
-          />
+            />
+
+          {/* CC Recipients */}
+          {ticket.cc_recipients && ticket.cc_recipients.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="h-5 w-5" />
+                  CC Recipients
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {ticket.cc_recipients.map((recipient, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-secondary text-secondary-foreground rounded-full flex items-center justify-center text-sm font-medium">
+                        {recipient.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-medium">{recipient.name}</p>
+                        <p className="text-sm text-muted-foreground">{recipient.email}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Assignment */}
           {ticket.assignee && (

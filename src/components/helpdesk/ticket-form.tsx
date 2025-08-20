@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useContacts } from "@/hooks/useContacts";
 import { useDepartments } from "@/hooks/useDepartments";
 import { Contact } from "@/types/contact";
+import { ContactSelector } from "@/components/contacts/ContactSelector";
 
 interface TicketFormData {
   title: string;
@@ -19,6 +20,11 @@ interface TicketFormData {
   customerName: string;
   customerEmail: string;
   departmentId?: string;
+  cc_recipients?: Array<{
+    id: string;
+    email: string;
+    name: string;
+  }>;
 }
 
 interface TicketFormProps {
@@ -47,6 +53,7 @@ export function TicketForm({ onSubmit, onCancel, defaultPhone, defaultName, defa
 
   // Add phone field to show caller info
   const [phoneNumber, setPhoneNumber] = useState(defaultPhone || '');
+  const [ccContacts, setCcContacts] = useState<Array<{ id: string; email: string; name: string; }>>([]);
 
   // Load departments on mount
   useEffect(() => {
@@ -111,7 +118,7 @@ export function TicketForm({ onSubmit, onCancel, defaultPhone, defaultName, defa
       return;
     }
 
-    onSubmit(formData);
+    onSubmit({ ...formData, cc_recipients: ccContacts });
     
     // Reset form
     setFormData({
@@ -267,6 +274,15 @@ export function TicketForm({ onSubmit, onCancel, defaultPhone, defaultName, defa
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="ccContacts">CC Recipients</Label>
+            <ContactSelector 
+              selectedContacts={ccContacts}
+              onContactsChange={setCcContacts}
+              placeholder="Add CC recipients..."
+            />
           </div>
 
           <div className="flex gap-3 pt-4">

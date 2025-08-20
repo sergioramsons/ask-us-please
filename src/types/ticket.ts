@@ -97,6 +97,11 @@ export interface Ticket {
   
   // Custom fields
   customFields: Record<string, any>;
+  cc_recipients?: Array<{
+    id: string;
+    email: string;
+    name: string;
+  }>;
 }
 
 export interface TicketStats {

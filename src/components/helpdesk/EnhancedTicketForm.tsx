@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
+import { ContactSelector } from '@/components/contacts/ContactSelector';
 import { TicketSeverity, TicketSource, TicketCategory, TicketPriority, TicketCustomer } from '@/types/ticket';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar as CalendarIcon, Plus, X, Paperclip, Clock, AlertTriangle } from 'lucide-react';
@@ -64,6 +65,7 @@ export function EnhancedTicketForm({ onSubmit, onCancel }: EnhancedTicketFormPro
 
   const [newTag, setNewTag] = useState('');
   const [dueDate, setDueDate] = useState<Date | undefined>();
+  const [ccContacts, setCcContacts] = useState<Array<{ id: string; email: string; name: string; }>>([]);
 
   // Load departments on mount
   useEffect(() => {
@@ -163,7 +165,16 @@ export function EnhancedTicketForm({ onSubmit, onCancel }: EnhancedTicketFormPro
                   placeholder="Brief description of the issue"
                   required
                 />
-              </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="ccContacts">CC Recipients</Label>
+            <ContactSelector 
+              selectedContacts={ccContacts}
+              onContactsChange={setCcContacts}
+              placeholder="Add CC recipients..."
+            />
+          </div>
 
               <div className="md:col-span-2">
                 <Label htmlFor="description">Description *</Label>

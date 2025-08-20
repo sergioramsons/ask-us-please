@@ -1,7 +1,8 @@
 export interface Contact {
   id: string;
-  first_name: string;
-  last_name: string;
+  name: string;
+  first_name?: string;
+  last_name?: string;
   email: string;
   phone?: string;
   company?: string;
@@ -17,4 +18,6 @@ export interface Contact {
   created_at: string;
   updated_at: string;
   created_by?: string;
+  organization_id?: string;
+  company_id?: string;
 }

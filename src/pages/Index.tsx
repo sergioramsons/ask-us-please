@@ -260,7 +260,8 @@ const loadTickets = async () => {
           category: ticketData.category || 'general',
           department_id: ticketData.departmentId === 'unassigned' ? null : ticketData.departmentId || null,
           contact_id: contactId,
-          created_by: user?.id
+          created_by: user?.id,
+          cc_recipients: ticketData.cc_recipients || []
         })
         .select('*')
         .single();

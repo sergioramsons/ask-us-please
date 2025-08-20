@@ -23,6 +23,48 @@ export function useContacts() {
     }
   };
 
+  const addContact = async (contactData: Partial<Contact>) => {
+    try {
+      // Get current user profile for organization context
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile?.organization_id) throw new Error('User organization not found');
+
+      // Build the name field from first_name and last_name if provided
+      const fullName = contactData.first_name && contactData.last_name 
+        ? `${contactData.first_name} ${contactData.last_name}`.trim()
+        : contactData.first_name || contactData.last_name || contactData.email;
+
+      const { data, error } = await supabase
+        .from('contacts')
+        .insert({
+          ...contactData,
+          name: fullName,
+          organization_id: profile.organization_id,
+          created_by: user.id,
+          status: 'active'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      // Reload contacts to include the new one
+      await loadContacts();
+      return data;
+    } catch (error) {
+      console.error('Error adding contact:', error);
+      throw error;
+    }
+  };
+
   const getContactByEmail = (email: string): Contact | undefined => {
     return contacts.find(contact => contact.email.toLowerCase() === email.toLowerCase());
   };
@@ -32,8 +74,8 @@ export function useContacts() {
     
     const term = searchTerm.toLowerCase();
     return contacts.filter(contact => 
-      contact.first_name.toLowerCase().includes(term) ||
-      contact.last_name.toLowerCase().includes(term) ||
+      contact.first_name?.toLowerCase().includes(term) ||
+      contact.last_name?.toLowerCase().includes(term) ||
       contact.email.toLowerCase().includes(term) ||
       contact.company?.toLowerCase().includes(term) || false
     );
@@ -47,6 +89,7 @@ export function useContacts() {
     contacts,
     loading,
     loadContacts,
+    addContact,
     getContactByEmail,
     searchContacts
   };

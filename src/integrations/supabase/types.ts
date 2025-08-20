@@ -1135,6 +1135,7 @@ export type Database = {
         Row: {
           assigned_to: string | null
           category: string | null
+          cc_recipients: Json | null
           contact_id: string | null
           created_at: string
           created_by: string | null
@@ -1153,6 +1154,7 @@ export type Database = {
         Insert: {
           assigned_to?: string | null
           category?: string | null
+          cc_recipients?: Json | null
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -1171,6 +1173,7 @@ export type Database = {
         Update: {
           assigned_to?: string | null
           category?: string | null
+          cc_recipients?: Json | null
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
