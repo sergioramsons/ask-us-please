@@ -304,7 +304,8 @@ const loadTickets = async () => {
           newTicket.subject,
           newTicket.priority,
           ticketData.customerEmail,
-          ticketData.customerName
+          ticketData.customerName,
+          ticketData.cc_recipients // Pass CC recipients to notification service
         );
       }
 

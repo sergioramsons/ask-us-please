@@ -51,9 +51,11 @@ export class NotificationService {
     ticketTitle: string,
     ticketPriority: string,
     recipientEmail: string,
-    recipientName?: string
+    recipientName?: string,
+    ccRecipients?: Array<{ email: string; name: string; }>
   ): Promise<boolean> {
-    return this.sendNotification({
+    // Send notification to main recipient
+    const mainResult = await this.sendNotification({
       type: 'ticket_created',
       ticketId,
       ticketTitle,
@@ -62,6 +64,27 @@ export class NotificationService {
       recipientEmail,
       recipientName
     });
+
+    // Send notifications to CC recipients
+    if (ccRecipients && ccRecipients.length > 0) {
+      const ccResults = await Promise.all(
+        ccRecipients.map(cc => 
+          this.sendNotification({
+            type: 'ticket_created',
+            ticketId,
+            ticketTitle,
+            ticketPriority,
+            ticketStatus: 'open',
+            recipientEmail: cc.email,
+            recipientName: cc.name
+          })
+        )
+      );
+      
+      console.log(`Sent notifications to ${ccResults.filter(r => r).length}/${ccRecipients.length} CC recipients`);
+    }
+
+    return mainResult;
   }
 
   static async notifyTicketUpdated(
