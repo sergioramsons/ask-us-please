@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useContacts } from "@/hooks/useContacts";
 import { useDepartments } from "@/hooks/useDepartments";
 import { Contact } from "@/types/contact";
-import { ContactSelector } from "@/components/contacts/ContactSelector";
+import { CCRecipientSelector } from "@/components/contacts/CCRecipientSelector";
 
 interface TicketFormData {
   title: string;
@@ -24,6 +24,7 @@ interface TicketFormData {
     id: string;
     email: string;
     name: string;
+    isContact?: boolean;
   }>;
 }
 
@@ -53,7 +54,7 @@ export function TicketForm({ onSubmit, onCancel, defaultPhone, defaultName, defa
 
   // Add phone field to show caller info
   const [phoneNumber, setPhoneNumber] = useState(defaultPhone || '');
-  const [ccContacts, setCcContacts] = useState<Array<{ id: string; email: string; name: string; }>>([]);
+  const [ccContacts, setCcContacts] = useState<Array<{ id: string; email: string; name: string; isContact?: boolean; }>>([]);
 
   // Load departments on mount
   useEffect(() => {
@@ -278,9 +279,9 @@ export function TicketForm({ onSubmit, onCancel, defaultPhone, defaultName, defa
 
           <div className="space-y-2">
             <Label htmlFor="ccContacts">CC Recipients</Label>
-            <ContactSelector 
-              selectedContacts={ccContacts}
-              onContactsChange={setCcContacts}
+            <CCRecipientSelector 
+              selectedRecipients={ccContacts}
+              onRecipientsChange={setCcContacts}
               placeholder="Add CC recipients..."
             />
           </div>

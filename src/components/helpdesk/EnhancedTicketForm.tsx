@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
-import { ContactSelector } from '@/components/contacts/ContactSelector';
+import { CCRecipientSelector } from '@/components/contacts/CCRecipientSelector';
 import { TicketSeverity, TicketSource, TicketCategory, TicketPriority, TicketCustomer } from '@/types/ticket';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar as CalendarIcon, Plus, X, Paperclip, Clock, AlertTriangle } from 'lucide-react';
@@ -65,7 +65,7 @@ export function EnhancedTicketForm({ onSubmit, onCancel }: EnhancedTicketFormPro
 
   const [newTag, setNewTag] = useState('');
   const [dueDate, setDueDate] = useState<Date | undefined>();
-  const [ccContacts, setCcContacts] = useState<Array<{ id: string; email: string; name: string; }>>([]);
+  const [ccContacts, setCcContacts] = useState<Array<{ id: string; email: string; name: string; isContact?: boolean; }>>([]);
 
   // Load departments on mount
   useEffect(() => {
@@ -169,9 +169,9 @@ export function EnhancedTicketForm({ onSubmit, onCancel }: EnhancedTicketFormPro
 
           <div className="space-y-2">
             <Label htmlFor="ccContacts">CC Recipients</Label>
-            <ContactSelector 
-              selectedContacts={ccContacts}
-              onContactsChange={setCcContacts}
+            <CCRecipientSelector 
+              selectedRecipients={ccContacts}
+              onRecipientsChange={setCcContacts}
               placeholder="Add CC recipients..."
             />
           </div>

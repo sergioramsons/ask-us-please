@@ -101,6 +101,7 @@ export interface Ticket {
     id: string;
     email: string;
     name: string;
+    isContact?: boolean;
   }>;
 }
 
