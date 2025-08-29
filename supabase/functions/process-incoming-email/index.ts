@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0';
-import { parseMultipartEmail } from './_shared/email-parser.ts';
+import { parseMultipartEmail } from '../_shared/email-parser.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -138,12 +138,13 @@ const handler = async (req: Request): Promise<Response> => {
       // This is a customer response to an existing ticket
       console.log('Adding comment to existing ticket:', existingTicket.ticket_number);
       
-      // Create a comment on the existing ticket
+      // Parse and create a comment on the existing ticket
+      const parsed = parseMultipartEmail(emailData.text || emailData.html || '');
       const { error: commentError } = await supabase
         .from('ticket_comments')
         .insert({
           ticket_id: existingTicket.id,
-          content: emailData.text || emailData.html || 'Email content not available',
+          content: parsed.text || 'Email content not available',
           email_id: emailRecord.id,
           is_internal: false,
           contact_id: existingTicket.contact_id,

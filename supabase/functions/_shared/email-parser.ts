@@ -5,125 +5,64 @@ export interface ParsedEmailContent {
   html: string;
 }
 
-export function parseMultipartEmail(body: string): ParsedEmailContent {
-  if (!body || !body.includes('multipart')) {
-    // Not a multipart email, return as-is
-    return {
-      text: body || '',
-      html: body || ''
-    };
-  }
+function normalizeNewlines(s: string) {
+  return (s || '').replace(/\r\n/g, '\n');
+}
 
-  let textContent = '';
-  let htmlContent = '';
+function escapeRegex(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
-  try {
-    // Find boundary - handle different boundary formats
-    const boundaryMatch = body.match(/boundary[=:][\s]*["']?([^"'\s;]+)/i);
-    if (!boundaryMatch) {
-      return { text: body, html: body };
-    }
+function findBoundaryMarker(body: string): string | null {
+  // Try header-style boundary param first
+  const headerBoundary = body.match(/boundary[=:][\s]*["']?([^"'\s;]+)/i)?.[1];
+  if (headerBoundary) return `--${headerBoundary.replace(/^["']|["']$/g, '')}`;
 
-    let boundary = boundaryMatch[1].replace(/^["']|["']$/g, ''); // Remove quotes if present
-    
-    // Split by boundary - try different boundary patterns
-    let parts = [];
-    
-    // Try with -- prefix (standard MIME)
-    if (body.includes(`--${boundary}`)) {
-      parts = body.split(`--${boundary}`);
-    }
-    // Try with the exact boundary as found in content
-    else if (body.includes(boundary)) {
-      parts = body.split(boundary);
-    }
-    
-    for (const part of parts) {
-      if (!part.trim() || part.includes('--') || part.length < 10) continue;
-      
-      // Parse headers and content
-      const headerEndIndex = part.indexOf('\n\n');
-      if (headerEndIndex === -1) continue;
-      
-      const headers = part.substring(0, headerEndIndex);
-      let content = part.substring(headerEndIndex + 2).trim();
-      
-      // Check content type
-      const contentTypeMatch = headers.match(/Content-Type:\s*([^;\n]+)/i);
-      const transferEncodingMatch = headers.match(/Content-Transfer-Encoding:\s*([^\n]+)/i);
-      
-      if (!contentTypeMatch) continue;
-      
-      const contentType = contentTypeMatch[1].trim().toLowerCase();
-      const transferEncoding = transferEncodingMatch?.[1]?.trim().toLowerCase() || '7bit';
-      
-      // Decode content based on transfer encoding
-      content = decodeContent(content, transferEncoding);
-      
-      // Store based on content type
-      if (contentType.includes('text/plain')) {
-        textContent = content;
-      } else if (contentType.includes('text/html')) {
-        htmlContent = content;
-      }
-    }
-    
-    // If we have HTML but no text, try to extract text from HTML
-    if (htmlContent && !textContent) {
-      textContent = stripHtml(htmlContent);
-    }
-    
-    // If we have text but no HTML, use text for both
-    if (textContent && !htmlContent) {
-      htmlContent = textContent.replace(/\n/g, '<br>');
-    }
-    
-    return {
-      text: textContent || body,
-      html: htmlContent || body
-    };
-    
-  } catch (error) {
-    console.error('Error parsing multipart email:', error);
-    return { text: body, html: body };
-  }
+  // Fallback: detect first boundary line in body like ------=_NextPart_...
+  const markerMatch = body.match(/^(--{2,}[^\s]+)$/m);
+  return markerMatch ? markerMatch[1] : null;
+}
+
+function findHeaderEndIndex(part: string): number {
+  // Look for first blank line separating headers from body
+  const idx = part.indexOf('\n\n');
+  if (idx !== -1) return idx;
+  const match = /\n\s*\n/.exec(part);
+  return match ? match.index + match[0].length - 2 : -1;
 }
 
 function decodeContent(content: string, encoding: string): string {
   try {
-    switch (encoding) {
-      case 'quoted-printable':
-        return decodeQuotedPrintable(content);
-      case 'base64':
-        return atob(content.replace(/\s/g, ''));
-      case '7bit':
-      case '8bit':
-      case 'binary':
-      default:
-        return content;
+    const enc = (encoding || '').toLowerCase();
+    if (enc.includes('quoted-printable')) {
+      return decodeQuotedPrintable(content);
     }
-  } catch (error) {
-    console.error('Error decoding content:', error);
+    if (enc.includes('base64')) {
+      const cleaned = content.replace(/\s+/g, '');
+      try {
+        return atob(cleaned);
+      } catch {
+        return content; // fallback
+      }
+    }
+    return content;
+  } catch {
     return content;
   }
 }
 
 function decodeQuotedPrintable(input: string): string {
   return input
-    .replace(/=\r?\n/g, '') // soft line breaks
-    .replace(/=([0-9A-F]{2})/gi, (match, hex) => {
-      return String.fromCharCode(parseInt(hex, 16));
-    })
-    .replace(/=3D/g, '=')
-    .replace(/=20/g, ' ')
-    .replace(/=22/g, '"');
+    .replace(/=\n/g, '') // soft line breaks (already normalized to \n)
+    .replace(/=([0-9A-F]{2})/gi, (_m, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/=3D/g, '=');
 }
 
 function stripHtml(html: string): string {
   return html
     .replace(/<script[^>]*>.*?<\/script>/gis, '')
     .replace(/<style[^>]*>.*?<\/style>/gis, '')
-    .replace(/<[^>]*>/g, '')
+    .replace(/<[^>]+>/g, '')
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
@@ -132,4 +71,75 @@ function stripHtml(html: string): string {
     .replace(/&#39;/g, "'")
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+export function parseMultipartEmail(body: string): ParsedEmailContent {
+  const normalized = normalizeNewlines(body || '');
+
+  // If it doesn't look like multipart, return as-is
+  if (!/multipart|------=|^--/i.test(normalized)) {
+    return { text: normalized, html: normalized };
+  }
+
+  let textContent = '';
+  let htmlContent = '';
+
+  try {
+    let marker = findBoundaryMarker(normalized);
+
+    if (!marker) {
+      // Fallback simple extraction: remove MIME boilerplate and headers
+      const simple = normalized
+        .replace(/^This is a multipart message in MIME format\.[\s\S]*?\n/gim, '')
+        .split('\n')
+        .filter(line => !/^Content-/.test(line) && !/^--/.test(line))
+        .join('\n')
+        .trim();
+      const htmlGuess = normalized.match(/<html[\s\S]*?<\/html>/i)?.[0] || '';
+      return {
+        text: simple || (htmlGuess ? stripHtml(decodeQuotedPrintable(htmlGuess)) : normalized),
+        html: htmlGuess || simple.replace(/\n/g, '<br>')
+      };
+    }
+
+    // Split by detected boundary marker
+    const parts = normalized.split(new RegExp(`\n${escapeRegex(marker)}(?=\n|--)`));
+
+    for (const raw of parts) {
+      const part = raw.trim();
+      if (!part || part === '--' || part.endsWith(`${marker}--`)) continue;
+
+      const headerEndIndex = findHeaderEndIndex(part);
+      if (headerEndIndex === -1) continue;
+
+      const headers = part.substring(0, headerEndIndex);
+      let content = part.substring(headerEndIndex).trim();
+
+      const contentType = headers.match(/content-type:\s*([^;\n]+)/i)?.[1]?.trim().toLowerCase() || '';
+      const transferEncoding = headers.match(/content-transfer-encoding:\s*([^\n]+)/i)?.[1]?.trim().toLowerCase() || '7bit';
+
+      content = decodeContent(content, transferEncoding);
+
+      if (contentType.includes('text/plain')) {
+        textContent = content.replace(/^This is a multipart message in MIME format\.?/i, '').trim();
+      } else if (contentType.includes('text/html')) {
+        htmlContent = content;
+      }
+    }
+
+    if (htmlContent && !textContent) {
+      textContent = stripHtml(htmlContent);
+    }
+    if (textContent && !htmlContent) {
+      htmlContent = textContent.replace(/\n/g, '<br>');
+    }
+
+    return {
+      text: textContent || normalized,
+      html: htmlContent || normalized,
+    };
+  } catch (err) {
+    console.error('Error parsing multipart email:', err);
+    return { text: normalized, html: normalized };
+  }
 }
