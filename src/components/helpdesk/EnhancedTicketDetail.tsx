@@ -30,6 +30,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { parseMultipartEmail } from '@/lib/emailParser';
 
 interface EnhancedTicketDetailProps {
   ticket: Ticket;
@@ -84,6 +85,7 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
       // Merge profiles with comments
       const commentsWithProfiles = comments.map(comment => ({
         ...comment,
+        content: parseMultipartEmail(comment.content || '').text,
         profile: profiles?.find(p => p.user_id === comment.user_id) || null
       }));
 

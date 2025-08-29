@@ -19,6 +19,7 @@ import { useOrganization } from "@/contexts/OrganizationContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationService } from "@/services/NotificationService";
+import { parseMultipartEmail } from "@/lib/emailParser";
 import { Plus, Trash2, Ticket as TicketIcon, Headphones, CheckSquare, Square } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -81,11 +82,12 @@ const loadTickets = async () => {
       // Transform database tickets to match the UI format
       const transformedTickets: Ticket[] = (data || []).map(ticket => {
         const contact = contactsMap.get(ticket.contact_id);
+        const parsed = parseMultipartEmail(ticket.description || '');
         return {
           id: ticket.id,
           ticketNumber: ticket.ticket_number || ticket.id,
           title: ticket.subject,
-          description: ticket.description || '',
+          description: parsed.text,
           status: ticket.status as any,
           priority: ticket.priority as any,
           severity: 'minor' as any,
