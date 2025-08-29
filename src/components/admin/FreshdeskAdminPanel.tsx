@@ -38,6 +38,7 @@ import { ChannelManager } from "@/components/channels/ChannelManager";
 import { UnifiedInbox } from "@/components/channels/UnifiedInbox";
 import { useOrganization } from "@/contexts/OrganizationContext";
 import { Ticket } from "@/types/ticket";
+import { MimeCleanupButton } from "./MimeCleanupButton";
 
 interface AdminPanelProps {
   tickets: Ticket[];
@@ -109,6 +110,21 @@ export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps
           id: "process-emails",
           title: "Process Emails",
           component: ManualEmailProcessor,
+        },
+        {
+          id: "mime-cleanup",
+          title: "MIME Content Cleanup",
+          component: () => (
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-medium">Clean MIME Content</h3>
+                <p className="text-sm text-muted-foreground">
+                  Clean up existing tickets and comments with raw MIME email content.
+                </p>
+              </div>
+              <MimeCleanupButton />
+            </div>
+          ),
         },
       ]
     },
