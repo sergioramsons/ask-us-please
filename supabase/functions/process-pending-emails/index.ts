@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0';
+import { parseMultipartEmail } from './_shared/email-parser.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -210,12 +211,16 @@ async function handleTicketReply(emailRecord: any, ticketNumber: string) {
       }
     }
 
+    // Parse email content to get clean text
+    const rawContent = emailRecord.body_text || emailRecord.body_html || '';
+    const parsedContent = parseMultipartEmail(rawContent);
+    
     // Add comment to existing ticket
     const { error: commentError } = await supabase
       .from('ticket_comments')
       .insert({
         ticket_id: existingTicket.id,
-        content: emailRecord.body_text || emailRecord.body_html || 'Email content not available',
+        content: parsedContent.text || 'Email content not available',
         email_id: emailRecord.id,
         is_internal: false,
       });
@@ -309,13 +314,17 @@ async function createTicketFromEmail(emailRecord: any) {
       priority = 'high';
     }
 
+    // Parse email content to get clean text
+    const rawContent = emailRecord.body_text || emailRecord.body_html || '';
+    const parsedContent = parseMultipartEmail(rawContent);
+    
     // Create the ticket
     const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
       .insert({
         ticket_number: ticketNumber,
         subject: emailRecord.subject,
-        description: emailRecord.body_text || emailRecord.body_html || 'Email content not available',
+        description: parsedContent.text || 'Email content not available',
         priority: priority,
         status: 'open',
         contact_id: contactId,
@@ -334,7 +343,7 @@ async function createTicketFromEmail(emailRecord: any) {
       .from('ticket_comments')
       .insert({
         ticket_id: ticket.id,
-        content: emailRecord.body_text || emailRecord.body_html || 'Email content not available',
+        content: parsedContent.text || 'Email content not available',
         email_id: emailRecord.id,
         is_internal: false,
       });
