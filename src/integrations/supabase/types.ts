@@ -1457,6 +1457,22 @@ export type Database = {
         Args: { org_id: string; ticket_id_param: string }
         Returns: string
       }
+      cleanup_mime_comment_content: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          comment_id: string
+          new_content: string
+          old_content: string
+        }[]
+      }
+      cleanup_mime_ticket_content: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          new_content: string
+          old_content: string
+          ticket_id: string
+        }[]
+      }
       decrypt_server_password: {
         Args: { encrypted_password: string }
         Returns: string
