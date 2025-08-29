@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.55.0';
+import { parseMultipartEmail } from './_shared/email-parser.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -299,13 +300,17 @@ async function createTicketFromEmail(emailRecord: any, emailData: IncomingEmailD
       priority = 'high';
     }
 
+    // Parse email content to get clean text
+    const rawContent = emailData.text || emailData.html || '';
+    const parsedContent = parseMultipartEmail(rawContent);
+    
     // Create the ticket
     const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
       .insert({
         ticket_number: ticketNumber,
         subject: emailData.subject,
-        description: emailData.text || emailData.html || 'Email content not available',
+        description: parsedContent.text || 'Email content not available',
         priority: priority,
         status: 'open',
         contact_id: contactId,
@@ -324,7 +329,7 @@ async function createTicketFromEmail(emailRecord: any, emailData: IncomingEmailD
       .from('ticket_comments')
       .insert({
         ticket_id: ticket.id,
-        content: emailData.text || emailData.html || 'Email content not available',
+        content: parsedContent.text || 'Email content not available',
         email_id: emailRecord.id,
         is_internal: false,
       });

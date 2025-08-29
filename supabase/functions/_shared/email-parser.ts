@@ -18,19 +18,28 @@ export function parseMultipartEmail(body: string): ParsedEmailContent {
   let htmlContent = '';
 
   try {
-    // Find boundary
+    // Find boundary - handle different boundary formats
     const boundaryMatch = body.match(/boundary[=:][\s]*["']?([^"'\s;]+)/i);
     if (!boundaryMatch) {
       return { text: body, html: body };
     }
 
-    const boundary = boundaryMatch[1];
+    let boundary = boundaryMatch[1].replace(/^["']|["']$/g, ''); // Remove quotes if present
     
-    // Split by boundary
-    const parts = body.split(`--${boundary}`);
+    // Split by boundary - try different boundary patterns
+    let parts = [];
+    
+    // Try with -- prefix (standard MIME)
+    if (body.includes(`--${boundary}`)) {
+      parts = body.split(`--${boundary}`);
+    }
+    // Try with the exact boundary as found in content
+    else if (body.includes(boundary)) {
+      parts = body.split(boundary);
+    }
     
     for (const part of parts) {
-      if (!part.trim() || part.includes('--')) continue;
+      if (!part.trim() || part.includes('--') || part.length < 10) continue;
       
       // Parse headers and content
       const headerEndIndex = part.indexOf('\n\n');
