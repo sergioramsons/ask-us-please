@@ -1098,6 +1098,7 @@ export type Database = {
           contact_id: string | null
           content: string
           created_at: string
+          email_id: string | null
           id: string
           is_internal: boolean | null
           ticket_id: string
@@ -1108,6 +1109,7 @@ export type Database = {
           contact_id?: string | null
           content: string
           created_at?: string
+          email_id?: string | null
           id?: string
           is_internal?: boolean | null
           ticket_id: string
@@ -1118,6 +1120,7 @@ export type Database = {
           contact_id?: string | null
           content?: string
           created_at?: string
+          email_id?: string | null
           id?: string
           is_internal?: boolean | null
           ticket_id?: string
@@ -1130,6 +1133,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_comments_email_id_fkey"
+            columns: ["email_id"]
+            isOneToOne: false
+            referencedRelation: "incoming_emails"
             referencedColumns: ["id"]
           },
           {
