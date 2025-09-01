@@ -49,6 +49,8 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
   // Load replies from database
   const loadReplies = async () => {
     try {
+      console.log('Loading replies for ticket:', ticket.id);
+      
       // First get replies
       const { data: replies, error } = await supabase
         .from('ticket_comments')
@@ -56,26 +58,38 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
         .eq('ticket_id', ticket.id)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      console.log('Replies query result:', { replies, error });
+
+      if (error) {
+        console.error('Error fetching replies:', error);
+        throw error;
+      }
 
       if (!replies || replies.length === 0) {
+        console.log('No replies found for ticket');
         setReplies([]);
         return;
       }
 
+      console.log(`Found ${replies.length} replies`);
+
       // Get unique user IDs
       const userIds = [...new Set(replies.map(reply => reply.user_id).filter(Boolean))];
+      console.log('User IDs from replies:', userIds);
       
       if (userIds.length === 0) {
+        console.log('No user IDs found, setting replies without profiles');
         setReplies(replies.map(reply => ({ ...reply, profile: null })));
         return;
       }
 
       // Get profiles for those users
-      const { data: profiles } = await supabase
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('user_id, display_name')
         .in('user_id', userIds);
+
+      console.log('Profiles query result:', { profiles, profilesError });
 
       // Merge profiles with replies
       const repliesWithProfiles = replies.map(reply => ({
@@ -84,9 +98,15 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
         profile: profiles?.find(p => p.user_id === reply.user_id) || null
       }));
 
+      console.log('Final replies with profiles:', repliesWithProfiles);
       setReplies(repliesWithProfiles);
     } catch (error) {
       console.error('Error loading replies:', error);
+      toast({
+        title: "Error Loading Replies",
+        description: "Could not load ticket replies. Please try again.",
+        variant: "destructive"
+      });
       setReplies([]);
     } finally {
       setRepliesLoading(false);
@@ -95,6 +115,7 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
 
   // Load replies on mount and subscribe to real-time updates
   useEffect(() => {
+    console.log('EnhancedTicketDetail mounted for ticket:', ticket.id);
     loadReplies();
     
     // Subscribe to real-time updates for new replies
@@ -108,14 +129,15 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
           table: 'ticket_comments',
           filter: `ticket_id=eq.${ticket.id}`
         },
-        () => {
-          console.log('New reply received, reloading...');
+        (payload) => {
+          console.log('New reply received via realtime:', payload);
           loadReplies();
         }
       )
       .subscribe();
 
     return () => {
+      console.log('Cleaning up realtime subscription for ticket:', ticket.id);
       supabase.removeChannel(channel);
     };
   }, [ticket.id]);
