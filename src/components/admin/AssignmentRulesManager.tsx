@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { useGroups } from '@/hooks/useGroups';
 import { 
   Settings, 
   Plus, 
@@ -18,14 +19,17 @@ import {
   RotateCcw, 
   Users, 
   Target,
-  Loader2
+  Loader2,
+  UserCheck
 } from 'lucide-react';
 
 interface AssignmentRule {
   id: string;
-  rule_type: 'round_robin' | 'department' | 'least_active' | 'manual';
+  rule_type: 'round_robin' | 'department' | 'group' | 'least_active' | 'manual';
   department_id?: string;
   department_name?: string;
+  group_id?: string;
+  group_name?: string;
   is_active: boolean;
   priority_order: number;
   created_at: string;
@@ -36,22 +40,30 @@ interface Department {
   name: string;
 }
 
+interface Group {
+  id: string;
+  name: string;
+}
+
 export function AssignmentRulesManager() {
   const { toast } = useToast();
   const { organization } = useOrganization();
+  const { groups } = useGroups();
   const [rules, setRules] = useState<AssignmentRule[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<AssignmentRule | null>(null);
   const [formData, setFormData] = useState<{
-    rule_type: 'round_robin' | 'department' | 'least_active' | 'manual';
+    rule_type: 'round_robin' | 'department' | 'group' | 'least_active' | 'manual';
     department_id: string;
+    group_id: string;
     is_active: boolean;
     priority_order: number;
   }>({
     rule_type: 'round_robin',
     department_id: '',
+    group_id: '',
     is_active: true,
     priority_order: 1
   });
@@ -67,23 +79,26 @@ export function AssignmentRulesManager() {
         .from('assignment_rules')
         .select(`
           *,
-          department:departments(name)
+          department:departments(name),
+          group:groups(name)
         `)
         .order('priority_order');
 
       if (error) throw error;
 
-      const rulesWithDepartment: AssignmentRule[] = (data || []).map(rule => ({
+      const rulesWithRelations: AssignmentRule[] = (data || []).map(rule => ({
         id: rule.id,
         rule_type: rule.rule_type as AssignmentRule['rule_type'],
         department_id: rule.department_id || undefined,
         department_name: rule.department?.name,
+        group_id: rule.group_id || undefined,
+        group_name: rule.group?.name,
         is_active: rule.is_active || false,
         priority_order: rule.priority_order || 1,
         created_at: rule.created_at
       }));
 
-      setRules(rulesWithDepartment);
+      setRules(rulesWithRelations);
     } catch (error: any) {
       console.error('Error loading assignment rules:', error);
       toast({
@@ -114,7 +129,8 @@ export function AssignmentRulesManager() {
     try {
       const ruleData = {
         ...formData,
-        department_id: formData.department_id === 'all' ? null : formData.department_id || null
+        department_id: formData.department_id === 'all' ? null : formData.department_id || null,
+        group_id: formData.group_id === 'all' ? null : formData.group_id || null
       };
 
       if (editingRule) {
@@ -150,6 +166,7 @@ export function AssignmentRulesManager() {
       setFormData({
         rule_type: 'round_robin',
         department_id: '',
+        group_id: '',
         is_active: true,
         priority_order: 1
       });
@@ -219,6 +236,7 @@ export function AssignmentRulesManager() {
     setFormData({
       rule_type: rule.rule_type,
       department_id: rule.department_id || '',
+      group_id: rule.group_id || '',
       is_active: rule.is_active,
       priority_order: rule.priority_order
     });
@@ -229,6 +247,7 @@ export function AssignmentRulesManager() {
     switch (type) {
       case 'round_robin': return 'Round Robin';
       case 'department': return 'Department Based';
+      case 'group': return 'Group Based';
       case 'least_active': return 'Least Active';
       case 'manual': return 'Manual Only';
       default: return type;
@@ -302,6 +321,12 @@ export function AssignmentRulesManager() {
                           Department Based - Assign by department
                         </div>
                       </SelectItem>
+                      <SelectItem value="group">
+                        <div className="flex items-center gap-2">
+                          <UserCheck className="h-4 w-4" />
+                          Group Based - Assign by group
+                        </div>
+                      </SelectItem>
                       <SelectItem value="manual">
                         Manual Only - No automatic assignment
                       </SelectItem>
@@ -324,6 +349,28 @@ export function AssignmentRulesManager() {
                         {departments.map(dept => (
                           <SelectItem key={dept.id} value={dept.id}>
                             {dept.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {formData.rule_type === 'group' && (
+                  <div className="space-y-2">
+                    <Label>Target Group</Label>
+                    <Select 
+                      value={formData.group_id} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, group_id: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select group" />
+                      </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="all">All Groups</SelectItem>
+                        {groups.map(group => (
+                          <SelectItem key={group.id} value={group.id}>
+                            {group.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -389,6 +436,7 @@ export function AssignmentRulesManager() {
                     {rule.rule_type === 'round_robin' && <RotateCcw className="h-4 w-4" />}
                     {rule.rule_type === 'least_active' && <Target className="h-4 w-4" />}
                     {rule.rule_type === 'department' && <Users className="h-4 w-4" />}
+                    {rule.rule_type === 'group' && <UserCheck className="h-4 w-4" />}
                     {rule.rule_type === 'manual' && <Settings className="h-4 w-4" />}
                     
                     <div>
@@ -396,7 +444,9 @@ export function AssignmentRulesManager() {
                       <div className="text-sm text-muted-foreground">
                         {rule.department_name && `Department: ${rule.department_name}`}
                         {!rule.department_name && rule.rule_type === 'department' && 'All Departments'}
-                        {rule.rule_type !== 'department' && `Priority: ${rule.priority_order}`}
+                        {rule.group_name && `Group: ${rule.group_name}`}
+                        {!rule.group_name && rule.rule_type === 'group' && 'All Groups'}
+                        {rule.rule_type !== 'department' && rule.rule_type !== 'group' && `Priority: ${rule.priority_order}`}
                       </div>
                     </div>
                   </div>
