@@ -344,9 +344,40 @@ async function createTicketFromEmail(emailRecord: any, emailData: IncomingEmailD
 
 async function findExistingTicket(emailData: IncomingEmailData) {
   try {
-    // Extract ticket number from subject line
-    // Common patterns: "Re: TICKET-00001", "[TICKET-00001]", "#TICKET-00001"
-    const ticketNumberRegex = /(?:re:\s*)?(?:\[|\#)?(TICKET-\d+)/i;
+    console.log('Looking for existing ticket for email from:', emailData.from.email);
+    
+    // Method 1: Check email headers for References and In-Reply-To
+    if (emailData.headers) {
+      const references = emailData.headers['References'] || emailData.headers['references'];
+      const inReplyTo = emailData.headers['In-Reply-To'] || emailData.headers['in-reply-to'];
+      
+      if (references || inReplyTo) {
+        console.log('Found email threading headers, checking for existing tickets');
+        
+        // Look for tickets that have been associated with these message IDs
+        const messageIds = [references, inReplyTo].filter(Boolean).join(' ').split(/\s+/);
+        
+        for (const messageId of messageIds) {
+          if (messageId.trim()) {
+            const { data: existingEmail } = await supabase
+              .from('incoming_emails')
+              .select('ticket_id, tickets(*)')
+              .eq('message_id', messageId.replace(/[<>]/g, ''))
+              .not('ticket_id', 'is', null)
+              .single();
+            
+            if (existingEmail?.ticket_id) {
+              console.log('Found ticket via email threading:', existingEmail.tickets?.ticket_number);
+              return existingEmail.tickets;
+            }
+          }
+        }
+      }
+    }
+    
+    // Method 2: Extract ticket number from subject line (improved patterns)
+    // Patterns: "Re: TICKET-00001", "[TICKET-00001]", "#TICKET-00001", "RE: [TICKET-00001]", etc.
+    const ticketNumberRegex = /(?:re:|fwd?:)?\s*(?:\[|\#)?(TICKET-\d+)(?:\])?/i;
     const match = emailData.subject.match(ticketNumberRegex);
     
     if (match) {
@@ -360,55 +391,87 @@ async function findExistingTicket(emailData: IncomingEmailData) {
         .eq('ticket_number', ticketNumber)
         .single();
       
-      if (error) {
-        console.log('No ticket found with number:', ticketNumber);
-        return null;
-      }
-      
-      // Verify the email is from the same contact or related
-      const { data: contact } = await supabase
-        .from('contacts')
-        .select('email')
-        .eq('id', ticket.contact_id)
-        .single();
-      
-      if (contact && contact.email.toLowerCase() === emailData.from.email.toLowerCase()) {
-        console.log('Email from ticket contact, this is a customer response');
-        return ticket;
-      } else {
-        console.log('Email not from original contact, treating as new inquiry');
-        return null;
-      }
-    }
-    
-    // Alternative: look for tickets from the same contact with similar subject
-    const { data: recentTickets } = await supabase
-      .from('tickets')
-      .select('id, ticket_number, contact_id, subject, created_at')
-      .eq('contact_id', (await getContactByEmail(emailData.from.email))?.id)
-      .eq('status', 'open')
-      .order('created_at', { ascending: false })
-      .limit(3);
-    
-    if (recentTickets && recentTickets.length > 0) {
-      // Check if subject is similar to any recent ticket
-      const cleanSubject = (subject: string) => 
-        subject.toLowerCase()
-          .replace(/^(re:|fwd?:)\s*/i, '')
-          .replace(/\[.*?\]/g, '')
-          .trim();
-      
-      const incomingSubject = cleanSubject(emailData.subject);
-      
-      for (const ticket of recentTickets) {
-        const ticketSubject = cleanSubject(ticket.subject);
-        if (incomingSubject === ticketSubject) {
-          console.log('Found matching ticket by subject:', ticket.ticket_number);
+      if (!error && ticket) {
+        // Verify the email is from the same contact or related
+        const { data: contact } = await supabase
+          .from('contacts')
+          .select('email')
+          .eq('id', ticket.contact_id)
+          .single();
+        
+        if (contact && contact.email.toLowerCase() === emailData.from.email.toLowerCase()) {
+          console.log('Email from ticket contact, this is a customer response');
           return ticket;
+        } else {
+          console.log('Email not from original contact, treating as new inquiry');
         }
       }
     }
     
+    // Method 3: Look for recent tickets from the same contact
+    const contact = await getContactByEmail(emailData.from.email);
+    if (!contact) {
+      console.log('No contact found for email:', emailData.from.email);
+      return null;
+    }
+    
+    const { data: recentTickets } = await supabase
+      .from('tickets')
+      .select('id, ticket_number, contact_id, subject, created_at, status')
+      .eq('contact_id', contact.id)
+      .in('status', ['open', 'pending', 'waiting'])  // Don't match closed tickets
+      .order('created_at', { ascending: false })
+      .limit(5);  // Check more recent tickets
+    
+    if (recentTickets && recentTickets.length > 0) {
+      console.log(`Found ${recentTickets.length} recent open tickets from this contact`);
+      
+      // Method 3a: Check if subject is similar to any recent ticket
+      const cleanSubject = (subject: string) => 
+        subject.toLowerCase()
+          .replace(/^(re:|fwd?:)\s*/gi, '')  // Remove Re: Fwd: prefixes
+          .replace(/\[TICKET-\d+\]/gi, '')   // Remove ticket number tags
+          .replace(/\[.*?\]/g, '')          // Remove other brackets
+          .replace(/\s+/g, ' ')             // Normalize whitespace
+          .trim();
+      
+      const incomingSubject = cleanSubject(emailData.subject);
+      console.log('Cleaned incoming subject:', incomingSubject);
+      
+      for (const ticket of recentTickets) {
+        const ticketSubject = cleanSubject(ticket.subject);
+        console.log('Comparing with ticket subject:', ticketSubject);
+        
+        // Exact match
+        if (incomingSubject === ticketSubject) {
+          console.log('Found exact subject match with ticket:', ticket.ticket_number);
+          return ticket;
+        }
+        
+        // Fuzzy match - check if one contains the other (for cases where subject gets truncated)
+        if (incomingSubject.length > 10 && ticketSubject.length > 10) {
+          if (incomingSubject.includes(ticketSubject) || ticketSubject.includes(incomingSubject)) {
+            console.log('Found fuzzy subject match with ticket:', ticket.ticket_number);
+            return ticket;
+          }
+        }
+      }
+      
+      // Method 3b: If no subject match and only one recent open ticket, use it
+      // This handles cases where customers reply with completely different subjects
+      if (recentTickets.length === 1) {
+        const recentTicket = recentTickets[0];
+        const hoursSinceCreated = (Date.now() - new Date(recentTicket.created_at).getTime()) / (1000 * 60 * 60);
+        
+        // Only match if the ticket was created within the last 7 days
+        if (hoursSinceCreated <= 168) {  // 7 days
+          console.log('Using single recent ticket from same contact:', recentTicket.ticket_number);
+          return recentTicket;
+        }
+      }
+    }
+    
+    console.log('No existing ticket found, will create new ticket');
     return null;
   } catch (error) {
     console.error('Error finding existing ticket:', error);
