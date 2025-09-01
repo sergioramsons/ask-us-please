@@ -147,6 +147,15 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
     return format(dateObj, 'PPP p');
   };
 
+  const getReplyText = (raw: string) => {
+    try {
+      const parsed = parseMultipartEmail(raw || '');
+      return (parsed.text || raw || '').trim();
+    } catch {
+      return raw || '';
+    }
+  };
+
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'critical': return 'bg-red-600 text-white';
@@ -325,7 +334,8 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
                           </span>
                         </div>
                         <div className="bg-muted/30 rounded-lg p-3">
-                          <p className="text-sm whitespace-pre-wrap text-foreground">{reply.content || '(no content)'}
+                          <p className="text-sm whitespace-pre-wrap text-foreground">
+                            {getReplyText(reply.content) || '(no content)'}
                           </p>
                         </div>
                       </div>
