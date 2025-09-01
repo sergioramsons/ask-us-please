@@ -110,18 +110,23 @@ export function UnifiedInbox() {
 
   // Load persisted read tickets on mount or when user/org changes
   useEffect(() => {
-    if (!storageKey) return;
+    if (!user?.id) return;
+    const keyCurrent = `unifiedInbox:reads:${user.id}:${organization?.id || 'org'}`;
+    const keyFallback = `unifiedInbox:reads:${user.id}:org`;
     try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        const ids: string[] = JSON.parse(raw);
-        setReadTickets(new Set(ids));
+      const sets: string[][] = [];
+      const raw1 = localStorage.getItem(keyCurrent);
+      if (raw1) sets.push(JSON.parse(raw1));
+      if (keyCurrent !== keyFallback) {
+        const raw2 = localStorage.getItem(keyFallback);
+        if (raw2) sets.push(JSON.parse(raw2));
       }
+      const merged = new Set(sets.flat());
+      if (merged.size > 0) setReadTickets(merged);
     } catch (e) {
-      console.warn('Failed to load read tickets from storage');
+      console.warn('Failed to load read tickets from storage', e);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storageKey]);
+  }, [user?.id, organization?.id]);
 
   // Save read tickets whenever they change and sync unread flags
   useEffect(() => {
@@ -133,7 +138,7 @@ export function UnifiedInbox() {
     }
     // Sync unread flags on current tickets
     setTickets(prev => prev.map(t => {
-      const newUnread = !readTickets.has(t.id) && t.status === 'open' && !t.assignee;
+      const newUnread = !readTickets.has(t.id);
       return t.unread === newUnread ? t : { ...t, unread: newUnread };
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -270,7 +275,7 @@ export function UnifiedInbox() {
           priority: ticket.priority as UnifiedTicket['priority'],
           assignee: assigneeName || undefined,
           lastActivity: new Date(ticket.updated_at),
-          unread: (ticket.status === 'open' && !ticket.assigned_to) && !readTickets.has(ticket.id),
+          unread: !readTickets.has(ticket.id),
           tags: ticket.tags || [],
           responses: commentCounts.get(ticket.id) || 0
         };
