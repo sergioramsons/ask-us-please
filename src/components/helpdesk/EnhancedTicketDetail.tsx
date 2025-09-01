@@ -209,14 +209,40 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
           
           {/* Action Bar */}
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                // Scroll to response form
+                const responseForm = document.querySelector('.response-form-container');
+                responseForm?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
               <MessageSquare className="h-4 w-4 mr-2" />
               Reply
             </Button>
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                // Scroll to response form and focus on internal note
+                const responseForm = document.querySelector('.response-form-container');
+                responseForm?.scrollIntoView({ behavior: 'smooth' });
+                // Could trigger internal note mode here
+              }}
+            >
               Add Note
             </Button>
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                toast({
+                  title: "Forward Ticket",
+                  description: "Forward functionality will be available soon."
+                });
+              }}
+            >
               Forward
             </Button>
             <Select value={ticket.status} onValueChange={(value) => onStatusChange(ticket.id, value)}>
@@ -297,7 +323,7 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
           </div>
 
           {/* Response Form */}
-          <div className="border-t bg-muted/20 p-4">
+          <div className="border-t bg-muted/20 p-4 response-form-container">
             <TicketResponseForm 
               ticketId={ticket.id}
               ticketNumber={ticket.ticketNumber}
