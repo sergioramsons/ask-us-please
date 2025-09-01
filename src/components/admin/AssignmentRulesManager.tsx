@@ -92,7 +92,7 @@ export function AssignmentRulesManager() {
         department_id: rule.department_id || undefined,
         department_name: rule.department?.name,
         group_id: rule.group_id || undefined,
-        group_name: rule.group?.name,
+        group_name: rule.group?.name || undefined,
         is_active: rule.is_active || false,
         priority_order: rule.priority_order || 1,
         created_at: rule.created_at

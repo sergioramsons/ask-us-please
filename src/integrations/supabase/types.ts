@@ -19,6 +19,7 @@ export type Database = {
           conditions: Json | null
           created_at: string
           department_id: string | null
+          group_id: string | null
           id: string
           is_active: boolean
           organization_id: string
@@ -30,6 +31,7 @@ export type Database = {
           conditions?: Json | null
           created_at?: string
           department_id?: string | null
+          group_id?: string | null
           id?: string
           is_active?: boolean
           organization_id: string
@@ -41,6 +43,7 @@ export type Database = {
           conditions?: Json | null
           created_at?: string
           department_id?: string | null
+          group_id?: string | null
           id?: string
           is_active?: boolean
           organization_id?: string
@@ -54,6 +57,13 @@ export type Database = {
             columns: ["department_id"]
             isOneToOne: false
             referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_rules_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
             referencedColumns: ["id"]
           },
           {
