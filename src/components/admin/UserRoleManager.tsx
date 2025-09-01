@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useGroups, Group } from '@/hooks/useGroups';
 import { useDepartments, Department } from '@/hooks/useDepartments';
+import { useOrganization } from '@/contexts/OrganizationContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Shield, UserPlus, UserMinus, Building2, Plus, Trash2, AlertTriangle, Settings } from 'lucide-react';
 
@@ -54,6 +55,8 @@ export function UserRoleManager() {
   const [selectedGroupForMembers, setSelectedGroupForMembers] = useState<string>('');
   const [groupMembers, setGroupMembers] = useState<any[]>([]);
   const [selectedUserForGroup, setSelectedUserForGroup] = useState<string>('');
+  
+  const { organization } = useOrganization();
   
   const { 
     getUsersWithRoles, 
@@ -115,9 +118,9 @@ export function UserRoleManager() {
   };
 
   const handleCreateDepartment = async () => {
-    if (!newDepartmentName.trim()) return;
+    if (!newDepartmentName.trim() || !organization?.id) return;
     
-    const created = await createDepartment(newDepartmentName, newDepartmentDesc);
+    const created = await createDepartment(newDepartmentName, newDepartmentDesc, organization.id);
     if (created) {
       setNewDepartmentName('');
       setNewDepartmentDesc('');
