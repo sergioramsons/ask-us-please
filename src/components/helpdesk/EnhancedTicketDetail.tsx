@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Ticket, TicketReply, TicketAttachment } from '@/types/ticket';
@@ -14,8 +11,6 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   ArrowLeft, 
-  Calendar, 
-  Clock, 
   User, 
   Mail, 
   Phone, 
@@ -198,74 +193,202 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="outline" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Tickets
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">{ticket.title}</h1>
-          <p className="text-muted-foreground">Ticket #{ticket.ticketNumber || ticket.id.slice(0, 8)}</p>
+    <div className="h-full bg-background">
+      {/* Freshdesk-style Header */}
+      <div className="border-b bg-card p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={onBack}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-lg font-semibold">{ticket.title}</h1>
+              <p className="text-sm text-muted-foreground">#{ticket.ticketNumber || ticket.id.slice(0, 8)}</p>
+            </div>
+          </div>
+          
+          {/* Action Bar */}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm">
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Reply
+            </Button>
+            <Button variant="outline" size="sm">
+              Add Note
+            </Button>
+            <Button variant="outline" size="sm">
+              Forward
+            </Button>
+            <Select value={ticket.status} onValueChange={(value) => onStatusChange(ticket.id, value)}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="in-progress">In Progress</SelectItem>
+                <SelectItem value="resolved">Resolved</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Ticket Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Ticket Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h4 className="font-semibold mb-2">Description</h4>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {ticket.description}
-                </p>
-              </div>
+      {/* Three-column layout */}
+      <div className="flex h-[calc(100vh-140px)]">
+        {/* Main Content - Ticket Body */}
+        <div className="flex-1 flex flex-col bg-card border-r">
+          {/* Ticket Description */}
+          <div className="p-4 border-b">
+            <div className="bg-muted/30 rounded-lg p-4">
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                {ticket.description}
+              </p>
+            </div>
+          </div>
 
-              {/* Status and Priority */}
-              <div className="flex flex-wrap gap-2">
+          {/* Conversation/Replies */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-4">
+              {repliesLoading ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Loading replies...</p>
+                </div>
+              ) : replies.length > 0 ? (
+                <div className="space-y-4">
+                  {replies.map((reply) => (
+                    <div key={reply.id} className="flex gap-3">
+                      <Avatar className="h-8 w-8 shrink-0">
+                        <AvatarFallback className="text-xs">
+                          {(
+                            (reply.profile?.display_name || ticket.customer?.company || ticket.customer?.name || ticket.customer?.email || 'U')
+                              .split(' ')
+                              .map((n: string) => n[0])
+                              .join('')
+                          )}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-medium">
+                            {reply.profile?.display_name || ticket.customer?.company || ticket.customer?.name || ticket.customer?.email || 'Customer'}
+                          </span>
+                          {reply.is_internal && (
+                            <Badge variant="secondary" className="text-xs">Internal</Badge>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            {formatDate(reply.created_at)}
+                          </span>
+                        </div>
+                        <div className="bg-muted/30 rounded-lg p-3">
+                          <p className="text-sm whitespace-pre-wrap">{reply.content}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <MessageSquare className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-muted-foreground">No replies yet</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Response Form */}
+          <div className="border-t bg-muted/20 p-4">
+            <TicketResponseForm 
+              ticketId={ticket.id}
+              ticketNumber={ticket.ticketNumber}
+              customerName={ticket.customer.name}
+              customerEmail={ticket.customer.email}
+              ticketSubject={ticket.title}
+              ticketStatus={ticket.status}
+              priority={ticket.priority}
+              onSubmit={handleResponseSubmit}
+            />
+          </div>
+        </div>
+
+        {/* Properties Widget */}
+        <div className="w-80 bg-card border-r overflow-y-auto">
+          <div className="p-4 border-b">
+            <h3 className="text-sm font-semibold mb-3">Properties</h3>
+            
+            {/* Status and Priority */}
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Status</label>
                 <Badge className={getStatusColor(ticket.status)}>
                   {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1).replace('-', ' ')}
                 </Badge>
+              </div>
+              
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Priority</label>
                 <Badge variant="outline">
-                  Priority: {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
+                  {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
                 </Badge>
-                {ticket.severity && (
+              </div>
+
+              {ticket.severity && (
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Severity</label>
                   <Badge className={getSeverityColor(ticket.severity)}>
                     {ticket.severity.charAt(0).toUpperCase() + ticket.severity.slice(1)}
                   </Badge>
-                )}
+                </div>
+              )}
+
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Category</label>
                 <Badge variant="secondary">
                   {ticket.category.charAt(0).toUpperCase() + ticket.category.slice(1).replace('-', ' ')}
                 </Badge>
-                <Badge variant="outline">
-                  Department: {departments.find(d => d.id === currentDepartment)?.name || 'Unassigned'}
-                </Badge>
-                {ticket.source && (
-                  <Badge variant="outline">
-                    Source: {ticket.source.charAt(0).toUpperCase() + ticket.source.slice(1)}
-                  </Badge>
-                )}
               </div>
+
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Department</label>
+                <Select value={currentDepartment || 'unassigned'} onValueChange={handleDepartmentChange}>
+                  <SelectTrigger className="h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {departments.map(dept => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {ticket.source && (
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Source</label>
+                  <span className="text-sm">{ticket.source.charAt(0).toUpperCase() + ticket.source.slice(1)}</span>
+                </div>
+              )}
 
               {/* SLA and Escalation */}
               {(ticket.slaBreached || ticket.escalationLevel > 0) && (
-                <div className="flex gap-2">
+                <div className="space-y-2">
                   {ticket.slaBreached && (
-                    <Badge variant="destructive" className="flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3" />
-                      SLA Breached
-                    </Badge>
+                    <div>
+                      <Badge variant="destructive" className="flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        SLA Breached
+                      </Badge>
+                    </div>
                   )}
                   {ticket.escalationLevel > 0 && (
-                    <Badge variant="secondary">
-                      Escalation Level: {ticket.escalationLevel}
-                    </Badge>
+                    <div>
+                      <Badge variant="secondary">
+                        Escalation Level: {ticket.escalationLevel}
+                      </Badge>
+                    </div>
                   )}
                 </div>
               )}
@@ -273,485 +396,167 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
               {/* Tags */}
               {ticket.tags && ticket.tags.length > 0 && (
                 <div>
-                  <h4 className="font-semibold mb-2 flex items-center gap-2">
-                    <Tag className="h-4 w-4" />
-                    Tags
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
+                  <label className="text-xs text-muted-foreground mb-1 block">Tags</label>
+                  <div className="flex flex-wrap gap-1">
                     {ticket.tags.map((tag) => (
-                      <Badge key={tag} variant="outline">
+                      <Badge key={tag} variant="outline" className="text-xs">
                         {tag}
                       </Badge>
                     ))}
                   </div>
                 </div>
               )}
+            </div>
+          </div>
 
-              {/* Custom Fields */}
-              {ticket.customFields && Object.keys(ticket.customFields).length > 0 && (
+          {/* Assignment */}
+          <div className="p-4 border-b">
+            <h3 className="text-sm font-semibold mb-3">Assignment</h3>
+            <TicketAssignmentManager 
+              ticketId={ticket.id}
+              currentAssigneeId={ticket.assignee?.id || null}
+              currentAssigneeName={ticket.assignee?.name || null}
+              onAssignmentChange={handleAssignmentChange}
+            />
+          </div>
+
+          {/* Time Information */}
+          <div className="p-4 border-b">
+            <h3 className="text-sm font-semibold mb-3">Timestamps</h3>
+            <div className="space-y-2 text-sm">
+              <div>
+                <span className="text-muted-foreground">Created:</span>
+                <p className="font-medium">{formatDate(ticket.createdAt)}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Updated:</span>
+                <p className="font-medium">{formatDate(ticket.updatedAt)}</p>
+              </div>
+              {ticket.resolvedAt && (
                 <div>
-                  <h4 className="font-semibold mb-2">Custom Fields</h4>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    {Object.entries(ticket.customFields).map(([key, value]) => (
-                      <div key={key}>
-                        <span className="text-muted-foreground capitalize">{key}:</span>
-                        <span className="ml-2 font-medium">{value}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <span className="text-muted-foreground">Resolved:</span>
+                  <p className="font-medium">{formatDate(ticket.resolvedAt)}</p>
                 </div>
               )}
-            </CardContent>
-          </Card>
-
-          {/* Resolution Information */}
-          {ticket.resolution && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                  Resolution Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+              {calculateResolutionTime() && (
                 <div>
-                  <p className="text-sm text-muted-foreground mb-2">Resolution Notes:</p>
-                  <p className="text-sm">{ticket.resolution.resolutionNotes}</p>
+                  <span className="text-muted-foreground">Resolution time:</span>
+                  <p className="font-medium">{calculateResolutionTime()} hours</p>
                 </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Resolved by:</span>
-                    <span className="ml-2 font-medium">{ticket.resolution.resolvedBy}</span>
+              )}
+            </div>
+          </div>
+
+          {/* Custom Fields */}
+          {ticket.customFields && Object.keys(ticket.customFields).length > 0 && (
+            <div className="p-4 border-b">
+              <h3 className="text-sm font-semibold mb-3">Custom Fields</h3>
+              <div className="space-y-2 text-sm">
+                {Object.entries(ticket.customFields).map(([key, value]) => (
+                  <div key={key}>
+                    <span className="text-muted-foreground capitalize">{key}:</span>
+                    <p className="font-medium">{value}</p>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">Resolution time:</span>
-                    <span className="ml-2 font-medium">{ticket.resolution.resolutionTime} minutes</span>
-                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Apps Pane */}
+        <div className="w-80 bg-muted/20 overflow-y-auto">
+          {/* Contact Details */}
+          <div className="p-4 border-b">
+            <h3 className="text-sm font-semibold mb-3">Contact Details</h3>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback>
+                    {ticket.customer.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">{ticket.customer.name}</p>
+                  <p className="text-sm text-muted-foreground">{ticket.customer.email}</p>
                 </div>
+              </div>
+              
+              {ticket.customer.phone && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span>{ticket.customer.phone}</span>
+                </div>
+              )}
+              
+              {ticket.customer.company && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Building className="h-4 w-4 text-muted-foreground" />
+                  <span>{ticket.customer.company}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Attachments */}
+          {ticket.attachments && ticket.attachments.length > 0 && (
+            <div className="p-4 border-b">
+              <h3 className="text-sm font-semibold mb-3">Attachments ({ticket.attachments.length})</h3>
+              <div className="space-y-2">
+                {ticket.attachments.map((attachment) => (
+                  <div key={attachment.id} className="flex items-center gap-2 p-2 bg-background rounded text-sm">
+                    <Paperclip className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{attachment.filename}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(attachment.filesize / 1024).toFixed(1)} KB
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="sm">
+                      Download
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Resolution Details */}
+          {ticket.resolution && (
+            <div className="p-4 border-b">
+              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                Resolution
+              </h3>
+              <div className="space-y-2 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Resolved by:</span>
+                  <p className="font-medium">{ticket.resolution.resolvedBy}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Resolution time:</span>
+                  <p className="font-medium">{ticket.resolution.resolutionTime} minutes</p>
+                </div>
+                {ticket.resolution.resolutionNotes && (
+                  <div>
+                    <span className="text-muted-foreground">Notes:</span>
+                    <p className="text-sm mt-1">{ticket.resolution.resolutionNotes}</p>
+                  </div>
+                )}
                 {ticket.resolution.customerSatisfaction && (
                   <div>
-                    <p className="text-sm text-muted-foreground mb-2">Customer Satisfaction:</p>
-                    <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Satisfaction:</span>
+                    <div className="flex items-center gap-2 mt-1">
                       <Badge variant="secondary">
                         ⭐ {ticket.resolution.customerSatisfaction.rating}/5
                       </Badge>
                       {ticket.resolution.customerSatisfaction.feedback && (
-                        <span className="text-sm italic">"{ticket.resolution.customerSatisfaction.feedback}"</span>
+                        <p className="text-xs italic">"{ticket.resolution.customerSatisfaction.feedback}"</p>
                       )}
                     </div>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Replies */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Replies ({replies.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {repliesLoading ? (
-                <div className="text-center py-4">
-                  <p className="text-muted-foreground">Loading replies...</p>
-                </div>
-              ) : replies.length > 0 ? (
-                <ScrollArea className="h-96">
-                  <div className="space-y-4">
-                    {replies.map((reply) => (
-                      <div key={reply.id} className="border rounded-lg p-4">
-                        <div className="flex items-center gap-3 mb-2">
-                           <Avatar className="h-8 w-8">
-                             <AvatarFallback>
-                               {(
-                                 (reply.profile?.display_name || ticket.customer?.company || ticket.customer?.name || ticket.customer?.email || 'U')
-                                   .split(' ')
-                                   .map((n: string) => n[0])
-                                   .join('')
-                               )}
-                             </AvatarFallback>
-                           </Avatar>
-                           <div className="flex-1">
-                             <div className="flex items-center gap-2">
-                               <span className="font-medium">
-                                 {reply.profile?.display_name || ticket.customer?.company || ticket.customer?.name || ticket.customer?.email || 'Customer'}
-                               </span>
-                              {reply.is_internal && (
-                                <Badge variant="secondary" className="text-xs">Internal</Badge>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              {formatDate(reply.created_at)}
-                            </p>
-                          </div>
-                        </div>
-                        <p className="text-sm whitespace-pre-wrap">{reply.content}</p>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              ) : (
-                 <p className="text-center text-muted-foreground py-4">
-                   No replies yet. Be the first to respond!
-                 </p>
-               )}
-            </CardContent>
-          </Card>
-
-          {/* Attachments */}
-          {ticket.attachments && ticket.attachments.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Paperclip className="h-5 w-5" />
-                  Attachments ({ticket.attachments.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {ticket.attachments.map((attachment) => (
-                    <div key={attachment.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Paperclip className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm font-medium">{attachment.filename}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {(attachment.filesize / 1024).toFixed(1)} KB • {attachment.contentType}
-                          </p>
-                        </div>
-                      </div>
-                      <Button variant="outline" size="sm">
-                        Download
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Response Form */}
-          <TicketResponseForm 
-            ticketId={ticket.id}
-            ticketNumber={ticket.ticketNumber}
-            customerName={ticket.customer.name}
-            customerEmail={ticket.customer.email}
-            ticketSubject={ticket.title}
-            ticketStatus={ticket.status}
-            priority={ticket.priority}
-            onSubmit={handleResponseSubmit}
-          />
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Customer Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Customer
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">{ticket.customer.name}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{ticket.customer.email}</span>
-              </div>
-              {ticket.customer.phone && (
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{ticket.customer.phone}</span>
-                </div>
-              )}
-              {ticket.customer.company && (
-                <div className="flex items-center gap-2">
-                  <Building className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{ticket.customer.company}</span>
-                </div>
-              )}
-              {ticket.customer.department && (
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Dept:</span> {ticket.customer.department}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Assignment Management */}
-          <TicketAssignmentManager
-            ticketId={ticket.id}
-            currentAssigneeId={ticket.assignee?.id}
-            currentAssigneeName={ticket.assignee?.name}
-            onAssignmentChange={handleAssignmentChange}
-            />
-
-          {/* CC Recipients */}
-          {ticket.cc_recipients && ticket.cc_recipients.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Mail className="h-5 w-5" />
-                  CC Recipients
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {ticket.cc_recipients.map((recipient, index) => (
-                    <div key={index} className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-secondary text-secondary-foreground rounded-full flex items-center justify-center text-sm font-medium">
-                        {recipient.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-medium">{recipient.name}</p>
-                        <p className="text-sm text-muted-foreground">{recipient.email}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Assignment */}
-          {ticket.assignee && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Assigned To</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback>
-                      {ticket.assignee.name.split(' ').map(n => n[0]).join('')}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-sm font-medium">{ticket.assignee.name}</p>
-                    <p className="text-xs text-muted-foreground">{ticket.assignee.email}</p>
-                  </div>
-                </div>
-                {ticket.assignee.department && (
-                  <p className="text-sm text-muted-foreground">
-                    Department: {ticket.assignee.department}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Department Management */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Department</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Select value={currentDepartment || 'unassigned'} onValueChange={handleDepartmentChange}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">No Department</SelectItem>
-                  {departments.map(dept => (
-                    <SelectItem key={dept.id} value={dept.id}>
-                      {dept.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
-
-          {/* Timeline */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Timeline
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">Created</p>
-                  <p className="text-muted-foreground">{formatDate(ticket.createdAt)}</p>
-                </div>
-              </div>
-              
-              {ticket.firstResponseAt && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Timer className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">First Response</p>
-                    <p className="text-muted-foreground">{formatDate(ticket.firstResponseAt)}</p>
-                  </div>
-                </div>
-              )}
-
-              {ticket.dueDate && (
-                <div className="flex items-center gap-2 text-sm">
-                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">Due Date</p>
-                    <p className="text-muted-foreground">{formatDate(ticket.dueDate)}</p>
-                  </div>
-                </div>
-              )}
-
-              {ticket.resolvedAt && (
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <div>
-                    <p className="font-medium">Resolved</p>
-                    <p className="text-muted-foreground">{formatDate(ticket.resolvedAt)}</p>
-                    {calculateResolutionTime() && (
-                      <p className="text-xs text-green-600">
-                        Resolution time: {calculateResolutionTime()} hours
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {ticket.closedAt && (
-                <div className="flex items-center gap-2 text-sm">
-                  <XCircle className="h-4 w-4 text-gray-500" />
-                  <div>
-                    <p className="font-medium">Closed</p>
-                    <p className="text-muted-foreground">{formatDate(ticket.closedAt)}</p>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center gap-2 text-sm">
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">Last Updated</p>
-                  <p className="text-muted-foreground">{formatDate(ticket.updatedAt)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {/* Status progression buttons */}
-              {ticket.status === 'open' && (
-                <Button 
-                  onClick={() => onStatusChange(ticket.id, 'in-progress')}
-                  className="w-full"
-                  variant="default"
-                >
-                  <Timer className="h-4 w-4 mr-2" />
-                  Start Working
-                </Button>
-              )}
-              
-              {ticket.status === 'in-progress' && (
-                <Button 
-                  onClick={() => onStatusChange(ticket.id, 'resolved')}
-                  className="w-full"
-                  variant="default"
-                >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Mark Resolved
-                </Button>
-              )}
-              
-              {ticket.status === 'resolved' && (
-                <Button 
-                  onClick={() => onStatusChange(ticket.id, 'closed')}
-                  className="w-full"
-                  variant="default"
-                >
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Close Ticket
-                </Button>
-              )}
-
-              {/* Additional status options */}
-              {ticket.status !== 'closed' && (
-                <>
-                  <div className="border-t pt-3">
-                    <p className="text-xs text-muted-foreground mb-2">Quick Actions:</p>
-                    <div className="space-y-2">
-                      {ticket.status !== 'open' && (
-                        <Button 
-                          onClick={() => onStatusChange(ticket.id, 'open')}
-                          className="w-full"
-                          variant="outline"
-                          size="sm"
-                        >
-                          ↩️ Reopen Ticket
-                        </Button>
-                      )}
-                      
-                      {ticket.status !== 'in-progress' && (
-                        <Button 
-                          onClick={() => onStatusChange(ticket.id, 'in-progress')}
-                          className="w-full"
-                          variant="outline"
-                          size="sm"
-                        >
-                          🔄 Move to In Progress
-                        </Button>
-                      )}
-                      
-                      <Button 
-                        onClick={() => onStatusChange(ticket.id, 'closed')}
-                        className="w-full"
-                        variant="destructive"
-                        size="sm"
-                      >
-                        <XCircle className="h-4 w-4 mr-2" />
-                        Force Close
-                      </Button>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {ticket.status === 'closed' && (
-                <div className="text-center py-4">
-                  <XCircle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Ticket is closed</p>
-                  <Button 
-                    onClick={() => onStatusChange(ticket.id, 'open')}
-                    className="mt-2"
-                    variant="outline"
-                    size="sm"
-                  >
-                    Reopen Ticket
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Watchers */}
-          {ticket.watchers && ticket.watchers.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Watchers</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  {ticket.watchers.length} user(s) watching this ticket
-                </p>
-              </CardContent>
-            </Card>
+            </div>
           )}
         </div>
       </div>
