@@ -114,7 +114,7 @@ export function useGroups() {
           name,
           description,
           organization_id: organization.id,
-          manager_id: managerId,
+          manager_id: managerId && managerId.trim() !== '' ? managerId : null,
         });
 
       if (error) throw error;
@@ -144,7 +144,7 @@ export function useGroups() {
         .update({
           name: updates.name,
           description: updates.description,
-          manager_id: updates.manager_id,
+          manager_id: updates.manager_id && updates.manager_id.trim() !== '' ? updates.manager_id : null,
           is_active: updates.is_active,
         })
         .eq('id', groupId);
