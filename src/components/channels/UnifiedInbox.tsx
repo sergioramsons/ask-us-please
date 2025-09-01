@@ -29,6 +29,7 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationService } from '@/services/NotificationService';
+import { parseMultipartEmail } from '@/lib/emailParser';
 
 interface UnifiedTicket {
   id: string;
@@ -212,11 +213,19 @@ export function UnifiedInbox() {
         else if (ticket.category?.toLowerCase().includes('phone')) channel = 'phone';
         else if (ticket.category?.toLowerCase().includes('chat')) channel = 'chat';
 
+        // Clean up MIME/HTML descriptions for display in the list and detail pane
+        const cleanedContent = (() => {
+          const parsed = parseMultipartEmail(ticket.description || '');
+          const text = parsed.text || '';
+          // Remove common MIME boilerplate line if present
+          return text.replace(/^This is a multipart message in MIME format\.?\s*/i, '').trim();
+        })();
+
         return {
           id: ticket.id,
           channel,
           subject: ticket.subject,
-          content: ticket.description || '',
+          content: cleanedContent,
           customer: {
             name: contact ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim() : 'Customer',
             email: contact?.email || '',
@@ -226,7 +235,7 @@ export function UnifiedInbox() {
           priority: ticket.priority as UnifiedTicket['priority'],
           assignee: assigneeName || undefined,
           lastActivity: new Date(ticket.updated_at),
-          unread: ticket.status === 'open' && !ticket.assigned_to, // Consider unread if open and unassigned
+          unread: ticket.status === 'open' && !ticket.assigned_to,
           tags: ticket.tags || [],
           responses: commentCounts.get(ticket.id) || 0
         };
