@@ -46,7 +46,7 @@ export function useDepartments() {
         .insert({ 
           name, 
           description,
-          organization_id: organization_id || '' // Will be set by the calling component
+          organization_id: organization_id && organization_id.trim() !== '' ? organization_id : null
         })
         .select()
         .single();
@@ -73,9 +73,15 @@ export function useDepartments() {
 
   const updateDepartment = useCallback(async (id: string, updates: Partial<Department>) => {
     try {
+      // Clean up UUID fields to convert empty strings to null
+      const cleanUpdates = {
+        ...updates,
+        manager_id: updates.manager_id && updates.manager_id.trim() !== '' ? updates.manager_id : null
+      };
+
       const { error } = await supabase
         .from('departments')
-        .update(updates)
+        .update(cleanUpdates)
         .eq('id', id);
 
       if (error) throw error;
