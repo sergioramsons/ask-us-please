@@ -304,6 +304,7 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
                 </div>
               ) : replies.length > 0 ? (
                 <div className="space-y-4">
+                  <div className="text-xs text-muted-foreground mb-2">Replies ({replies.length})</div>
                   {replies.map((reply) => (
                     <div key={reply.id} className="flex gap-3">
                       <Avatar className="h-8 w-8 shrink-0">
@@ -324,7 +325,8 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
                           </span>
                         </div>
                         <div className="bg-muted/30 rounded-lg p-3">
-                          <p className="text-sm whitespace-pre-wrap">{reply.content}</p>
+                          <p className="text-sm whitespace-pre-wrap text-foreground">{reply.content || '(no content)'}
+                          </p>
                         </div>
                       </div>
                     </div>
