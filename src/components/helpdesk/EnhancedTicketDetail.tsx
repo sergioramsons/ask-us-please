@@ -94,7 +94,7 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
       // Merge profiles with replies
       const repliesWithProfiles = replies.map(reply => ({
         ...reply,
-        content: parseMultipartEmail(reply.content || '').text,
+        content: reply.content || '',
         profile: profiles?.find(p => p.user_id === reply.user_id) || null
       }));
 
