@@ -235,9 +235,9 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
               variant="outline" 
               size="sm"
               onClick={() => {
-                // Scroll to response form
-                const responseForm = document.querySelector('.response-form-container');
-                responseForm?.scrollIntoView({ behavior: 'smooth' });
+                // Scroll to replies section
+                const repliesEl = document.getElementById('replies-section');
+                repliesEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
               }}
             >
               <MessageSquare className="h-4 w-4 mr-2" />
@@ -297,7 +297,7 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
 
           {/* Conversation/Replies */}
           <div className="flex-1 overflow-y-auto">
-            <div className="p-4">
+            <div id="replies-section" className="p-4">
               {repliesLoading ? (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground">Loading replies...</p>
