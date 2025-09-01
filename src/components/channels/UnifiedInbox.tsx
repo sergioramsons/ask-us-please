@@ -105,6 +105,40 @@ export function UnifiedInbox() {
   const [sending, setSending] = useState(false);
   const [readTickets, setReadTickets] = useState<Set<string>>(new Set());
 
+  // Persist read tickets per user+organization in localStorage
+  const storageKey = user?.id ? `unifiedInbox:reads:${user.id}:${organization?.id || 'org'}` : null;
+
+  // Load persisted read tickets on mount or when user/org changes
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const ids: string[] = JSON.parse(raw);
+        setReadTickets(new Set(ids));
+      }
+    } catch (e) {
+      console.warn('Failed to load read tickets from storage');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storageKey]);
+
+  // Save read tickets whenever they change and sync unread flags
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(Array.from(readTickets)));
+    } catch (e) {
+      console.warn('Failed to save read tickets to storage');
+    }
+    // Sync unread flags on current tickets
+    setTickets(prev => prev.map(t => {
+      const newUnread = !readTickets.has(t.id) && t.status === 'open' && !t.assignee;
+      return t.unread === newUnread ? t : { ...t, unread: newUnread };
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readTickets, storageKey]);
+
   // Reset all filters and reload data
   const resetFiltersAndReload = () => {
     setSearchQuery('');
