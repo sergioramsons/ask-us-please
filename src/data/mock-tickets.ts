@@ -28,7 +28,7 @@ export const mockTickets: Ticket[] = [
     tags: ["login", "authentication", "urgent"],
     watchers: ["user1", "user2"],
     attachments: [],
-    comments: [
+    replies: [
       {
         id: "c1",
         content: "I've checked the user account and everything seems to be in order. Let me investigate the email delivery issue.",
@@ -75,7 +75,7 @@ export const mockTickets: Ticket[] = [
     tags: ["billing", "invoice", "subscription"],
     watchers: ["user3"],
     attachments: [],
-    comments: [],
+    replies: [],
     slaBreached: false,
     escalationLevel: 0,
     customFields: {
@@ -102,7 +102,7 @@ export const mockTickets: Ticket[] = [
     tags: ["feature-request", "ui", "accessibility"],
     watchers: [],
     attachments: [],
-    comments: [],
+    replies: [],
     slaBreached: false,
     escalationLevel: 0,
     customFields: {
@@ -138,7 +138,7 @@ export const mockTickets: Ticket[] = [
     tags: ["export", "csv", "data"],
     watchers: ["user4"],
     attachments: [],
-    comments: [],
+    replies: [],
     resolution: {
       resolvedAt: new Date("2024-01-14T15:20:00"),
       resolvedBy: "James Wilson",
@@ -185,7 +185,7 @@ export const mockTickets: Ticket[] = [
     tags: ["api", "documentation", "integration"],
     watchers: [],
     attachments: [],
-    comments: [],
+    replies: [],
     resolution: {
       resolvedAt: new Date("2024-01-11T16:30:00"),
       resolvedBy: "Sophie Martinez",
@@ -223,7 +223,7 @@ export const mockTickets: Ticket[] = [
     tags: ["mobile", "crash", "android", "urgent"],
     watchers: ["user1", "user5"],
     attachments: [],
-    comments: [],
+    replies: [],
     slaBreached: true,
     escalationLevel: 2,
     customFields: {

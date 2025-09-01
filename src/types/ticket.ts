@@ -29,7 +29,7 @@ export interface TicketAttachment {
   uploadedBy: string;
 }
 
-export interface TicketComment {
+export interface TicketReply {
   id: string;
   content: string;
   author: {
@@ -84,7 +84,7 @@ export interface Ticket {
   tags: string[];
   watchers: string[]; // User IDs watching this ticket
   attachments: TicketAttachment[];
-  comments: TicketComment[];
+  replies: TicketReply[];
   resolution?: TicketResolution;
   
   // SLA tracking

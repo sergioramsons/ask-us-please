@@ -103,7 +103,7 @@ export function OrganizationDeletion() {
             <AlertDescription>
               <strong>Warning:</strong> Deleting an organization will permanently remove:
               <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>All tickets and comments</li>
+                <li>All tickets and replies</li>
                 <li>All contacts</li>
                 <li>All auto-dialer campaigns and results</li>
                 <li>All email servers and configurations</li>

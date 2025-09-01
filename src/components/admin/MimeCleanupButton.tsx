@@ -10,7 +10,7 @@ export const MimeCleanupButton = () => {
     setIsLoading(true);
     try {
       const result = await cleanupMimeContent();
-      toast.success(`Cleanup completed! ${result.ticketsUpdated} tickets and ${result.commentsUpdated} comments updated.`);
+      toast.success(`Cleanup completed! ${result.ticketsUpdated} tickets and ${result.commentsUpdated} replies updated.`);
       console.log('Cleanup results:', result);
     } catch (error) {
       console.error('Cleanup failed:', error);

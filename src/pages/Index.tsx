@@ -105,7 +105,7 @@ const loadTickets = async () => {
           tags: [],
           watchers: [],
           attachments: [],
-          comments: [],
+          replies: [],
           slaBreached: false,
           escalationLevel: 0,
           customFields: {},
@@ -598,7 +598,7 @@ const loadTickets = async () => {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete Multiple Tickets</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to delete {selectedTicketIds.size} tickets? This action cannot be undone and will remove all comments and data associated with these tickets.
+                      Are you sure you want to delete {selectedTicketIds.size} tickets? This action cannot be undone and will remove all replies and data associated with these tickets.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

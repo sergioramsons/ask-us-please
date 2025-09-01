@@ -119,7 +119,7 @@ export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps
               <div>
                 <h3 className="text-lg font-medium">Clean MIME Content</h3>
                 <p className="text-sm text-muted-foreground">
-                  Clean up existing tickets and comments with raw MIME email content.
+                  Clean up existing tickets and replies with raw MIME email content.
                 </p>
               </div>
               <MimeCleanupButton />

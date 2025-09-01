@@ -6,7 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Ticket, TicketComment, TicketAttachment } from '@/types/ticket';
+import { Ticket, TicketReply, TicketAttachment } from '@/types/ticket';
 import { TicketResponseForm } from './TicketResponseForm';
 import { TicketAssignmentManager } from './TicketAssignmentManager';
 import { useDepartments } from '@/hooks/useDepartments';
@@ -42,8 +42,8 @@ interface EnhancedTicketDetailProps {
 export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartmentChange }: EnhancedTicketDetailProps) {
   const { toast } = useToast();
   const { departments, fetchDepartments } = useDepartments();
-  const [comments, setComments] = useState<any[]>([]);
-  const [commentsLoading, setCommentsLoading] = useState(true);
+  const [replies, setReplies] = useState<any[]>([]);
+  const [repliesLoading, setRepliesLoading] = useState(true);
   const [currentDepartment, setCurrentDepartment] = useState<string | null>((ticket as any).department_id || null);
 
   // Load departments on mount
@@ -51,11 +51,11 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
     fetchDepartments();
   }, [fetchDepartments]);
 
-  // Load comments from database
-  const loadComments = async () => {
+  // Load replies from database
+  const loadReplies = async () => {
     try {
-      // First get comments
-      const { data: comments, error } = await supabase
+      // First get replies
+      const { data: replies, error } = await supabase
         .from('ticket_comments')
         .select('*')
         .eq('ticket_id', ticket.id)
@@ -63,16 +63,16 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
 
       if (error) throw error;
 
-      if (!comments || comments.length === 0) {
-        setComments([]);
+      if (!replies || replies.length === 0) {
+        setReplies([]);
         return;
       }
 
       // Get unique user IDs
-      const userIds = [...new Set(comments.map(comment => comment.user_id).filter(Boolean))];
+      const userIds = [...new Set(replies.map(reply => reply.user_id).filter(Boolean))];
       
       if (userIds.length === 0) {
-        setComments(comments.map(comment => ({ ...comment, profile: null })));
+        setReplies(replies.map(reply => ({ ...reply, profile: null })));
         return;
       }
 
@@ -82,29 +82,29 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
         .select('user_id, display_name')
         .in('user_id', userIds);
 
-      // Merge profiles with comments
-      const commentsWithProfiles = comments.map(comment => ({
-        ...comment,
-        content: parseMultipartEmail(comment.content || '').text,
-        profile: profiles?.find(p => p.user_id === comment.user_id) || null
+      // Merge profiles with replies
+      const repliesWithProfiles = replies.map(reply => ({
+        ...reply,
+        content: parseMultipartEmail(reply.content || '').text,
+        profile: profiles?.find(p => p.user_id === reply.user_id) || null
       }));
 
-      setComments(commentsWithProfiles);
+      setReplies(repliesWithProfiles);
     } catch (error) {
-      console.error('Error loading comments:', error);
-      setComments([]);
+      console.error('Error loading replies:', error);
+      setReplies([]);
     } finally {
-      setCommentsLoading(false);
+      setRepliesLoading(false);
     }
   };
 
-  // Load comments on mount and subscribe to real-time updates
+  // Load replies on mount and subscribe to real-time updates
   useEffect(() => {
-    loadComments();
+    loadReplies();
     
-    // Subscribe to real-time updates for new comments
+    // Subscribe to real-time updates for new replies
     const channel = supabase
-      .channel('ticket-comments')
+      .channel('ticket-replies')
       .on(
         'postgres_changes',
         {
@@ -114,8 +114,8 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
           filter: `ticket_id=eq.${ticket.id}`
         },
         () => {
-          console.log('New comment received, reloading...');
-          loadComments();
+          console.log('New reply received, reloading...');
+          loadReplies();
         }
       )
       .subscribe();
@@ -181,8 +181,8 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
   };
 
   const handleResponseSubmit = (response: string, isInternal: boolean) => {
-    // Optimistically add the new comment, then reload from DB
-    setComments(prev => [
+    // Optimistically add the new reply, then reload from DB
+    setReplies(prev => [
       ...prev,
       {
         id: `temp-${Date.now()}`,
@@ -194,7 +194,7 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
         profile: null
       }
     ]);
-    loadComments();
+    loadReplies();
   };
 
   return (
@@ -345,29 +345,29 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
             </Card>
           )}
 
-          {/* Comments */}
+          {/* Replies */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5" />
-                Comments ({comments.length})
+                Replies ({replies.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {commentsLoading ? (
+              {repliesLoading ? (
                 <div className="text-center py-4">
-                  <p className="text-muted-foreground">Loading comments...</p>
+                  <p className="text-muted-foreground">Loading replies...</p>
                 </div>
-              ) : comments.length > 0 ? (
+              ) : replies.length > 0 ? (
                 <ScrollArea className="h-96">
                   <div className="space-y-4">
-                    {comments.map((comment) => (
-                      <div key={comment.id} className="border rounded-lg p-4">
+                    {replies.map((reply) => (
+                      <div key={reply.id} className="border rounded-lg p-4">
                         <div className="flex items-center gap-3 mb-2">
                            <Avatar className="h-8 w-8">
                              <AvatarFallback>
                                {(
-                                 (comment.profile?.display_name || ticket.customer?.company || ticket.customer?.name || ticket.customer?.email || 'U')
+                                 (reply.profile?.display_name || ticket.customer?.company || ticket.customer?.name || ticket.customer?.email || 'U')
                                    .split(' ')
                                    .map((n: string) => n[0])
                                    .join('')
@@ -377,25 +377,25 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
                            <div className="flex-1">
                              <div className="flex items-center gap-2">
                                <span className="font-medium">
-                                 {comment.profile?.display_name || ticket.customer?.company || ticket.customer?.name || ticket.customer?.email || 'Customer'}
+                                 {reply.profile?.display_name || ticket.customer?.company || ticket.customer?.name || ticket.customer?.email || 'Customer'}
                                </span>
-                              {comment.is_internal && (
+                              {reply.is_internal && (
                                 <Badge variant="secondary" className="text-xs">Internal</Badge>
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground">
-                              {formatDate(comment.created_at)}
+                              {formatDate(reply.created_at)}
                             </p>
                           </div>
                         </div>
-                        <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
+                        <p className="text-sm whitespace-pre-wrap">{reply.content}</p>
                       </div>
                     ))}
                   </div>
                 </ScrollArea>
               ) : (
                  <p className="text-center text-muted-foreground py-4">
-                   No comments yet. Be the first to respond!
+                   No replies yet. Be the first to respond!
                  </p>
                )}
             </CardContent>

@@ -46,7 +46,7 @@ export function ManualEmailProcessor() {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Force check for new incoming emails and process them into tickets/comments.
+          Force check for new incoming emails and process them into tickets/replies.
         </p>
         
         <Button 

@@ -223,7 +223,7 @@ export function TicketList({
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete Ticket</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete ticket "{ticket.title}"? This action cannot be undone and will remove all comments and data associated with this ticket.
+                              Are you sure you want to delete ticket "{ticket.title}"? This action cannot be undone and will remove all replies and data associated with this ticket.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>

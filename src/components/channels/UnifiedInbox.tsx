@@ -210,19 +210,19 @@ export function UnifiedInbox() {
 
       if (error) throw error;
 
-      // Get comment counts separately for better performance
+      // Get reply counts separately for better performance
       const ticketIds = (data || []).map(ticket => ticket.id);
-      let commentCounts = new Map();
+      let replyCounts = new Map();
       
       if (ticketIds.length > 0) {
-        const { data: commentData } = await supabase
+        const { data: replyData } = await supabase
           .from('ticket_comments')
           .select('ticket_id')
           .in('ticket_id', ticketIds);
         
-        if (commentData) {
-          commentCounts = commentData.reduce((acc, comment) => {
-            acc.set(comment.ticket_id, (acc.get(comment.ticket_id) || 0) + 1);
+        if (replyData) {
+          replyCounts = replyData.reduce((acc, reply) => {
+            acc.set(reply.ticket_id, (acc.get(reply.ticket_id) || 0) + 1);
             return acc;
           }, new Map());
         }
@@ -280,7 +280,7 @@ export function UnifiedInbox() {
           lastActivity: new Date(ticket.updated_at),
           unread: !readTickets.has(ticket.id),
           tags: ticket.tags || [],
-          responses: commentCounts.get(ticket.id) || 0
+          responses: replyCounts.get(ticket.id) || 0
         };
       });
 
@@ -326,8 +326,8 @@ export function UnifiedInbox() {
 
     try {
       setSending(true);
-      // Insert comment
-      const { error: commentError } = await supabase
+      // Insert reply
+      const { error: replyError } = await supabase
         .from('ticket_comments')
         .insert({
           ticket_id: selectedTicket,
@@ -336,7 +336,7 @@ export function UnifiedInbox() {
           content: replyText.trim(),
         });
 
-      if (commentError) throw commentError;
+      if (replyError) throw replyError;
 
       // Optimistically update UI
       setTickets(prev => prev.map(t =>

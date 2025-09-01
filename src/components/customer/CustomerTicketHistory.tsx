@@ -44,7 +44,7 @@ export function CustomerTicketHistory() {
         tags: ["login", "password"],
         createdAt: new Date(Date.now() - 86400000 * 2),
         updatedAt: new Date(Date.now() - 86400000),
-        comments: [
+        replies: [
           {
             id: "1",
             content: "I've reset your password. Please try logging in again.",
@@ -91,7 +91,7 @@ export function CustomerTicketHistory() {
         tags: ["ui", "enhancement"],
         createdAt: new Date(Date.now() - 86400000 * 5),
         updatedAt: new Date(Date.now() - 86400000 * 2),
-        comments: [
+        replies: [
           {
             id: "2",
             content: "We're working on this feature. Expected completion next month.",
@@ -206,19 +206,19 @@ export function CustomerTicketHistory() {
               </div>
             )}
             
-            {selectedTicket.comments && selectedTicket.comments.length > 0 && (
+            {selectedTicket.replies && selectedTicket.replies.length > 0 && (
               <div>
-                <h4 className="font-semibold mb-2">Comments</h4>
+                <h4 className="font-semibold mb-2">Replies</h4>
                 <div className="space-y-4">
-                  {selectedTicket.comments.map((comment) => (
-                    <div key={comment.id} className="border-l-2 border-muted pl-4">
+                  {selectedTicket.replies.map((reply) => (
+                    <div key={reply.id} className="border-l-2 border-muted pl-4">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium">{comment.author.name}</span>
+                        <span className="font-medium">{reply.author.name}</span>
                         <span className="text-sm text-muted-foreground">
-                          {format(comment.createdAt, 'PPp')}
+                          {format(reply.createdAt, 'PPp')}
                         </span>
                       </div>
-                      <p className="text-muted-foreground">{comment.content}</p>
+                      <p className="text-muted-foreground">{reply.content}</p>
                     </div>
                   ))}
                 </div>
