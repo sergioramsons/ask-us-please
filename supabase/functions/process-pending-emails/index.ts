@@ -78,32 +78,85 @@ for (const email of pendingEmails) {
           markedProcessed++;
           console.log('Added reply to existing ticket:', ticketNumber, 'for email:', email.id);
         } else {
-          // Failed to handle as reply, create new ticket
-          const ticket = await createTicketFromEmail(email);
-          if (ticket) {
-            console.log('Created new ticket:', ticket.ticket_number, 'for email:', email.id);
-            const { error: updateErr } = await supabase
-              .from('incoming_emails')
-              .update({ 
-                ticket_id: ticket.id,
-                processed: true 
-              })
-              .eq('id', email.id);
-            if (updateErr) throw updateErr;
-            createdTickets++;
-            markedProcessed++;
-          } else {
-            const { error: markErr } = await supabase
-              .from('incoming_emails')
-              .update({ processed: true })
-              .eq('id', email.id);
-            if (markErr) throw markErr;
-            markedProcessed++;
-            errors.push(`Email ${email.id}: Ticket creation returned no result`);
+          // Failed to handle as reply, try fallback matching before creating new ticket
+          // Fall through to fallback logic below
+        }
+      }
+
+      // Fallback reply detection (no explicit ticket number):
+      // 1) Same sender has recent open ticket(s)
+      // 2) Subject (after cleaning) matches or is similar to a recent ticket
+      let handledByFallback = false;
+      try {
+        const cleanSubject = (s: string) =>
+          (s || '')
+            .toLowerCase()
+            .replace(/^(re:|fwd?:)\s*/gi, '')
+            .replace(/\[ticket-\d+\]/gi, '')
+            .replace(/\[.*?\]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+        const senderEmail = getSenderEmail(email);
+        if (senderEmail) {
+          const { data: contact } = await supabase
+            .from('contacts')
+            .select('id')
+            .eq('email', senderEmail)
+            .maybeSingle();
+
+          if (contact) {
+            const { data: recentTickets } = await supabase
+              .from('tickets')
+              .select('id, ticket_number, subject, created_at, status')
+              .eq('contact_id', contact.id)
+              .in('status', ['open', 'pending', 'waiting'])
+              .order('created_at', { ascending: false })
+              .limit(5);
+
+            if (recentTickets && recentTickets.length > 0) {
+              const incomingClean = cleanSubject(subjectText);
+
+              // Try exact/contains match against recent tickets
+              let chosen = recentTickets.find(t => cleanSubject(t.subject) === incomingClean);
+              if (!chosen) {
+                chosen = recentTickets.find(t => {
+                  const tClean = cleanSubject(t.subject);
+                  return incomingClean.length > 10 && tClean.length > 10 && (incomingClean.includes(tClean) || tClean.includes(incomingClean));
+                });
+              }
+
+              // If still no match and there's only one recent ticket within 7 days, use it
+              if (!chosen && recentTickets.length === 1) {
+                const onlyTicket = recentTickets[0];
+                const hoursSinceCreated = (Date.now() - new Date(onlyTicket.created_at as string).getTime()) / (1000 * 60 * 60);
+                if (hoursSinceCreated <= 168) {
+                  chosen = onlyTicket;
+                }
+              }
+
+              if (chosen) {
+                const ok = await handleTicketReply(email, chosen.ticket_number);
+                if (ok) {
+                  handledByFallback = true;
+                  markedProcessed++;
+                  console.log('Added reply via fallback matching to ticket:', chosen.ticket_number, 'for email:', email.id);
+                }
+              }
+            }
           }
         }
-      } else {
-        // New ticket
+      } catch (fallbackErr) {
+        console.error('Fallback reply detection error:', fallbackErr);
+      }
+
+      if (!ticketNumberMatch && handledByFallback) {
+        // Already handled and marked processed above
+        continue;
+      }
+
+      if (!ticketNumberMatch || !handledByFallback) {
+        // Create a new ticket as a last resort
         const ticket = await createTicketFromEmail(email);
         if (ticket) {
           console.log('Created ticket:', ticket.ticket_number, 'for email:', email.id);
