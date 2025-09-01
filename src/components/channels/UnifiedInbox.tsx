@@ -103,6 +103,7 @@ export function UnifiedInbox() {
   const [loading, setLoading] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
+  const [readTickets, setReadTickets] = useState<Set<string>>(new Set());
 
   // Reset all filters and reload data
   const resetFiltersAndReload = () => {
@@ -235,7 +236,7 @@ export function UnifiedInbox() {
           priority: ticket.priority as UnifiedTicket['priority'],
           assignee: assigneeName || undefined,
           lastActivity: new Date(ticket.updated_at),
-          unread: ticket.status === 'open' && !ticket.assigned_to,
+          unread: (ticket.status === 'open' && !ticket.assigned_to) && !readTickets.has(ticket.id),
           tags: ticket.tags || [],
           responses: commentCounts.get(ticket.id) || 0
         };
@@ -252,6 +253,12 @@ export function UnifiedInbox() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleTicketClick = (ticketId: string) => {
+    setSelectedTicket(ticketId);
+    // Mark ticket as read
+    setReadTickets(prev => new Set([...prev, ticketId]));
   };
 
   const handleSendReply = async () => {
@@ -454,7 +461,7 @@ export function UnifiedInbox() {
                           className={`p-4 border-b cursor-pointer hover:bg-muted transition-colors ${
                             selectedTicket === ticket.id ? 'bg-muted' : ''
                           } ${ticket.unread ? 'bg-blue-50' : ''}`}
-                          onClick={() => setSelectedTicket(ticket.id)}
+                          onClick={() => handleTicketClick(ticket.id)}
                         >
                           <div className="flex items-start gap-3">
                             <Avatar className="h-10 w-10">
@@ -543,7 +550,7 @@ export function UnifiedInbox() {
                           className={`p-4 border-b cursor-pointer hover:bg-muted transition-colors ${
                             selectedTicket === ticket.id ? 'bg-muted' : ''
                           } bg-blue-50`}
-                          onClick={() => setSelectedTicket(ticket.id)}
+                          onClick={() => handleTicketClick(ticket.id)}
                         >
                           <div className="flex items-start gap-3">
                             <Avatar className="h-10 w-10">
@@ -628,7 +635,7 @@ export function UnifiedInbox() {
                           className={`p-4 border-b cursor-pointer hover:bg-muted transition-colors ${
                             selectedTicket === ticket.id ? 'bg-muted' : ''
                           } ${ticket.unread ? 'bg-blue-50' : ''}`}
-                          onClick={() => setSelectedTicket(ticket.id)}
+                          onClick={() => handleTicketClick(ticket.id)}
                         >
                           <div className="flex items-start gap-3">
                             <Avatar className="h-10 w-10">
@@ -716,7 +723,7 @@ export function UnifiedInbox() {
                           className={`p-4 border-b cursor-pointer hover:bg-muted transition-colors ${
                             selectedTicket === ticket.id ? 'bg-muted' : ''
                           } ${ticket.unread ? 'bg-blue-50' : ''} border-l-4 border-l-red-500`}
-                          onClick={() => setSelectedTicket(ticket.id)}
+                          onClick={() => handleTicketClick(ticket.id)}
                         >
                           <div className="flex items-start gap-3">
                             <Avatar className="h-10 w-10">
