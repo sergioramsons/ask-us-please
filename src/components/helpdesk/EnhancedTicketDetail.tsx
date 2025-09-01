@@ -308,18 +308,13 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
                     <div key={reply.id} className="flex gap-3">
                       <Avatar className="h-8 w-8 shrink-0">
                         <AvatarFallback className="text-xs">
-                          {(
-                            (reply.profile?.display_name || ticket.customer?.company || ticket.customer?.name || ticket.customer?.email || 'U')
-                              .split(' ')
-                              .map((n: string) => n[0])
-                              .join('')
-                          )}
+                          {reply.contact_id ? 'C' : 'S'}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-sm font-medium">
-                            {reply.profile?.display_name || ticket.customer?.company || ticket.customer?.name || ticket.customer?.email || 'Customer'}
+                            {reply.contact_id ? 'Customer' : 'Support'}
                           </span>
                           {reply.is_internal && (
                             <Badge variant="secondary" className="text-xs">Internal</Badge>
