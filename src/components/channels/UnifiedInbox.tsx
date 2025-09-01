@@ -433,92 +433,359 @@ export function UnifiedInbox() {
                 <TabsTrigger value="assigned">Mine</TabsTrigger>
                 <TabsTrigger value="urgent">Urgent</TabsTrigger>
               </TabsList>
-            </Tabs>
-          </div>
 
-          <div className="overflow-y-auto">
-            {loading ? (
-              <div className="p-4 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                <p className="text-sm text-muted-foreground">Loading tickets...</p>
-              </div>
-            ) : filteredTickets.length === 0 ? (
-              <div className="p-4 text-center">
-                <p className="text-muted-foreground">No tickets found</p>
-              </div>
-            ) : (
-              filteredTickets.map((ticket) => {
-              const ChannelIcon = ChannelIcons[ticket.channel];
-              return (
-                <div
-                  key={ticket.id}
-                  className={`p-4 border-b cursor-pointer hover:bg-muted transition-colors ${
-                    selectedTicket === ticket.id ? 'bg-muted' : ''
-                  } ${ticket.unread ? 'bg-blue-50' : ''}`}
-                  onClick={() => setSelectedTicket(ticket.id)}
-                >
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={ticket.customer.avatar} />
-                      <AvatarFallback>
-                        {ticket.customer.name.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <ChannelIcon className={`h-4 w-4 ${ChannelColors[ticket.channel]}`} />
-                        <span className="font-medium text-sm truncate">
-                          {ticket.customer.name}
-                        </span>
-                        {ticket.unread && (
-                          <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                        )}
-                      </div>
-
-                      <h3 className={`font-medium text-sm truncate mb-1 ${
-                        ticket.unread ? 'font-semibold' : ''
-                      }`}>
-                        {ticket.subject}
-                      </h3>
-
-                      <p className="text-xs text-muted-foreground truncate mb-2">
-                        {ticket.content}
-                      </p>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Badge 
-                            className={`text-xs ${StatusColors[ticket.status]} text-white`}
-                            variant="secondary"
-                          >
-                            {ticket.status}
-                          </Badge>
-                          <span className={`text-xs font-medium ${PriorityColors[ticket.priority]}`}>
-                            {ticket.priority}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          {formatLastActivity(ticket.lastActivity)}
-                        </div>
-                      </div>
-
-                      {ticket.tags.length > 0 && (
-                        <div className="flex gap-1 mt-2">
-                          {ticket.tags.slice(0, 2).map(tag => (
-                            <Badge key={tag} variant="outline" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
+              <TabsContent value="all" className="mt-0">
+                <div className="overflow-y-auto">
+                  {loading ? (
+                    <div className="p-4 text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                      <p className="text-sm text-muted-foreground">Loading tickets...</p>
                     </div>
-                  </div>
+                  ) : filteredTickets.length === 0 ? (
+                    <div className="p-4 text-center">
+                      <p className="text-muted-foreground">No tickets found</p>
+                    </div>
+                  ) : (
+                    filteredTickets.map((ticket) => {
+                      const ChannelIcon = ChannelIcons[ticket.channel];
+                      return (
+                        <div
+                          key={ticket.id}
+                          className={`p-4 border-b cursor-pointer hover:bg-muted transition-colors ${
+                            selectedTicket === ticket.id ? 'bg-muted' : ''
+                          } ${ticket.unread ? 'bg-blue-50' : ''}`}
+                          onClick={() => setSelectedTicket(ticket.id)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={ticket.customer.avatar} />
+                              <AvatarFallback>
+                                {ticket.customer.name.split(' ').map(n => n[0]).join('')}
+                              </AvatarFallback>
+                            </Avatar>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <ChannelIcon className={`h-4 w-4 ${ChannelColors[ticket.channel]}`} />
+                                <span className="font-medium text-sm truncate">
+                                  {ticket.customer.name}
+                                </span>
+                                {ticket.unread && (
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                                )}
+                              </div>
+
+                              <h3 className={`font-medium text-sm truncate mb-1 ${
+                                ticket.unread ? 'font-semibold' : ''
+                              }`}>
+                                {ticket.subject}
+                              </h3>
+
+                              <p className="text-xs text-muted-foreground truncate mb-2">
+                                {ticket.content}
+                              </p>
+
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Badge 
+                                    className={`text-xs ${StatusColors[ticket.status]} text-white`}
+                                    variant="secondary"
+                                  >
+                                    {ticket.status}
+                                  </Badge>
+                                  <span className={`text-xs font-medium ${PriorityColors[ticket.priority]}`}>
+                                    {ticket.priority}
+                                  </span>
+                                </div>
+                                
+                                <div className="flex items-center gap-2">
+                                  {ticket.assignee && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {ticket.assignee}
+                                    </Badge>
+                                  )}
+                                  <span className="text-xs text-muted-foreground">
+                                    {formatLastActivity(ticket.lastActivity)}
+                                  </span>
+                                  {ticket.responses > 0 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {ticket.responses}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
-              );
-            })
-            )}
+              </TabsContent>
+
+              <TabsContent value="unread" className="mt-0">
+                <div className="overflow-y-auto">
+                  {loading ? (
+                    <div className="p-4 text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                      <p className="text-sm text-muted-foreground">Loading tickets...</p>
+                    </div>
+                  ) : filteredTickets.filter(t => t.unread).length === 0 ? (
+                    <div className="p-4 text-center">
+                      <p className="text-muted-foreground">No unread tickets</p>
+                    </div>
+                  ) : (
+                    filteredTickets.filter(t => t.unread).map((ticket) => {
+                      const ChannelIcon = ChannelIcons[ticket.channel];
+                      return (
+                        <div
+                          key={ticket.id}
+                          className={`p-4 border-b cursor-pointer hover:bg-muted transition-colors ${
+                            selectedTicket === ticket.id ? 'bg-muted' : ''
+                          } bg-blue-50`}
+                          onClick={() => setSelectedTicket(ticket.id)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={ticket.customer.avatar} />
+                              <AvatarFallback>
+                                {ticket.customer.name.split(' ').map(n => n[0]).join('')}
+                              </AvatarFallback>
+                            </Avatar>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <ChannelIcon className={`h-4 w-4 ${ChannelColors[ticket.channel]}`} />
+                                <span className="font-medium text-sm truncate">
+                                  {ticket.customer.name}
+                                </span>
+                                <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                              </div>
+
+                              <h3 className="font-semibold text-sm truncate mb-1">
+                                {ticket.subject}
+                              </h3>
+
+                              <p className="text-xs text-muted-foreground truncate mb-2">
+                                {ticket.content}
+                              </p>
+
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Badge 
+                                    className={`text-xs ${StatusColors[ticket.status]} text-white`}
+                                    variant="secondary"
+                                  >
+                                    {ticket.status}
+                                  </Badge>
+                                  <span className={`text-xs font-medium ${PriorityColors[ticket.priority]}`}>
+                                    {ticket.priority}
+                                  </span>
+                                </div>
+                                
+                                <div className="flex items-center gap-2">
+                                  {ticket.assignee && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {ticket.assignee}
+                                    </Badge>
+                                  )}
+                                  <span className="text-xs text-muted-foreground">
+                                    {formatLastActivity(ticket.lastActivity)}
+                                  </span>
+                                  {ticket.responses > 0 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {ticket.responses}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="assigned" className="mt-0">
+                <div className="overflow-y-auto">
+                  {loading ? (
+                    <div className="p-4 text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                      <p className="text-sm text-muted-foreground">Loading tickets...</p>
+                    </div>
+                  ) : filteredTickets.filter(t => t.assignee && t.assignee.includes(user?.user_metadata?.display_name || user?.email || '')).length === 0 ? (
+                    <div className="p-4 text-center">
+                      <p className="text-muted-foreground">No tickets assigned to you</p>
+                    </div>
+                  ) : (
+                    filteredTickets.filter(t => t.assignee && t.assignee.includes(user?.user_metadata?.display_name || user?.email || '')).map((ticket) => {
+                      const ChannelIcon = ChannelIcons[ticket.channel];
+                      return (
+                        <div
+                          key={ticket.id}
+                          className={`p-4 border-b cursor-pointer hover:bg-muted transition-colors ${
+                            selectedTicket === ticket.id ? 'bg-muted' : ''
+                          } ${ticket.unread ? 'bg-blue-50' : ''}`}
+                          onClick={() => setSelectedTicket(ticket.id)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={ticket.customer.avatar} />
+                              <AvatarFallback>
+                                {ticket.customer.name.split(' ').map(n => n[0]).join('')}
+                              </AvatarFallback>
+                            </Avatar>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <ChannelIcon className={`h-4 w-4 ${ChannelColors[ticket.channel]}`} />
+                                <span className="font-medium text-sm truncate">
+                                  {ticket.customer.name}
+                                </span>
+                                {ticket.unread && (
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                                )}
+                                <User className="h-3 w-3 text-green-600" />
+                              </div>
+
+                              <h3 className={`font-medium text-sm truncate mb-1 ${
+                                ticket.unread ? 'font-semibold' : ''
+                              }`}>
+                                {ticket.subject}
+                              </h3>
+
+                              <p className="text-xs text-muted-foreground truncate mb-2">
+                                {ticket.content}
+                              </p>
+
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Badge 
+                                    className={`text-xs ${StatusColors[ticket.status]} text-white`}
+                                    variant="secondary"
+                                  >
+                                    {ticket.status}
+                                  </Badge>
+                                  <span className={`text-xs font-medium ${PriorityColors[ticket.priority]}`}>
+                                    {ticket.priority}
+                                  </span>
+                                </div>
+                                
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="text-xs">
+                                    {ticket.assignee}
+                                  </Badge>
+                                  <span className="text-xs text-muted-foreground">
+                                    {formatLastActivity(ticket.lastActivity)}
+                                  </span>
+                                  {ticket.responses > 0 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {ticket.responses}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="urgent" className="mt-0">
+                <div className="overflow-y-auto">
+                  {loading ? (
+                    <div className="p-4 text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                      <p className="text-sm text-muted-foreground">Loading tickets...</p>
+                    </div>
+                  ) : filteredTickets.filter(t => t.priority === 'urgent').length === 0 ? (
+                    <div className="p-4 text-center">
+                      <p className="text-muted-foreground">No urgent tickets</p>
+                    </div>
+                  ) : (
+                    filteredTickets.filter(t => t.priority === 'urgent').map((ticket) => {
+                      const ChannelIcon = ChannelIcons[ticket.channel];
+                      return (
+                        <div
+                          key={ticket.id}
+                          className={`p-4 border-b cursor-pointer hover:bg-muted transition-colors ${
+                            selectedTicket === ticket.id ? 'bg-muted' : ''
+                          } ${ticket.unread ? 'bg-blue-50' : ''} border-l-4 border-l-red-500`}
+                          onClick={() => setSelectedTicket(ticket.id)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={ticket.customer.avatar} />
+                              <AvatarFallback>
+                                {ticket.customer.name.split(' ').map(n => n[0]).join('')}
+                              </AvatarFallback>
+                            </Avatar>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <ChannelIcon className={`h-4 w-4 ${ChannelColors[ticket.channel]}`} />
+                                <span className="font-medium text-sm truncate">
+                                  {ticket.customer.name}
+                                </span>
+                                {ticket.unread && (
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                                )}
+                                <Badge variant="destructive" className="text-xs">URGENT</Badge>
+                              </div>
+
+                              <h3 className={`font-medium text-sm truncate mb-1 ${
+                                ticket.unread ? 'font-semibold' : ''
+                              }`}>
+                                {ticket.subject}
+                              </h3>
+
+                              <p className="text-xs text-muted-foreground truncate mb-2">
+                                {ticket.content}
+                              </p>
+
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Badge 
+                                    className={`text-xs ${StatusColors[ticket.status]} text-white`}
+                                    variant="secondary"
+                                  >
+                                    {ticket.status}
+                                  </Badge>
+                                  <span className="text-xs font-medium text-red-600">
+                                    {ticket.priority}
+                                  </span>
+                                </div>
+                                
+                                <div className="flex items-center gap-2">
+                                  {ticket.assignee && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {ticket.assignee}
+                                    </Badge>
+                                  )}
+                                  <span className="text-xs text-muted-foreground">
+                                    {formatLastActivity(ticket.lastActivity)}
+                                  </span>
+                                  {ticket.responses > 0 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {ticket.responses}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
 
