@@ -259,6 +259,7 @@ export function UnifiedInbox() {
     setSelectedTicket(ticketId);
     // Mark ticket as read
     setReadTickets(prev => new Set([...prev, ticketId]));
+    setTickets(prev => prev.map(t => (t.id === ticketId ? { ...t, unread: false } : t)));
   };
 
   const handleSendReply = async () => {
