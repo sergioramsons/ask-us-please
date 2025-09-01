@@ -104,6 +104,7 @@ export function UnifiedInbox() {
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
   const [readTickets, setReadTickets] = useState<Set<string>>(new Set());
+  const [readsLoaded, setReadsLoaded] = useState(false);
 
   // Persist read tickets per user+organization in localStorage
   const storageKey = user?.id ? `unifiedInbox:reads:${user.id}:${organization?.id || 'org'}` : null;
@@ -125,6 +126,8 @@ export function UnifiedInbox() {
       if (merged.size > 0) setReadTickets(merged);
     } catch (e) {
       console.warn('Failed to load read tickets from storage', e);
+    } finally {
+      setReadsLoaded(true);
     }
   }, [user?.id, organization?.id]);
 
@@ -162,10 +165,10 @@ export function UnifiedInbox() {
   }, []);
 
   useEffect(() => {
-    if (organization?.id) {
+    if (organization?.id && readsLoaded) {
       loadTickets();
     }
-  }, [organization?.id]);
+  }, [organization?.id, readsLoaded]);
 
   // Load real tickets from database with optimized query
   const loadTickets = async () => {
@@ -297,7 +300,17 @@ export function UnifiedInbox() {
   const handleTicketClick = (ticketId: string) => {
     setSelectedTicket(ticketId);
     // Mark ticket as read
-    setReadTickets(prev => new Set([...prev, ticketId]));
+    setReadTickets(prev => {
+      const next = new Set(prev);
+      next.add(ticketId);
+      // Persist immediately to avoid losing state on quick navigation
+      if (storageKey) {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(Array.from(next)));
+        } catch {}
+      }
+      return next;
+    });
     setTickets(prev => prev.map(t => (t.id === ticketId ? { ...t, unread: false } : t)));
   };
 
