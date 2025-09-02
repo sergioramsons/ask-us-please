@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { parseMultipartEmail } from '@/lib/emailParser';
+import VoiceInterface from '@/components/audio/VoiceInterface';
 
 interface EnhancedTicketDetailProps {
   ticket: Ticket;
@@ -520,6 +521,14 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
 
         {/* Apps Pane */}
         <div className="w-80 bg-muted/20 overflow-y-auto">
+          {/* Voice Assistant */}
+          <div className="p-4 border-b">
+            <VoiceInterface 
+              ticketId={ticket.ticketNumber} 
+              onSpeakingChange={(speaking) => console.log('Voice assistant speaking:', speaking)}
+            />
+          </div>
+
           {/* Contact Details */}
           <div className="p-4 border-b">
             <h3 className="text-sm font-semibold mb-3">Contact Details</h3>
