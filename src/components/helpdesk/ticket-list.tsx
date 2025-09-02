@@ -1,11 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Ticket, TicketStatus } from "@/types/ticket";
-import { Search, LayoutGrid, List, Inbox, Filter, ChevronDown, Eye, Settings } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { Search, LayoutGrid, List, Inbox, Filter, Eye } from "lucide-react";
 import { TicketFiltersPanel } from "./TicketFiltersPanel";
 import { TicketViews } from "./TicketViews";
 import { TicketCard } from "./TicketCard";
@@ -34,7 +32,7 @@ export function TicketList({
   onToggleSelection,
   onBulkDelete 
 }: TicketListProps) {
-  const { toast } = useToast();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [layout, setLayout] = useState<ViewLayout>('card');
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest');

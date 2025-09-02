@@ -94,7 +94,7 @@ export function TicketInbox({
               key={ticket.id}
               className={`flex items-center gap-4 p-4 hover:bg-accent/30 transition-colors ${
                 selectedTicketIds.has(ticket.id) ? 'bg-accent/20' : ''
-              } ${unread ? 'bg-blue-50/50 border-l-4 border-l-blue-500' : ''} ${
+              } ${unread ? 'bg-primary/10 border-l-4 border-l-primary' : ''} ${
                 selectionMode ? '' : 'cursor-pointer'
               }`}
               onClick={() => !selectionMode && onViewTicket(ticket)}
@@ -111,7 +111,7 @@ export function TicketInbox({
               {/* Read/Unread indicator */}
               <div className="flex-shrink-0">
                 {unread ? (
-                  <Mail className="h-4 w-4 text-blue-600" />
+                  <Mail className="h-4 w-4 text-primary" />
                 ) : (
                   <MailOpen className="h-4 w-4 text-muted-foreground" />
                 )}

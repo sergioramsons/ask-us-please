@@ -10,6 +10,7 @@ import { AdminPanel } from "@/components/admin/AdminPanel";
 import { CombinedContactsCompanies } from "@/components/admin/CombinedContactsCompanies";
 import { ReportsDashboard } from "@/components/reports/ReportsDashboard";
 import { EnhancedTicketDetail } from "@/components/helpdesk/EnhancedTicketDetail";
+import { TicketList } from "@/components/helpdesk/ticket-list";
 import { UnifiedInbox } from "@/components/channels/UnifiedInbox";
 import { AccountDashboard } from "@/components/account/AccountDashboard";
 import { FreshdeskLayout } from "@/components/layout/FreshdeskLayout";
@@ -530,85 +531,16 @@ const loadTickets = async () => {
   };
 
   const renderTicketsView = () => (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Top bar actions to mirror Freshdesk minimalism */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">All Tickets</h2>
-          <p className="text-muted-foreground">Manage and track all support tickets</p>
+        <div className="sr-only">
+          <h2>Tickets</h2>
         </div>
-        <Button 
-          onClick={() => setCurrentView('create-ticket')}
-          variant="default"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          New Ticket
-        </Button>
-      </div>
-      
-      {/* Ticket Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        {[
-          { key: 'all', label: 'Total', value: stats.total, color: 'text-primary' },
-          { key: 'open', label: 'Open', value: stats.open, color: 'text-red-600' },
-          { key: 'in-progress', label: 'In Progress', value: stats.inProgress, color: 'text-orange-600' },
-          { key: 'resolved', label: 'Resolved', value: stats.resolved, color: 'text-green-600' },
-          { key: 'closed', label: 'Closed', value: stats.closed, color: 'text-gray-600' },
-        ].map((stat) => (
-          <div
-            key={stat.key}
-            role="button"
-            tabIndex={0}
-            onClick={() => setStatusFilter(stat.key as any)}
-            onKeyDown={(e) => e.key === 'Enter' && setStatusFilter(stat.key as any)}
-            className={`freshdesk-card cursor-pointer transition-all hover:shadow-medium ${
-              statusFilter === stat.key ? 'ring-2 ring-primary' : ''
-            }`}
-          >
-            <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
-            <div className="text-sm text-muted-foreground">{stat.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Selection Mode Controls */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="text-sm text-muted-foreground">
-            Showing {statusFilter === 'all' ? tickets.length : tickets.filter(t => t.status === statusFilter).length} of {tickets.length}
-            {statusFilter !== 'all' && (
-              <span> • Filter: <span className="font-medium capitalize">{String(statusFilter).replace('-', ' ')}</span></span>
-            )}
-          </div>
-          {statusFilter !== 'all' && (
-            <Button variant="outline" size="sm" onClick={() => setStatusFilter('all')}>
-              Clear filter
-            </Button>
-          )}
-        </div>
-        
         <div className="flex items-center gap-2">
           {isSelectionMode && (
             <>
-              <span className="text-sm text-muted-foreground">
-                {selectedTicketIds.size} selected
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={selectedTicketIds.size > 0 ? deselectAllTickets : selectAllTickets}
-              >
-                {selectedTicketIds.size > 0 ? (
-                  <>
-                    <Square className="h-4 w-4 mr-1" />
-                    Deselect All
-                  </>
-                ) : (
-                  <>
-                    <CheckSquare className="h-4 w-4 mr-1" />
-                    Select All
-                  </>
-                )}
-              </Button>
+              <span className="text-sm text-muted-foreground">{selectedTicketIds.size} selected</span>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
@@ -617,7 +549,7 @@ const loadTickets = async () => {
                     disabled={selectedTicketIds.size === 0 || deletingMultiple}
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
-                    Delete Selected ({selectedTicketIds.size})
+                    Delete Selected
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -640,7 +572,7 @@ const loadTickets = async () => {
               </AlertDialog>
             </>
           )}
-          
+
           <Button
             variant={isSelectionMode ? "default" : "outline"}
             size="sm"
@@ -648,116 +580,23 @@ const loadTickets = async () => {
           >
             {isSelectionMode ? "Exit Selection" : "Select Multiple"}
           </Button>
+
+          <Button onClick={() => setCurrentView('create-ticket')}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Ticket
+          </Button>
         </div>
       </div>
 
-      {/* Tickets List */}
-      <div className="freshdesk-card">
-        {!ticketsLoading && (
-          <div>
-            {tickets.length === 0 ? (
-              <div className="text-center py-12">
-                <TicketIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">No tickets yet</h3>
-                <p className="text-muted-foreground mb-4">Create your first ticket to get started</p>
-                <Button 
-                  onClick={() => setCurrentView('create-ticket')}
-                  variant="default"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Ticket
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {(statusFilter === 'all' ? tickets : tickets.filter(t => t.status === statusFilter)).map((ticket) => (
-                   <div 
-                     key={ticket.id}
-                     className="flex items-center justify-between p-4 border border-border rounded hover:bg-accent/50 transition-colors cursor-pointer"
-                     onClick={() => !isSelectionMode && handleViewTicket(ticket)}
-                   >
-                     <div className="flex items-start gap-3 flex-1">
-                       {isSelectionMode && (
-                         <Checkbox
-                           checked={selectedTicketIds.has(ticket.id)}
-                           onCheckedChange={() => toggleTicketSelection(ticket.id)}
-                           onClick={(e) => e.stopPropagation()}
-                           className="mt-1"
-                         />
-                       )}
-                       <div className="flex-1">
-                       <div className="flex items-center gap-3">
-                         <span className="font-medium text-sm">#{ticket.ticketNumber || ticket.id.slice(0, 8)}</span>
-                         <span className={`px-2 py-1 rounded text-xs font-medium ${
-                           ticket.status === 'open' ? 'bg-red-100 text-red-800' :
-                           ticket.status === 'in-progress' ? 'bg-orange-100 text-orange-800' :
-                           ticket.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                           'bg-gray-100 text-gray-800'
-                         }`}>
-                           {ticket.status}
-                         </span>
-                         <span className={`px-2 py-1 rounded text-xs font-medium ${
-                           ticket.priority === 'high' ? 'bg-red-100 text-red-800' :
-                           ticket.priority === 'medium' ? 'bg-orange-100 text-orange-800' :
-                           'bg-blue-100 text-blue-800'
-                         }`}>
-                           {ticket.priority}
-                         </span>
-                       </div>
-                       <h3 className="font-medium mt-1">{ticket.title}</h3>
-                       <p className="text-sm text-muted-foreground line-clamp-2">{ticket.description}</p>
-                       <div className="text-xs text-muted-foreground mt-2">
-                         Created {ticket.createdAt.toLocaleDateString()} • Updated {ticket.updatedAt.toLocaleDateString()}
-                       </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2 ml-4">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-destructive hover:text-destructive"
-                              disabled={deletingTicket === ticket.id}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Ticket</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete ticket "{ticket.title}"? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
-                               <AlertDialogAction
-                                 onClick={(e) => { e.stopPropagation(); handleDeleteTicket(ticket.id); }}
-                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                               >
-                                 Delete Ticket
-                               </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-        
-        {ticketsLoading && (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading tickets...</p>
-          </div>
-        )}
-      </div>
+      {/* Freshdesk-style Ticket List */}
+      <TicketList
+        tickets={tickets}
+        onViewTicket={handleViewTicket}
+        onTicketDeleted={loadTickets}
+        selectionMode={isSelectionMode}
+        selectedTicketIds={selectedTicketIds}
+        onToggleSelection={toggleTicketSelection}
+      />
     </div>
   );
 
