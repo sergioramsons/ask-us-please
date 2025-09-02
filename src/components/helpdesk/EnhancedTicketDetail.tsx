@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { parseMultipartEmail } from '@/lib/emailParser';
-
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface EnhancedTicketDetailProps {
   ticket: Ticket;
@@ -307,55 +307,70 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
 
           {/* Conversation/Replies */}
           <div className="flex-1 overflow-y-auto">
-            <div id="replies-section" className="p-4 min-h-[200px]">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-foreground">Conversation</h3>
-                <Badge variant="outline" className="text-xs">
-                  {repliesLoading ? 'Loading…' : `Replies (${replies.length})`}
-                </Badge>
+            <Tabs defaultValue="conversation" className="w-full">
+              <div className="sticky top-0 z-10 bg-card/80 backdrop-blur border-b">
+                <div className="p-2">
+                  <TabsList>
+                    <TabsTrigger value="conversation">
+                      Conversation
+                      <Badge variant="outline" className="ml-2 text-xs">
+                        {repliesLoading ? '…' : replies.length}
+                      </Badge>
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
               </div>
-              {repliesLoading ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">Loading replies...</p>
-                </div>
-              ) : replies.length > 0 ? (
-                <div className="space-y-4">
-                  
-                  {replies.map((reply) => (
-                    <div key={reply.id} className="flex gap-3">
-                      <Avatar className="h-8 w-8 shrink-0">
-                        <AvatarFallback className="text-xs">
-                          {reply.contact_id ? 'C' : 'S'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-medium">
-                            {reply.contact_id ? 'Customer' : 'Support'}
-                          </span>
-                          {reply.is_internal && (
-                            <Badge variant="secondary" className="text-xs">Internal</Badge>
-                          )}
-                          <span className="text-xs text-muted-foreground">
-                            {formatDate(reply.created_at)}
-                          </span>
-                        </div>
-                        <div className="bg-muted/30 rounded-lg p-3 border border-border shadow-sm">
-                          <p className="text-sm whitespace-pre-wrap break-words text-foreground">
-                            {getReplyText(reply.content) || '(no content)'}
-                          </p>
-                        </div>
-                      </div>
+              <TabsContent value="conversation" className="m-0">
+                <div id="replies-section" className="p-4 min-h-[200px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-foreground">Conversation</h3>
+                    <Badge variant="outline" className="text-xs">
+                      {repliesLoading ? 'Loading…' : `Replies (${replies.length})`}
+                    </Badge>
+                  </div>
+                  {repliesLoading ? (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">Loading replies...</p>
                     </div>
-                  ))}
+                  ) : replies.length > 0 ? (
+                    <div className="space-y-4">
+                      {replies.map((reply) => (
+                        <div key={reply.id} className="flex gap-3">
+                          <Avatar className="h-8 w-8 shrink-0">
+                            <AvatarFallback className="text-xs">
+                              {reply.contact_id ? 'C' : 'S'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-sm font-medium">
+                                {reply.contact_id ? 'Customer' : 'Support'}
+                              </span>
+                              {reply.is_internal && (
+                                <Badge variant="secondary" className="text-xs">Internal</Badge>
+                              )}
+                              <span className="text-xs text-muted-foreground">
+                                {formatDate(reply.created_at)}
+                              </span>
+                            </div>
+                            <div className="bg-muted/30 rounded-lg p-3 border border-border shadow-sm">
+                              <p className="text-sm whitespace-pre-wrap break-words text-foreground">
+                                {getReplyText(reply.content) || '(no content)'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <MessageSquare className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                      <p className="text-muted-foreground">No replies yet</p>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="text-center py-8">
-                  <MessageSquare className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-muted-foreground">No replies yet</p>
-                </div>
-              )}
-            </div>
+              </TabsContent>
+            </Tabs>
           </div>
 
           {/* Response Form */}
