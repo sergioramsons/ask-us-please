@@ -25,7 +25,7 @@ export function FreshdeskLayout({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-surface flex">
+    <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
       <FreshdeskSidebar
         currentView={currentView}

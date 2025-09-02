@@ -538,7 +538,7 @@ const loadTickets = async () => {
         </div>
         <Button 
           onClick={() => setCurrentView('create-ticket')}
-          variant="freshdesk"
+          variant="default"
         >
           <Plus className="h-4 w-4 mr-2" />
           New Ticket
@@ -662,7 +662,7 @@ const loadTickets = async () => {
                 <p className="text-muted-foreground mb-4">Create your first ticket to get started</p>
                 <Button 
                   onClick={() => setCurrentView('create-ticket')}
-                  variant="freshdesk"
+                  variant="default"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Create Ticket

@@ -8,39 +8,39 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Advanced modern color palette */
-    --background: 0 0% 98%;
-    --foreground: 224 71.4% 4.1%;
+    /* Freshdesk color palette - exact match */
+    --background: 0 0% 99%;
+    --foreground: 210 11% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 224 71.4% 4.1%;
+    --card-foreground: 210 11% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 224 71.4% 4.1%;
+    --popover-foreground: 210 11% 15%;
 
-    /* Modern primary with depth */
-    --primary: 262 100% 58%;
-    --primary-hover: 262 83% 62%;
-    --primary-muted: 262 64% 95%;
-    --primary-foreground: 210 20% 98%;
+    /* Freshdesk primary - teal/green */
+    --primary: 149 60% 43%;
+    --primary-hover: 149 60% 38%;
+    --primary-muted: 149 60% 95%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Sophisticated neutrals */
-    --secondary: 220 14.3% 95.9%;
-    --secondary-foreground: 220.9 39.3% 11%;
+    /* Freshdesk neutrals */
+    --secondary: 210 17% 96%;
+    --secondary-foreground: 210 11% 15%;
 
-    --muted: 220 14.3% 95.9%;
-    --muted-foreground: 220 8.9% 46.1%;
+    --muted: 210 17% 98%;
+    --muted-foreground: 210 11% 46%;
 
-    --accent: 220 14.3% 95.9%;
-    --accent-foreground: 220.9 39.3% 11%;
+    --accent: 210 17% 95%;
+    --accent-foreground: 210 11% 15%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 20% 98%;
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    /* Premium borders */
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 262 100% 58%;
+    /* Clean Freshdesk borders */
+    --border: 210 17% 93%;
+    --input: 210 17% 93%;
+    --ring: 149 60% 43%;
 
     /* Status with personality */
     --success: 142 76% 36%;
@@ -55,22 +55,22 @@ All colors MUST be HSL.
     --info-light: 221 83% 94%;
     --info-foreground: 355 20% 98%;
 
-    /* Advanced sidebar */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 240 5.2% 33.9%;
-    --sidebar-primary: 262 100% 58%;
+    /* Freshdesk sidebar */
+    --sidebar-background: 215 25% 97%;
+    --sidebar-foreground: 210 11% 40%;
+    --sidebar-primary: 149 60% 43%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14.3% 95.9%;
-    --sidebar-accent-foreground: 220.9 39.3% 11%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 262 100% 58%;
+    --sidebar-accent: 149 60% 95%;
+    --sidebar-accent-foreground: 210 11% 15%;
+    --sidebar-border: 210 17% 90%;
+    --sidebar-ring: 149 60% 43%;
 
-    /* Premium gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(262 100% 58%), hsl(292 84% 61%));
-    --gradient-secondary: linear-gradient(135deg, hsl(220 14% 96%), hsl(210 20% 98%));
-    --gradient-hero: linear-gradient(135deg, hsl(262 100% 58%) 0%, hsl(292 84% 61%) 50%, hsl(312 73% 64%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(220 14% 99%) 100%);
-    --gradient-surface: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 14% 98%));
+    /* Freshdesk gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(149 60% 43%), hsl(149 60% 48%));
+    --gradient-secondary: linear-gradient(135deg, hsl(210 17% 96%), hsl(210 20% 98%));
+    --gradient-hero: linear-gradient(135deg, hsl(149 60% 43%) 0%, hsl(149 60% 48%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(210 17% 99%) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(0 0% 100%), hsl(215 25% 98%));
     
     /* Enhanced shadows */
     --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
@@ -81,21 +81,21 @@ All colors MUST be HSL.
     --shadow-glow: 0 0 0 1px hsl(262 100% 58% / 0.05), 0 0 20px hsl(262 100% 58% / 0.1);
     --shadow-colored: 0 8px 25px -8px hsl(262 100% 58% / 0.35);
 
-    /* Enhanced typography */
-    --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --font-mono: "JetBrains Mono", "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
-    --font-display: "Cal Sans", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    /* Freshdesk typography */
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif;
+    --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+    --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
 
-    /* Modern spacing */
-    --radius: 8px;
-    --radius-sm: 6px;
-    --radius-lg: 12px;
-    --radius-xl: 16px;
+    /* Freshdesk spacing */
+    --radius: 6px;
+    --radius-sm: 4px;
+    --radius-lg: 8px;
+    --radius-xl: 12px;
 
-    /* Layout */
-    --header-height: 64px;
-    --sidebar-width: 280px;
-    --sidebar-width-collapsed: 68px;
+    /* Freshdesk layout */
+    --header-height: 60px;
+    --sidebar-width: 240px;
+    --sidebar-width-collapsed: 60px;
   }
 
   .dark {
@@ -177,45 +177,49 @@ All colors MUST be HSL.
     letter-spacing: -0.011em;
   }
 
-  /* Advanced modern components */
+  /* Freshdesk components */
   .modern-header {
-    @apply h-[var(--header-height)] bg-card/95 backdrop-blur-md border-b border-border/50 shadow-sm;
+    @apply h-[var(--header-height)] bg-card border-b border-border shadow-sm;
   }
 
   .modern-sidebar {
-    @apply w-[var(--sidebar-width)] bg-gradient-card border-r border-border/50 shadow-lg backdrop-blur-sm;
+    @apply w-[var(--sidebar-width)] bg-sidebar border-r border-sidebar-border shadow-sm;
   }
 
   .modern-content {
-    @apply bg-gradient-surface min-h-[calc(100vh-var(--header-height))];
+    @apply bg-muted min-h-[calc(100vh-var(--header-height))];
   }
 
   .modern-card {
-    @apply bg-gradient-card border border-border/50 shadow-lg rounded-[var(--radius-lg)] p-6 backdrop-blur-sm;
+    @apply bg-card border border-border shadow-sm rounded-[var(--radius)] p-4;
   }
 
   .modern-card-hover {
-    @apply transition-all duration-300 hover:shadow-xl hover:shadow-colored/20 hover:-translate-y-1;
+    @apply transition-all duration-200 hover:shadow-md hover:border-border/80;
   }
 
   .glass-effect {
-    @apply bg-card/80 backdrop-blur-xl border border-border/20 shadow-xl;
+    @apply bg-card border border-border shadow-md;
   }
 
   .modern-button {
-    @apply bg-gradient-primary text-primary-foreground hover:shadow-lg hover:shadow-colored/25 rounded-[var(--radius)] px-6 py-3 font-medium text-sm transition-all duration-300 hover:scale-105;
+    @apply bg-primary text-primary-foreground hover:bg-primary-hover rounded-[var(--radius)] px-4 py-2 text-sm font-medium transition-colors duration-200;
   }
 
   .modern-input {
-    @apply bg-card/50 backdrop-blur-sm border border-border/50 rounded-[var(--radius)] px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all duration-200;
+    @apply bg-card border border-input rounded-[var(--radius)] px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-ring transition-colors duration-200;
   }
 
   .modern-nav-item {
-    @apply flex items-center gap-3 px-4 py-3 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground rounded-[var(--radius)] transition-all duration-200 hover:translate-x-1;
+    @apply flex items-center gap-3 px-3 py-2 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground rounded-[var(--radius-sm)] transition-colors duration-200;
   }
 
   .modern-nav-item-active {
-    @apply bg-gradient-primary text-primary-foreground shadow-md font-semibold;
+    @apply bg-sidebar-accent text-sidebar-accent-foreground font-semibold border-l-2 border-l-primary;
+  }
+
+  .freshdesk-card {
+    @apply bg-card border border-border shadow-sm rounded-[var(--radius)] p-4;
   }
 
   .animate-float {
