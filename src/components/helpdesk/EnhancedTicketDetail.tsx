@@ -22,11 +22,13 @@ import {
   CheckCircle,
   XCircle,
   Timer,
-  TrendingUp
+  TrendingUp,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { parseMultipartEmail } from '@/lib/emailParser';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface EnhancedTicketDetailProps {
   ticket: Ticket;
@@ -41,6 +43,7 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
   const [replies, setReplies] = useState<any[]>([]);
   const [repliesLoading, setRepliesLoading] = useState(true);
   const [currentDepartment, setCurrentDepartment] = useState<string | null>((ticket as any).department_id || null);
+  const [conversationOpen, setConversationOpen] = useState(true);
 
   // Load departments on mount
   useEffect(() => {
@@ -307,27 +310,26 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
 
           {/* Conversation/Replies */}
           <div className="flex-1 overflow-y-auto">
-            <Tabs defaultValue="conversation" className="w-full">
-              <div className="sticky top-0 z-10 bg-card/80 backdrop-blur border-b">
-                <div className="p-2">
-                  <TabsList>
-                    <TabsTrigger value="conversation">
-                      Conversation
-                      <Badge variant="outline" className="ml-2 text-xs">
-                        {repliesLoading ? '…' : replies.length}
-                      </Badge>
-                    </TabsTrigger>
-                  </TabsList>
-                </div>
-              </div>
-              <TabsContent value="conversation" className="m-0">
-                <div id="replies-section" className="p-4 min-h-[200px]">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-foreground">Conversation</h3>
-                    <Badge variant="outline" className="text-xs">
-                      {repliesLoading ? 'Loading…' : `Replies (${replies.length})`}
+            <Collapsible open={conversationOpen} onOpenChange={setConversationOpen}>
+              <div className="sticky top-0 z-20 bg-card border-b">
+                <div className="p-2 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Conversation</span>
+                    <Badge variant="outline" className="ml-1 text-xs">
+                      {repliesLoading ? '…' : replies.length}
                     </Badge>
                   </div>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm" aria-label={conversationOpen ? 'Collapse conversation' : 'Expand conversation'}>
+                      {conversationOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </Button>
+                  </CollapsibleTrigger>
+                </div>
+              </div>
+
+              <CollapsibleContent>
+                <div id="replies-section" className="p-4 min-h-[160px]">
                   {repliesLoading ? (
                     <div className="text-center py-8">
                       <p className="text-muted-foreground">Loading replies...</p>
@@ -369,8 +371,8 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
                     </div>
                   )}
                 </div>
-              </TabsContent>
-            </Tabs>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
           {/* Response Form */}
