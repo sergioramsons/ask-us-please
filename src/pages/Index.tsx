@@ -67,7 +67,7 @@ const Index = () => {
     window.history.replaceState({}, '', newUrl);
   };
 
-  // Initialize view from URL on mount
+  // Initialize view from URL on mount and handle URL routing
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlView = params.get('view') as View;
@@ -75,12 +75,22 @@ const Index = () => {
     
     if (urlTicketId) {
       setCurrentView('ticket-detail');
+      // Handle ticket selection after tickets load
+      if (tickets.length > 0) {
+        const t = tickets.find(t => t.id === urlTicketId);
+        if (t) {
+          setSelectedTicket(t);
+        } else {
+          setTicketParam(null);
+          setCurrentView('tickets');
+        }
+      }
     } else if (urlView && ['inbox', 'contacts-companies', 'create-ticket', 'admin-panel', 'reports', 'account'].includes(urlView)) {
       setCurrentView(urlView);
     } else {
       setCurrentView('tickets');
     }
-  }, []);
+  }, [tickets]); // Include tickets dependency to handle ticket selection
 
   // Update URL when view changes
   useEffect(() => {
@@ -179,24 +189,6 @@ const loadTickets = async () => {
     }
   }, [user, organization?.id, orgLoading]);
 
-  // Handle URL routing for tickets
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const ticketId = params.get('ticketId');
-    
-    if (ticketId) {
-      if (tickets.length > 0) {
-        const t = tickets.find(t => t.id === ticketId);
-        if (t) {
-          setSelectedTicket(t);
-          setCurrentView('ticket-detail');
-        } else {
-          setTicketParam(null);
-          setCurrentView('tickets');
-        }
-      }
-    }
-  }, [tickets]);
 
   // Auto-launch helpdesk when coming from Yeastar
   useEffect(() => {
