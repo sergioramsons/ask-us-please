@@ -43,6 +43,18 @@ const Index = () => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [deletingMultiple, setDeletingMultiple] = useState(false);
 
+  const setTicketParam = (id: string | null) => {
+    const params = new URLSearchParams(window.location.search);
+    if (id) {
+      params.set('ticketId', id);
+    } else {
+      params.delete('ticketId');
+    }
+    const newQuery = params.toString();
+    const newUrl = `${window.location.pathname}${newQuery ? `?${newQuery}` : ''}`;
+    window.history.replaceState({}, '', newUrl);
+  };
+
   // Load tickets from database
 const loadTickets = async () => {
     setTicketsLoading(true);
@@ -149,9 +161,6 @@ const loadTickets = async () => {
           setTicketParam(null);
           setCurrentView('tickets');
         }
-      } else {
-        // Set view but wait for tickets to load
-        setCurrentView('ticket-detail');
       }
     }
   }, [tickets]);
@@ -231,18 +240,6 @@ const loadTickets = async () => {
     inProgress: tickets.filter(t => t.status === 'in-progress').length,
     resolved: tickets.filter(t => t.status === 'resolved').length,
     closed: tickets.filter(t => t.status === 'closed').length
-  };
-
-  const setTicketParam = (id: string | null) => {
-    const params = new URLSearchParams(window.location.search);
-    if (id) {
-      params.set('ticketId', id);
-    } else {
-      params.delete('ticketId');
-    }
-    const newQuery = params.toString();
-    const newUrl = `${window.location.pathname}${newQuery ? `?${newQuery}` : ''}`;
-    window.history.replaceState({}, '', newUrl);
   };
 
 
