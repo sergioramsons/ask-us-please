@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -42,6 +42,7 @@ const Index = () => {
   const [selectedTicketIds, setSelectedTicketIds] = useState<Set<string>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [deletingMultiple, setDeletingMultiple] = useState(false);
+  const viewInitRef = useRef(false);
 
   const setTicketParam = (id: string | null) => {
     const params = new URLSearchParams(window.location.search);
@@ -74,7 +75,7 @@ const Index = () => {
     window.history.replaceState({}, '', newUrl);
   };
 
-  // Initialize view from URL on mount and handle URL routing
+  // Initialize view from URL on mount (do not depend on tickets)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlView = params.get('view') as View;
@@ -82,25 +83,34 @@ const Index = () => {
     
     if (urlTicketId) {
       setCurrentView('ticket-detail');
-      // Handle ticket selection after tickets load
-      if (tickets.length > 0) {
-        const t = tickets.find(t => t.id === urlTicketId);
-        if (t) {
-          setSelectedTicket(t);
-        } else {
-          setTicketParam(null);
-          setCurrentView('tickets');
-        }
-      }
     } else if (urlView && ['inbox', 'contacts-companies', 'create-ticket', 'admin-panel', 'reports', 'account'].includes(urlView)) {
       setCurrentView(urlView);
     } else {
       setCurrentView('tickets');
     }
-  }, [tickets]); // Include tickets dependency to handle ticket selection
+  }, []);
 
-  // Update URL when view changes
+  // After tickets load, select the ticket if URL has ticketId and we're on ticket-detail
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlTicketId = params.get('ticketId');
+    if (currentView === 'ticket-detail' && urlTicketId && tickets.length > 0) {
+      const t = tickets.find(t => t.id === urlTicketId);
+      if (t) {
+        setSelectedTicket(t);
+      } else {
+        setTicketParam(null);
+        setCurrentView('tickets');
+      }
+    }
+  }, [tickets, currentView]);
+
+  // Update URL when view changes (skip initial mount to avoid overwriting URL params)
+  useEffect(() => {
+    if (!viewInitRef.current) {
+      viewInitRef.current = true;
+      return;
+    }
     setViewParam(currentView);
   }, [currentView]);
 
