@@ -65,6 +65,7 @@ export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps
   const [activeSection, setActiveSection] = useState<string>("general");
   const [activeSubsection, setActiveSubsection] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [initialized, setInitialized] = useState(false);
 
   // Initialize from URL parameters
   useEffect(() => {
@@ -74,13 +75,24 @@ export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps
     
     setActiveSection(section);
     setActiveSubsection(subsection);
+    setInitialized(true);
   }, []);
 
-  // Update URL when section/subsection changes
+  // Ensure a subsection is selected if section changes and none set
   useEffect(() => {
+    if (!initialized) return;
+    const section = adminSections.find(s => s.id === activeSection);
+    if (section?.subsections?.length && !activeSubsection) {
+      setActiveSubsection(section.subsections[0].id);
+    }
+  }, [activeSection, initialized]);
+
+  // Update URL when section/subsection changes (skip until initialized)
+  useEffect(() => {
+    if (!initialized) return;
     const params = new URLSearchParams(window.location.search);
     
-    if (activeSection !== 'general') {
+    if (activeSection && activeSection !== 'general') {
       params.set('adminSection', activeSection);
     } else {
       params.delete('adminSection');
@@ -95,7 +107,7 @@ export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps
     const newQuery = params.toString();
     const newUrl = `${window.location.pathname}${newQuery ? `?${newQuery}` : ''}`;
     window.history.replaceState({}, '', newUrl);
-  }, [activeSection, activeSubsection]);
+  }, [activeSection, activeSubsection, initialized]);
 
   const adminSections: AdminSection[] = [
     {
