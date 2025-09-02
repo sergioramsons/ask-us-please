@@ -55,6 +55,7 @@ const Index = () => {
     window.history.replaceState({}, '', newUrl);
   };
 
+
   // Load tickets from database
 const loadTickets = async () => {
     setTicketsLoading(true);
