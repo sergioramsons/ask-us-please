@@ -340,8 +340,8 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
                             {formatDate(reply.created_at)}
                           </span>
                         </div>
-                        <div className="bg-muted/30 rounded-lg p-3">
-                          <p className="text-sm whitespace-pre-wrap text-foreground">
+                        <div className="bg-muted/30 rounded-lg p-3 border border-border shadow-sm">
+                          <p className="text-sm whitespace-pre-wrap break-words text-foreground">
                             {getReplyText(reply.content) || '(no content)'}
                           </p>
                         </div>
