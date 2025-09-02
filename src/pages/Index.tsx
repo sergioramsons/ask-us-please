@@ -143,9 +143,25 @@ const loadTickets = async () => {
       if (t) {
         setSelectedTicket(t);
         setCurrentView('ticket-detail');
+      } else {
+        // If ticket not found, clear the URL param and go to tickets view
+        setTicketParam(null);
+        setCurrentView('tickets');
       }
+    } else if (ticketId && tickets.length === 0) {
+      // Don't change view while tickets are loading
+      return;
     }
   }, [tickets]);
+
+  // Handle initial URL routing - check for ticketId on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ticketId = params.get('ticketId');
+    if (ticketId) {
+      setCurrentView('ticket-detail');
+    }
+  }, []);
 
   // Auto-launch helpdesk when coming from Yeastar
   useEffect(() => {
