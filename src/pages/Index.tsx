@@ -244,6 +244,14 @@ const loadTickets = async () => {
     window.history.replaceState({}, '', newUrl);
   };
 
+  // Clear ticketId from URL whenever we leave Ticket Detail
+  useEffect(() => {
+    if (currentView !== 'ticket-detail') {
+      setSelectedTicket(null);
+      setTicketParam(null);
+    }
+  }, [currentView]);
+
   const handleCreateTicket = async (ticketData: any) => {
     try {
       // First, try to find or create a contact
