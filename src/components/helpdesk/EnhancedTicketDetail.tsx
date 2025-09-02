@@ -42,6 +42,7 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
   const [replies, setReplies] = useState<any[]>([]);
   const [repliesLoading, setRepliesLoading] = useState(true);
   const [currentDepartment, setCurrentDepartment] = useState<string | null>((ticket as any).department_id || null);
+  const [conversationExpanded, setConversationExpanded] = useState(true);
 
   // Load departments on mount
   useEffect(() => {
@@ -190,13 +191,13 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
     });
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadgeColor = (status: string) => {
     switch (status) {
-      case 'open': return 'bg-blue-500 text-white';
-      case 'in-progress': return 'bg-yellow-500 text-black';
-      case 'resolved': return 'bg-green-500 text-white';
-      case 'closed': return 'bg-gray-500 text-white';
-      default: return 'bg-gray-500 text-white';
+      case 'open': return 'bg-blue-100 text-blue-800';
+      case 'in-progress': return 'bg-yellow-100 text-yellow-800';
+      case 'resolved': return 'bg-green-100 text-green-800';
+      case 'closed': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -226,52 +227,55 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
   };
 
   return (
-    <div className="h-full bg-background">
-      {/* Freshdesk Header */}
-      <div className="bg-white border-b px-6 py-4 shadow-sm">
-        <div className="flex items-center justify-between max-w-full">
-          <div className="flex items-center gap-3 min-w-0">
-            <Button variant="ghost" size="sm" onClick={onBack} className="hover:bg-muted/50">
+    <div className="h-full bg-gray-50">
+      {/* Freshdesk-style Header */}
+      <div className="bg-white border-b shadow-sm">
+        <div className="px-6 py-3">
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onBack} 
+              className="h-8 w-8 p-0 hover:bg-gray-100 rounded"
+            >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-medium text-foreground truncate">{ticket.title}</h1>
-                <Badge variant="outline" className="text-xs font-normal">
-                  #{ticket.ticketNumber || ticket.id.slice(0, 8)}
-                </Badge>
-              </div>
-              <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                <span>Created {formatDate(ticket.createdAt)}</span>
-                <span>•</span>
-                <span>Updated {formatDate(ticket.updatedAt)}</span>
-              </div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-medium text-gray-900">{ticket.title}</h1>
+              <span className="text-sm text-gray-500">
+                #{ticket.ticketNumber || ticket.id.slice(0, 8)}
+              </span>
             </div>
           </div>
+        </div>
+        
+        {/* Ticket Info Bar */}
+        <div className="px-6 py-2 bg-gray-50 border-t flex items-center justify-between">
+          <div className="flex items-center gap-6 text-sm text-gray-600">
+            <span><strong>Status:</strong> <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${getStatusBadgeColor(ticket.status)}`}>{ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1).replace('-', ' ')}</span></span>
+            <span><strong>Priority:</strong> {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}</span>
+            <span><strong>Type:</strong> {ticket.category.charAt(0).toUpperCase() + ticket.category.slice(1).replace('-', ' ')}</span>
+            <span><strong>Created:</strong> {formatDate(ticket.createdAt)}</span>
+          </div>
           
-          {/* Action Bar */}
+          {/* Action Buttons */}
           <div className="flex items-center gap-2">
             <Button 
-              variant="outline" 
-              size="sm"
-              className="border-border hover:bg-muted/50"
-              onClick={() => {
-                const repliesEl = document.getElementById('replies-section');
-                repliesEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }}
+              size="sm" 
+              variant="outline"
+              className="h-8 px-3 border-gray-300 hover:bg-gray-50"
             >
-              <MessageSquare className="h-4 w-4 mr-1" />
               Reply
             </Button>
             <Button 
-              variant="outline" 
-              size="sm"
-              className="border-border hover:bg-muted/50"
+              size="sm" 
+              variant="outline"
+              className="h-8 px-3 border-gray-300 hover:bg-gray-50"
             >
               Forward
             </Button>
             <Select value={ticket.status} onValueChange={(value) => onStatusChange(ticket.id, value)}>
-              <SelectTrigger className="w-32 h-8">
+              <SelectTrigger className="w-28 h-8 border-gray-300">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -286,31 +290,29 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
       </div>
 
       {/* Main Layout */}
-      <div className="flex h-[calc(100vh-120px)]">
+      <div className="flex h-[calc(100vh-140px)]">
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col bg-white">
+        <div className="flex-1 flex flex-col bg-white mr-6">
           
           {/* Original Request */}
-          <div className="border-b bg-gray-50/50">
+          <div className="border-b border-gray-200">
             <div className="p-6">
               <div className="flex items-start gap-4">
                 <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-primary text-primary-foreground font-medium">
+                  <AvatarFallback className="bg-blue-500 text-white font-medium">
                     {ticket.customer.name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="font-medium text-foreground">{ticket.customer.name}</span>
-                    <span className="text-muted-foreground">&lt;{ticket.customer.email}&gt;</span>
-                    <span className="text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="font-medium text-gray-900">{ticket.customer.name}</span>
+                    <span className="text-gray-500">&lt;{ticket.customer.email}&gt;</span>
+                    <span className="text-sm text-gray-500">
                       {formatDate(ticket.createdAt)}
                     </span>
                   </div>
-                  <div className="prose prose-sm max-w-none">
-                    <p className="text-foreground leading-relaxed whitespace-pre-wrap">
-                      {ticket.description}
-                    </p>
+                  <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
+                    {ticket.description}
                   </div>
                 </div>
               </div>
@@ -322,56 +324,72 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
             <div className="p-6">
               {repliesLoading ? (
                 <div className="text-center py-8">
-                  <p className="text-muted-foreground">Loading conversation...</p>
+                  <p className="text-gray-500">Loading conversation...</p>
                 </div>
               ) : replies.length > 0 ? (
                 <div className="space-y-6">
-                  <div className="text-sm font-medium text-muted-foreground border-b pb-2">
-                    Conversation ({replies.length})
+                  <div className="flex items-center justify-between border-b pb-3">
+                    <h3 className="text-sm font-medium text-gray-700">
+                      Conversation ({replies.length})
+                    </h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setConversationExpanded(!conversationExpanded)}
+                      className="h-6 px-2 text-gray-500 hover:text-gray-700"
+                    >
+                      {conversationExpanded ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </Button>
                   </div>
-                  {replies.map((reply) => (
-                    <div key={reply.id} className="flex gap-4">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className={`font-medium ${
-                          reply.contact_id 
-                            ? 'bg-primary text-primary-foreground' 
-                            : 'bg-muted text-muted-foreground'
-                        }`}>
-                          {reply.contact_id ? 'C' : 'S'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="font-medium text-foreground">
-                            {reply.contact_id ? ticket.customer.name : 'Support Agent'}
-                          </span>
-                          {reply.is_internal && (
-                            <Badge variant="secondary" className="text-xs">Private Note</Badge>
-                          )}
-                          <span className="text-xs text-muted-foreground">
-                            {formatDate(reply.created_at)}
-                          </span>
+                  {conversationExpanded && (
+                    <div className="space-y-6">
+                      {replies.map((reply) => (
+                        <div key={reply.id} className="flex gap-4 border-b border-gray-100 pb-4 last:border-b-0">
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback className={`font-medium ${
+                              reply.contact_id 
+                                ? 'bg-blue-500 text-white' 
+                                : 'bg-green-500 text-white'
+                            }`}>
+                              {reply.contact_id ? 'C' : 'S'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="font-medium text-gray-900">
+                                {reply.contact_id ? ticket.customer.name : 'Support Agent'}
+                              </span>
+                              {reply.is_internal && (
+                                <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">Private Note</Badge>
+                              )}
+                              <span className="text-sm text-gray-500">
+                                {formatDate(reply.created_at)}
+                              </span>
+                            </div>
+                            <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
+                              {getReplyText(reply.content) || '(no content)'}
+                            </div>
+                          </div>
                         </div>
-                        <div className="prose prose-sm max-w-none">
-                          <p className="text-foreground leading-relaxed whitespace-pre-wrap">
-                            {getReplyText(reply.content) || '(no content)'}
-                          </p>
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
-                  <p className="text-muted-foreground">No conversation yet</p>
+                  <MessageSquare className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                  <p className="text-gray-500">No conversation yet</p>
                 </div>
               )}
             </div>
           </div>
 
           {/* Response Form */}
-          <div className="border-t bg-white p-6">
+          <div className="border-t border-gray-200 bg-white p-6">
             <TicketResponseForm 
               ticketId={ticket.id}
               ticketNumber={ticket.ticketNumber}
@@ -386,37 +404,37 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
         </div>
 
         {/* Properties Sidebar */}
-        <div className="w-80 bg-white border-l flex-shrink-0">
+        <div className="w-80 bg-white border-l border-gray-200 flex-shrink-0">
           {/* Properties Panel */}
-          <div className="p-6 border-b">
-            <h3 className="text-sm font-semibold text-foreground mb-4">Properties</h3>
+          <div className="p-4 border-b border-gray-200">
+            <h3 className="text-sm font-medium text-gray-700 mb-4">Properties</h3>
             
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-2 block">Status</label>
-                <Badge className={`${getStatusColor(ticket.status)} text-xs font-normal`}>
+                <label className="text-xs font-medium text-gray-500 mb-2 block uppercase">Status</label>
+                <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${getStatusBadgeColor(ticket.status)}`}>
                   {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1).replace('-', ' ')}
-                </Badge>
+                </span>
               </div>
               
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-2 block">Priority</label>
-                <Badge variant="outline" className="text-xs font-normal">
+                <label className="text-xs font-medium text-gray-500 mb-2 block uppercase">Priority</label>
+                <span className="text-sm text-gray-900">
                   {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
-                </Badge>
+                </span>
               </div>
 
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-2 block">Type</label>
-                <Badge variant="secondary" className="text-xs font-normal">
+                <label className="text-xs font-medium text-gray-500 mb-2 block uppercase">Type</label>
+                <span className="text-sm text-gray-900">
                   {ticket.category.charAt(0).toUpperCase() + ticket.category.slice(1).replace('-', ' ')}
-                </Badge>
+                </span>
               </div>
 
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-2 block">Group</label>
+                <label className="text-xs font-medium text-gray-500 mb-2 block uppercase">Group</label>
                 <Select value={currentDepartment || 'unassigned'} onValueChange={handleDepartmentChange}>
-                  <SelectTrigger className="h-8 text-sm">
+                  <SelectTrigger className="h-8 text-sm border-gray-300">
                     <SelectValue placeholder="Select group..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -432,14 +450,14 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
 
               {ticket.source && (
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-2 block">Source</label>
-                  <span className="text-sm text-foreground">{ticket.source.charAt(0).toUpperCase() + ticket.source.slice(1)}</span>
+                  <label className="text-xs font-medium text-gray-500 mb-2 block uppercase">Source</label>
+                  <span className="text-sm text-gray-900">{ticket.source.charAt(0).toUpperCase() + ticket.source.slice(1)}</span>
                 </div>
               )}
 
               {/* Assignment */}
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-2 block">Assignee</label>
+                <label className="text-xs font-medium text-gray-500 mb-2 block uppercase">Assignee</label>
                 <TicketAssignmentManager
                   ticketId={ticket.id}
                   currentAssigneeId={ticket.assignee?.id}
@@ -476,17 +494,17 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
           </div>
 
           {/* Requester Information */}
-          <div className="p-6 border-b">
-            <h3 className="text-sm font-semibold text-foreground mb-4">Requester</h3>
+          <div className="p-4 border-b border-gray-200">
+            <h3 className="text-sm font-medium text-gray-700 mb-4">Requester</h3>
             <div className="flex items-start gap-3">
               <Avatar className="h-10 w-10">
-                <AvatarFallback className="bg-primary text-primary-foreground font-medium">
+                <AvatarFallback className="bg-blue-500 text-white font-medium">
                   {ticket.customer.name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <h4 className="font-medium text-foreground mb-1">{ticket.customer.name}</h4>
-                <div className="space-y-1 text-sm text-muted-foreground">
+                <h4 className="font-medium text-gray-900 mb-2">{ticket.customer.name}</h4>
+                <div className="space-y-1 text-sm text-gray-600">
                   <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4" />
                     <span className="truncate">{ticket.customer.email}</span>
@@ -509,27 +527,27 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
           </div>
 
           {/* Additional Details */}
-          <div className="p-6">
-            <h3 className="text-sm font-semibold text-foreground mb-4">Additional Details</h3>
+          <div className="p-4">
+            <h3 className="text-sm font-medium text-gray-700 mb-4">Additional Details</h3>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Created</span>
-                <span className="text-foreground">{formatDate(ticket.createdAt)}</span>
+                <span className="text-gray-500">Created</span>
+                <span className="text-gray-900">{formatDate(ticket.createdAt)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Updated</span>
-                <span className="text-foreground">{formatDate(ticket.updatedAt)}</span>
+                <span className="text-gray-500">Updated</span>
+                <span className="text-gray-900">{formatDate(ticket.updatedAt)}</span>
               </div>
               {ticket.resolvedAt && (
                 <>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Resolved</span>
-                    <span className="text-foreground">{formatDate(ticket.resolvedAt)}</span>
+                    <span className="text-gray-500">Resolved</span>
+                    <span className="text-gray-900">{formatDate(ticket.resolvedAt)}</span>
                   </div>
                   {calculateResolutionTime() && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Resolution Time</span>
-                      <span className="text-foreground">{calculateResolutionTime()} hours</span>
+                      <span className="text-gray-500">Resolution Time</span>
+                      <span className="text-gray-900">{calculateResolutionTime()} hours</span>
                     </div>
                   )}
                 </>
