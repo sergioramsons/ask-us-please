@@ -133,6 +133,19 @@ const loadTickets = async () => {
     }
   }, [user, organization?.id, orgLoading]);
 
+  // Open ticket detail from URL param after tickets load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ticketId = params.get('ticketId');
+    if (ticketId && tickets.length > 0) {
+      const t = tickets.find(t => t.id === ticketId);
+      if (t) {
+        setSelectedTicket(t);
+        setCurrentView('ticket-detail');
+      }
+    }
+  }, [tickets]);
+
   // Auto-launch helpdesk when coming from Yeastar
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -200,6 +213,18 @@ const loadTickets = async () => {
     inProgress: tickets.filter(t => t.status === 'in-progress').length,
     resolved: tickets.filter(t => t.status === 'resolved').length,
     closed: tickets.filter(t => t.status === 'closed').length
+  };
+
+  const setTicketParam = (id: string | null) => {
+    const params = new URLSearchParams(window.location.search);
+    if (id) {
+      params.set('ticketId', id);
+    } else {
+      params.delete('ticketId');
+    }
+    const newQuery = params.toString();
+    const newUrl = `${window.location.pathname}${newQuery ? `?${newQuery}` : ''}`;
+    window.history.replaceState({}, '', newUrl);
   };
 
   const handleCreateTicket = async (ticketData: any) => {
@@ -451,6 +476,7 @@ const loadTickets = async () => {
   const handleViewTicket = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setCurrentView('ticket-detail');
+    setTicketParam(ticket.id);
   };
 
   const handleStatusChange = async (ticketId: string, status: TicketStatus) => {
@@ -777,7 +803,7 @@ const loadTickets = async () => {
       {currentView === 'ticket-detail' && selectedTicket && (
         <EnhancedTicketDetail
           ticket={selectedTicket}
-          onBack={() => setCurrentView('tickets')}
+          onBack={() => { setTicketParam(null); setCurrentView('tickets'); }}
           onStatusChange={handleStatusChange}
           onDepartmentChange={handleDepartmentChange}
         />
