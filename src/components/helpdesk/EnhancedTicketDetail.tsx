@@ -293,7 +293,7 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
       </div>
 
       {/* Three-column layout */}
-      <div className="flex h-[calc(100vh-140px)]">
+      <div className="flex min-h-[calc(100vh-140px)]">
         {/* Main Content - Ticket Body */}
         <div className="flex-1 flex flex-col bg-card border-r">
           {/* Ticket Description */}
