@@ -62,6 +62,13 @@ const Index = () => {
     } else {
       params.set('view', view);
     }
+    
+    // Preserve admin panel state when switching to/from admin panel
+    if (view !== 'admin-panel') {
+      params.delete('adminSection');
+      params.delete('adminSubsection');
+    }
+    
     const newQuery = params.toString();
     const newUrl = `${window.location.pathname}${newQuery ? `?${newQuery}` : ''}`;
     window.history.replaceState({}, '', newUrl);

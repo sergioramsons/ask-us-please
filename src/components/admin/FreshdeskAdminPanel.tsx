@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Settings, 
   Users, 
@@ -65,6 +65,37 @@ export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps
   const [activeSection, setActiveSection] = useState<string>("general");
   const [activeSubsection, setActiveSubsection] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Initialize from URL parameters
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const section = params.get('adminSection') || 'general';
+    const subsection = params.get('adminSubsection') || '';
+    
+    setActiveSection(section);
+    setActiveSubsection(subsection);
+  }, []);
+
+  // Update URL when section/subsection changes
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    
+    if (activeSection !== 'general') {
+      params.set('adminSection', activeSection);
+    } else {
+      params.delete('adminSection');
+    }
+    
+    if (activeSubsection) {
+      params.set('adminSubsection', activeSubsection);
+    } else {
+      params.delete('adminSubsection');
+    }
+    
+    const newQuery = params.toString();
+    const newUrl = `${window.location.pathname}${newQuery ? `?${newQuery}` : ''}`;
+    window.history.replaceState({}, '', newUrl);
+  }, [activeSection, activeSubsection]);
 
   const adminSections: AdminSection[] = [
     {
