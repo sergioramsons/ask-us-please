@@ -55,6 +55,38 @@ const Index = () => {
     window.history.replaceState({}, '', newUrl);
   };
 
+  const setViewParam = (view: View) => {
+    const params = new URLSearchParams(window.location.search);
+    if (view === 'tickets') {
+      params.delete('view');
+    } else {
+      params.set('view', view);
+    }
+    const newQuery = params.toString();
+    const newUrl = `${window.location.pathname}${newQuery ? `?${newQuery}` : ''}`;
+    window.history.replaceState({}, '', newUrl);
+  };
+
+  // Initialize view from URL on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlView = params.get('view') as View;
+    const urlTicketId = params.get('ticketId');
+    
+    if (urlTicketId) {
+      setCurrentView('ticket-detail');
+    } else if (urlView && ['inbox', 'contacts-companies', 'create-ticket', 'admin-panel', 'reports', 'account'].includes(urlView)) {
+      setCurrentView(urlView);
+    } else {
+      setCurrentView('tickets');
+    }
+  }, []);
+
+  // Update URL when view changes
+  useEffect(() => {
+    setViewParam(currentView);
+  }, [currentView]);
+
 
   // Load tickets from database
 const loadTickets = async () => {
