@@ -200,6 +200,14 @@ const loadTickets = async () => {
     }
   }, []);
 
+  // Clear ticketId from URL whenever we leave Ticket Detail
+  useEffect(() => {
+    if (currentView !== 'ticket-detail') {
+      setSelectedTicket(null);
+      setTicketParam(null);
+    }
+  }, [currentView]);
+
   // Redirect to auth if not authenticated
   if (!loading && !user) {
     return <Navigate to="/auth" replace />;
@@ -237,13 +245,6 @@ const loadTickets = async () => {
     window.history.replaceState({}, '', newUrl);
   };
 
-  // Clear ticketId from URL whenever we leave Ticket Detail
-  useEffect(() => {
-    if (currentView !== 'ticket-detail') {
-      setSelectedTicket(null);
-      setTicketParam(null);
-    }
-  }, [currentView]);
 
   const handleCreateTicket = async (ticketData: any) => {
     try {
