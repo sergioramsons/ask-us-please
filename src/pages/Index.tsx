@@ -134,34 +134,27 @@ const loadTickets = async () => {
     }
   }, [user, organization?.id, orgLoading]);
 
-  // Open ticket detail from URL param after tickets load
+  // Handle URL routing for tickets
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const ticketId = params.get('ticketId');
-    if (ticketId && tickets.length > 0) {
-      const t = tickets.find(t => t.id === ticketId);
-      if (t) {
-        setSelectedTicket(t);
-        setCurrentView('ticket-detail');
+    
+    if (ticketId) {
+      if (tickets.length > 0) {
+        const t = tickets.find(t => t.id === ticketId);
+        if (t) {
+          setSelectedTicket(t);
+          setCurrentView('ticket-detail');
+        } else {
+          setTicketParam(null);
+          setCurrentView('tickets');
+        }
       } else {
-        // If ticket not found, clear the URL param and go to tickets view
-        setTicketParam(null);
-        setCurrentView('tickets');
+        // Set view but wait for tickets to load
+        setCurrentView('ticket-detail');
       }
-    } else if (ticketId && tickets.length === 0) {
-      // Don't change view while tickets are loading
-      return;
     }
   }, [tickets]);
-
-  // Handle initial URL routing - check for ticketId on mount
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const ticketId = params.get('ticketId');
-    if (ticketId) {
-      setCurrentView('ticket-detail');
-    }
-  }, []);
 
   // Auto-launch helpdesk when coming from Yeastar
   useEffect(() => {
