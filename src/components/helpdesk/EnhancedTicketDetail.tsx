@@ -26,6 +26,7 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import { parseMultipartEmail } from '@/lib/emailParser';
 
@@ -330,87 +331,97 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
             </div>
           </div>
 
-          {/* Conversation */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-6" ref={conversationRef}>
-              {repliesLoading ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">Loading conversation...</p>
-                </div>
-              ) : replies.length > 0 ? (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between border-b pb-3">
-                    <h3 className="text-sm font-medium text-gray-700">
-                      Conversation ({replies.length})
-                    </h3>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setConversationExpanded(!conversationExpanded)}
-                      className="h-6 px-2 text-gray-500 hover:text-gray-700"
-                    >
-                      {conversationExpanded ? (
-                        <ChevronUp className="h-4 w-4" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                  {conversationExpanded && (
+          {/* Tabbed Interface */}
+          <div className="flex-1 overflow-hidden">
+            <Tabs defaultValue="conversation" className="h-full flex flex-col">
+              <TabsList className="mx-6 mt-4 grid w-full grid-cols-2">
+                <TabsTrigger value="conversation">Conversation</TabsTrigger>
+                <TabsTrigger value="add-response">Add Response</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="conversation" className="flex-1 overflow-y-auto mt-0">
+                <div className="p-6" ref={conversationRef}>
+                  {repliesLoading ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">Loading conversation...</p>
+                    </div>
+                  ) : replies.length > 0 ? (
                     <div className="space-y-6">
-                      {replies.map((reply) => (
-                        <div key={reply.id} className="flex gap-4 border-b border-gray-100 pb-4 last:border-b-0">
-                          <Avatar className="h-10 w-10">
-                            <AvatarFallback className={`font-medium ${
-                              reply.contact_id 
-                                ? 'bg-blue-500 text-white' 
-                                : 'bg-green-500 text-white'
-                            }`}>
-                              {reply.contact_id ? 'C' : 'S'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="font-medium text-gray-900">
-                                {reply.contact_id ? ticket.customer.name : 'Support Agent'}
-                              </span>
-                              {reply.is_internal && (
-                                <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">Private Note</Badge>
-                              )}
-                              <span className="text-sm text-gray-500">
-                                {formatDate(reply.created_at)}
-                              </span>
+                      <div className="flex items-center justify-between border-b pb-3">
+                        <h3 className="text-sm font-medium text-gray-700">
+                          Conversation ({replies.length})
+                        </h3>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setConversationExpanded(!conversationExpanded)}
+                          className="h-6 px-2 text-gray-500 hover:text-gray-700"
+                        >
+                          {conversationExpanded ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      {conversationExpanded && (
+                        <div className="space-y-6">
+                          {replies.map((reply) => (
+                            <div key={reply.id} className="flex gap-4 border-b border-gray-100 pb-4 last:border-b-0">
+                              <Avatar className="h-10 w-10">
+                                <AvatarFallback className={`font-medium ${
+                                  reply.contact_id 
+                                    ? 'bg-blue-500 text-white' 
+                                    : 'bg-green-500 text-white'
+                                }`}>
+                                  {reply.contact_id ? 'C' : 'S'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="font-medium text-gray-900">
+                                    {reply.contact_id ? ticket.customer.name : 'Support Agent'}
+                                  </span>
+                                  {reply.is_internal && (
+                                    <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">Private Note</Badge>
+                                  )}
+                                  <span className="text-sm text-gray-500">
+                                    {formatDate(reply.created_at)}
+                                  </span>
+                                </div>
+                                <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
+                                  {getReplyText(reply.content) || '(no content)'}
+                                </div>
+                              </div>
                             </div>
-                            <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-                              {getReplyText(reply.content) || '(no content)'}
-                            </div>
-                          </div>
+                          ))}
                         </div>
-                      ))}
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <MessageSquare className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                      <p className="text-gray-500">No conversation yet</p>
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="text-center py-12">
-                  <MessageSquare className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-500">No conversation yet</p>
+              </TabsContent>
+              
+              <TabsContent value="add-response" className="flex-1 overflow-y-auto mt-0">
+                <div className="p-6 h-full">
+                  <TicketResponseForm 
+                    ticketId={ticket.id}
+                    ticketNumber={ticket.ticketNumber}
+                    customerName={ticket.customer.name}
+                    customerEmail={ticket.customer.email}
+                    ticketSubject={ticket.title}
+                    ticketStatus={ticket.status}
+                    priority={ticket.priority}
+                    onSubmit={handleResponseSubmit}
+                  />
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* Response Form */}
-          <div className="border-t border-gray-200 bg-white p-6">
-            <TicketResponseForm 
-              ticketId={ticket.id}
-              ticketNumber={ticket.ticketNumber}
-              customerName={ticket.customer.name}
-              customerEmail={ticket.customer.email}
-              ticketSubject={ticket.title}
-              ticketStatus={ticket.status}
-              priority={ticket.priority}
-              onSubmit={handleResponseSubmit}
-            />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
 
