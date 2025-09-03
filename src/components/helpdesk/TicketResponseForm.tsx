@@ -48,6 +48,15 @@ export function TicketResponseForm({
   const [sendAndClose, setSendAndClose] = useState(false);
   const [subject, setSubject] = useState(ticketSubject);
   const [forwardTo, setForwardTo] = useState('');
+
+  // Handle response type changes - clear response when switching to forward
+  const handleResponseTypeChange = (newType: 'reply' | 'forward') => {
+    setResponseType(newType);
+    if (newType === 'forward') {
+      setResponse(''); // Clear response when switching to forward
+      setUpdateStatus(null); // Reset status change
+    }
+  };
   const { toast } = useToast();
 
   // Helper interface for CC recipients
@@ -247,7 +256,7 @@ export function TicketResponseForm({
 
   return (
     <div className="h-full bg-gray-50">
-      <Tabs value={responseType} onValueChange={(v) => setResponseType(v as 'reply' | 'forward')} className="h-full flex flex-col">
+      <Tabs value={responseType} onValueChange={(v) => handleResponseTypeChange(v as 'reply' | 'forward')} className="h-full flex flex-col">
         {/* Centered Reply/Forward Tabs */}
         <div className="bg-white border-b">
           <div className="flex items-center justify-center py-2">
@@ -650,7 +659,7 @@ function ForwardContent({
       {/* Message Body */}
       <div className="flex-1 p-4">
         <Textarea
-          placeholder="Add your message to forward..."
+          placeholder="Write your forward message here... (Only this message will be forwarded, not the conversation history)"
           value={response}
           onChange={(e) => setResponse(e.target.value)}
           className="min-h-48 border-0 shadow-none resize-none focus-visible:ring-0 p-0 h-full"
