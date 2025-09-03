@@ -103,6 +103,8 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
 
       console.log('Final replies with profiles:', repliesWithProfiles);
       setReplies(repliesWithProfiles);
+      // Ensure conversation is expanded when replies are loaded
+      setConversationExpanded(true);
     } catch (error) {
       console.error('Error loading replies:', error);
       toast({
