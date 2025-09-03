@@ -301,7 +301,7 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
       </div>
 
       {/* Main Layout */}
-      <div className="flex h-[calc(100vh-140px)]">
+      <div className="flex min-h-[calc(100vh-140px)]">
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col bg-white mr-6">
           
