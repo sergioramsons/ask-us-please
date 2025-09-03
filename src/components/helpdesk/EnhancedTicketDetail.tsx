@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -43,11 +43,13 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
   const [repliesLoading, setRepliesLoading] = useState(true);
   const [currentDepartment, setCurrentDepartment] = useState<string | null>((ticket as any).department_id || null);
   const [conversationExpanded, setConversationExpanded] = useState(true);
+  const conversationRef = useRef<HTMLDivElement>(null);
 
   // Ensure conversation is expanded when replies load
   useEffect(() => {
     if (!repliesLoading && replies.length > 0) {
       setConversationExpanded(true);
+      conversationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [repliesLoading, replies.length]);
 
@@ -330,7 +332,7 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
 
           {/* Conversation */}
           <div className="flex-1 overflow-y-auto">
-            <div className="p-6">
+            <div className="p-6" ref={conversationRef}>
               {repliesLoading ? (
                 <div className="text-center py-8">
                   <p className="text-gray-500">Loading conversation...</p>
