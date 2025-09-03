@@ -308,9 +308,10 @@ export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps
     const section = adminSections.find(s => s.id === activeSection);
     if (!section?.subsections?.length) return null;
     
-    const subsection = section.subsections.find(s => s.id === activeSubsection) || section.subsections[0];
-    const Component = subsection.component;
+    const subsection = section.subsections.find(s => s.id === activeSubsection);
+    if (!subsection) return null;
     
+    const Component = subsection.component;
     return <Component {...(subsection.props || {})} />;
   };
 
