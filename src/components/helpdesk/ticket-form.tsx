@@ -219,11 +219,106 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
                   <SelectValue placeholder="Select agent" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border-border">
-                  <SelectItem value="Justine Akvueno">Justine Akvueno</SelectItem>
+                  <SelectItem value="Justine Akusung">Justine Akusung</SelectItem>
                   <SelectItem value="John Doe">John Doe</SelectItem>
                   <SelectItem value="Jane Smith">Jane Smith</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Description Editor */}
+            <div className="space-y-2">
+              <div className="border border-border rounded-lg bg-background">
+                {/* Editor Toolbar */}
+                <div className="border-b border-border p-2 flex items-center gap-1">
+                  <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <span className="font-bold">B</span>
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <span className="italic">I</span>
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <span className="underline">U</span>
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <span className="text-xs">AI</span>
+                  </Button>
+                  <div className="w-px h-4 bg-border mx-1"></div>
+                  <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <span className="text-xs">≡</span>
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <span className="text-xs">≣</span>
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <span className="text-xs">¶</span>
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <span className="text-xs">🔗</span>
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <span className="text-xs">📷</span>
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <span className="text-xs">📊</span>
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <span className="text-xs">{}</span>
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <span className="text-xs">✏️</span>
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <span className="text-xs">😊</span>
+                  </Button>
+                </div>
+                
+                {/* Editor Content Area */}
+                <div className="p-4 min-h-[200px]">
+                  <textarea
+                    className="w-full h-full min-h-[180px] bg-transparent border-0 resize-none outline-none text-sm"
+                    placeholder="Start typing your message..."
+                    value={formData.description || ''}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  />
+                </div>
+                
+                {/* Bottom Toolbar */}
+                <div className="border-t border-border p-2 flex items-center gap-1">
+                  <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <span className="text-xs">A</span>
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <span className="text-xs">📎</span>
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <span className="text-xs">🖼️</span>
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <span className="text-xs">📊</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Reference Number Field */}
+            <div className="space-y-2">
+              <Label htmlFor="reference" className="text-sm font-medium">Reference Number</Label>
+              <Input
+                id="reference"
+                placeholder="Enter reference number"
+                className="bg-background"
+              />
+            </div>
+
+            {/* Tags Field */}
+            <div className="space-y-2">
+              <Label htmlFor="tags" className="text-sm font-medium">Tags</Label>
+              <Input
+                id="tags"
+                placeholder="Add tags"
+                className="bg-background"
+              />
             </div>
 
             {/* Form Actions */}
