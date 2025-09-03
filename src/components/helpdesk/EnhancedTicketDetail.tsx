@@ -340,68 +340,91 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
               </TabsList>
               
               <TabsContent value="conversation" className="flex-1 overflow-y-auto mt-0">
-                <div className="p-6" ref={conversationRef}>
+                <div className="bg-gray-50 h-full" ref={conversationRef}>
                   {repliesLoading ? (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500">Loading conversation...</p>
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                        <p className="text-gray-500">Loading conversation...</p>
+                      </div>
                     </div>
                   ) : replies.length > 0 ? (
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-between border-b pb-3">
-                        <h3 className="text-sm font-medium text-gray-700">
-                          Conversation ({replies.length})
-                        </h3>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setConversationExpanded(!conversationExpanded)}
-                          className="h-6 px-2 text-gray-500 hover:text-gray-700"
-                        >
-                          {conversationExpanded ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                      {conversationExpanded && (
-                        <div className="space-y-6">
-                          {replies.map((reply) => (
-                            <div key={reply.id} className="flex gap-4 border-b border-gray-100 pb-4 last:border-b-0">
-                              <Avatar className="h-10 w-10">
-                                <AvatarFallback className={`font-medium ${
-                                  reply.contact_id 
+                    <div className="p-4 space-y-4">
+                      {replies.map((reply, index) => {
+                        const isAgent = !reply.contact_id;
+                        const isPrivateNote = reply.is_internal;
+                        
+                        return (
+                          <div
+                            key={reply.id}
+                            className={`flex gap-3 ${isAgent && !isPrivateNote ? 'flex-row-reverse' : ''}`}
+                          >
+                            <Avatar className="h-9 w-9 flex-shrink-0">
+                              <AvatarFallback className={`text-sm font-medium ${
+                                isPrivateNote 
+                                  ? 'bg-orange-500 text-white'
+                                  : reply.contact_id 
                                     ? 'bg-blue-500 text-white' 
                                     : 'bg-green-500 text-white'
+                              }`}>
+                                {isPrivateNote ? 'N' : reply.contact_id ? ticket.customer.name.charAt(0).toUpperCase() : 'A'}
+                              </AvatarFallback>
+                            </Avatar>
+                            
+                            <div className={`max-w-[75%] ${isAgent && !isPrivateNote ? 'mr-auto' : 'ml-auto'}`}>
+                              {/* Message Header */}
+                              <div className={`flex items-center gap-2 mb-1 ${isAgent && !isPrivateNote ? 'flex-row-reverse' : ''}`}>
+                                <span className="text-sm font-medium text-gray-700">
+                                  {isPrivateNote 
+                                    ? 'Private Note' 
+                                    : reply.contact_id 
+                                      ? ticket.customer.name 
+                                      : 'Support Agent'
+                                  }
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {formatDate(reply.created_at)}
+                                </span>
+                                {isPrivateNote && (
+                                  <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800 border-orange-200">
+                                    Internal
+                                  </Badge>
+                                )}
+                              </div>
+                              
+                              {/* Message Bubble */}
+                              <div className={`rounded-lg px-4 py-3 shadow-sm ${
+                                isPrivateNote 
+                                  ? 'bg-orange-50 border border-orange-200' 
+                                  : reply.contact_id 
+                                    ? 'bg-white border border-gray-200' 
+                                    : 'bg-blue-50 border border-blue-200'
+                              }`}>
+                                <div className={`text-sm leading-relaxed whitespace-pre-wrap ${
+                                  isPrivateNote 
+                                    ? 'text-orange-900' 
+                                    : 'text-gray-800'
                                 }`}>
-                                  {reply.contact_id ? 'C' : 'S'}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className="font-medium text-gray-900">
-                                    {reply.contact_id ? ticket.customer.name : 'Support Agent'}
-                                  </span>
-                                  {reply.is_internal && (
-                                    <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">Private Note</Badge>
-                                  )}
-                                  <span className="text-sm text-gray-500">
-                                    {formatDate(reply.created_at)}
-                                  </span>
-                                </div>
-                                <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
                                   {getReplyText(reply.content) || '(no content)'}
                                 </div>
                               </div>
+                              
+                              {/* Message metadata */}
+                              <div className={`text-xs text-gray-400 mt-1 ${isAgent && !isPrivateNote ? 'text-right' : ''}`}>
+                                {index === replies.length - 1 && 'Latest'}
+                              </div>
                             </div>
-                          ))}
-                        </div>
-                      )}
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
-                    <div className="text-center py-12">
-                      <MessageSquare className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-                      <p className="text-gray-500">No conversation yet</p>
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <MessageSquare className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                        <h3 className="text-lg font-medium text-gray-700 mb-2">No conversation yet</h3>
+                        <p className="text-gray-500">Start the conversation by adding a response.</p>
+                      </div>
                     </div>
                   )}
                 </div>
