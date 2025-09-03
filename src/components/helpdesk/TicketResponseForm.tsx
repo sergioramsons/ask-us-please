@@ -47,6 +47,7 @@ export function TicketResponseForm({
   const [updateStatus, setUpdateStatus] = useState<string | null>(null);
   const [sendAndClose, setSendAndClose] = useState(false);
   const [subject, setSubject] = useState(ticketSubject);
+  const [forwardTo, setForwardTo] = useState('');
   const { toast } = useToast();
 
   // Helper interface for CC recipients
@@ -146,8 +147,9 @@ export function TicketResponseForm({
         console.warn('Could not update ticket:', ticketError);
       }
 
-      // Send email if not internal and customer email is provided
-      if (!isInternal && customerEmail) {
+      // Send email if not internal and recipient is provided
+      const recipientEmail = responseType === 'forward' ? forwardTo : customerEmail;
+      if (!isInternal && recipientEmail) {
         try {
           const { data: activeServer } = await supabase
             .from('email_servers')
@@ -163,7 +165,7 @@ export function TicketResponseForm({
               body: {
                 ticketId: ticketNumber || ticketId,
                 customerName,
-                customerEmail,
+                customerEmail: recipientEmail,
                 subject: subject,
                 message: response,
                 agentName: 'Support Agent',
@@ -181,7 +183,7 @@ export function TicketResponseForm({
               body: {
                 ticketId: ticketNumber || ticketId,
                 customerName,
-                customerEmail,
+                customerEmail: recipientEmail,
                 subject: subject,
                 message: response,
                 agentName: 'Support Agent',
@@ -206,7 +208,7 @@ export function TicketResponseForm({
             const serverType = activeServer ? 'custom SMTP server' : 'Resend';
             toast({
               title: "Response sent",
-              description: `Your response has been sent to ${customerEmail} via ${serverType}`,
+              description: `Your message has been sent to ${recipientEmail} via ${serverType}`,
             });
           }
         } catch (error) {
@@ -245,7 +247,7 @@ export function TicketResponseForm({
 
   return (
     <div className="h-full bg-gray-50">
-      <Tabs value={responseType} onValueChange={(value: 'reply' | 'forward') => setResponseType(value)} className="h-full flex flex-col">
+      <Tabs value={responseType} onValueChange={(v) => setResponseType(v as 'reply' | 'forward')} className="h-full flex flex-col">
         {/* Centered Reply/Forward Tabs */}
         <div className="bg-white border-b">
           <div className="flex items-center justify-center py-2">
@@ -309,6 +311,8 @@ export function TicketResponseForm({
             isSendingEmail={isSendingEmail}
             onCannedResponseSelect={handleCannedResponseSelect}
             onSubmit={handleSubmit}
+            forwardTo={forwardTo}
+            setForwardTo={setForwardTo}
           />
         </TabsContent>
       </Tabs>
@@ -473,7 +477,7 @@ function ReplyContent({
                 <SelectTrigger className="w-48">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-50 bg-background">
                   <SelectItem value="no-change">Don't change status</SelectItem>
                   <SelectItem value="open">Open</SelectItem>
                   <SelectItem value="in-progress">In Progress</SelectItem>
@@ -566,10 +570,10 @@ function ForwardContent({
   userSignature,
   isSendingEmail,
   onCannedResponseSelect,
-  onSubmit
+  onSubmit,
+  forwardTo,
+  setForwardTo,
 }: any) {
-  const [forwardTo, setForwardTo] = useState('');
-  
   return (
     <div className="bg-white h-full flex flex-col">
       {/* Email Headers */}
