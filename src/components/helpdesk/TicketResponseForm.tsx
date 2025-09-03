@@ -49,12 +49,66 @@ export function TicketResponseForm({
   const [subject, setSubject] = useState(ticketSubject);
   const [forwardTo, setForwardTo] = useState('');
 
-  // Handle response type changes - clear response when switching to forward
-  const handleResponseTypeChange = (newType: 'reply' | 'forward') => {
+  // Handle response type changes - load conversation history when switching to forward
+  const handleResponseTypeChange = async (newType: 'reply' | 'forward') => {
     setResponseType(newType);
     if (newType === 'forward') {
-      setResponse(''); // Clear response when switching to forward
       setUpdateStatus(null); // Reset status change
+      // Load conversation history for forwarding
+      await loadConversationHistory();
+    }
+  };
+
+  // Load conversation history for forwarding
+  const loadConversationHistory = async () => {
+    try {
+      // Get ticket details
+      const { data: ticket, error: ticketError } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('id', ticketId)
+        .single();
+
+      if (ticketError) {
+        console.error('Error loading ticket:', ticketError);
+        return;
+      }
+
+      // Get all ticket comments
+      const { data: comments, error: commentsError } = await supabase
+        .from('ticket_comments')
+        .select('*')
+        .eq('ticket_id', ticketId)
+        .order('created_at', { ascending: true });
+
+      if (commentsError) {
+        console.error('Error loading comments:', commentsError);
+        return;
+      }
+
+      // Build conversation history
+      let conversationHistory = `---------- Forwarded Conversation ----------\n\n`;
+      conversationHistory += `Subject: ${ticketSubject}\n`;
+      conversationHistory += `From: ${customerName} <${customerEmail}>\n`;
+      conversationHistory += `Date: ${new Date(ticket.created_at).toLocaleString()}\n\n`;
+      conversationHistory += `${ticket.description}\n\n`;
+
+      // Add all comments to the conversation
+      if (comments && comments.length > 0) {
+        for (const comment of comments) {
+          if (!comment.is_internal) { // Only include public comments in forward
+            conversationHistory += `---------- Response ----------\n`;
+            conversationHistory += `From: Support Agent\n`;
+            conversationHistory += `Date: ${new Date(comment.created_at).toLocaleString()}\n\n`;
+            conversationHistory += `${comment.content}\n\n`;
+          }
+        }
+      }
+
+      conversationHistory += `---------- End of Conversation ----------\n\n`;
+      setResponse(conversationHistory);
+    } catch (error) {
+      console.error('Error loading conversation history:', error);
     }
   };
   const { toast } = useToast();
@@ -659,7 +713,7 @@ function ForwardContent({
       {/* Message Body */}
       <div className="flex-1 p-4">
         <Textarea
-          placeholder="Write your forward message here... (Only this message will be forwarded, not the conversation history)"
+          placeholder="Add your forward message above the conversation history..."
           value={response}
           onChange={(e) => setResponse(e.target.value)}
           className="min-h-48 border-0 shadow-none resize-none focus-visible:ring-0 p-0 h-full"
