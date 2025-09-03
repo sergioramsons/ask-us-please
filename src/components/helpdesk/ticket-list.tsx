@@ -5,10 +5,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Ticket, TicketStatus } from "@/types/ticket";
 import { Search, LayoutGrid, List, Inbox, Filter, Eye } from "lucide-react";
 import { TicketFiltersPanel } from "./TicketFiltersPanel";
-import { TicketViews } from "./TicketViews";
-import { TicketCard } from "./TicketCard";
-import { TicketTable } from "./TicketTable";
-import { TicketInbox } from "./TicketInbox";
 
 interface TicketListProps {
   tickets: Ticket[];
@@ -19,9 +15,6 @@ interface TicketListProps {
   onToggleSelection?: (ticketId: string) => void;
   onBulkDelete?: (ticketIds: string[]) => void;
 }
-
-type ViewLayout = 'card' | 'table' | 'inbox';
-type SortOrder = 'newest' | 'oldest';
 
 export function TicketList({ 
   tickets, 
@@ -95,7 +88,7 @@ export function TicketList({
       return matchesSearch && matchesFilters;
     })
     .sort((a, b) => {
-      if (sortOrder === 'newest') {
+      if (sortOrder === 'Date created') {
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       } else {
         return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
@@ -105,7 +98,7 @@ export function TicketList({
   const renderTicketList = () => {
     if (processedTickets.length === 0) {
       return (
-        <div className="text-center py-12 text-muted-foreground">
+        <div className="text-center py-12 text-gray-500">
           <div className="mb-4">
             <Eye className="h-12 w-12 mx-auto opacity-50" />
           </div>
@@ -116,104 +109,96 @@ export function TicketList({
     }
 
     return (
-      <div className="space-y-0 border-t">
+      <div className="bg-white">
         {processedTickets.map((ticket, index) => {
           const overdue = isOverdue(ticket);
           return (
             <div
               key={ticket.id}
-              className={`flex items-center p-4 border-b hover:bg-muted/50 cursor-pointer transition-colors ${
+              className={`flex items-center px-4 py-3 border-b hover:bg-gray-50 cursor-pointer transition-colors ${
                 selectedTicketIds.has(ticket.id) ? 'bg-blue-50' : ''
               }`}
               onClick={() => onViewTicket(ticket)}
             >
-              {/* Checkbox for selection */}
-              {selectionMode && (
-                <div className="mr-3" onClick={(e) => e.stopPropagation()}>
-                  <input
-                    type="checkbox"
-                    checked={selectedTicketIds.has(ticket.id)}
-                    onChange={() => onToggleSelection?.(ticket.id)}
-                    className="rounded border-gray-300"
-                  />
-                </div>
-              )}
-
-              {/* Avatar */}
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-medium mr-4 ${getAvatarColor(ticket.customer.name)}`}>
-                {getInitials(ticket.customer.name)}
+              {/* Checkbox */}
+              <div className="w-8 mr-4" onClick={(e) => e.stopPropagation()}>
+                <input
+                  type="checkbox"
+                  checked={selectedTicketIds.has(ticket.id)}
+                  onChange={() => onToggleSelection?.(ticket.id)}
+                  className="rounded border-gray-300"
+                />
               </div>
 
-              {/* Ticket Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0 pr-4">
-                    {/* Status and Title Row */}
-                    <div className="flex items-center gap-2 mb-1">
-                      {overdue && (
-                        <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-medium rounded">
-                          Overdue
-                        </span>
-                      )}
-                      {ticket.status === 'resolved' && (
-                        <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded">
-                          Resolved
-                        </span>
-                      )}
-                      <h3 className="font-medium text-gray-900 truncate">
-                        {ticket.title}
-                      </h3>
-                      <span className="text-gray-500 text-sm shrink-0">
-                        #{(ticket as any).ticket_number || `${ticket.id.slice(-6)}`}
-                      </span>
-                    </div>
-
-                    {/* Customer and Date Info */}
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <span>{ticket.customer.name}</span>
-                      <span>•</span>
-                      <span>Created: {formatTicketDate(ticket.createdAt)}</span>
-                      {overdue && (
-                        <>
-                          <span>•</span>
-                          <span className="text-red-600">Overdue by: {Math.floor((new Date().getTime() - new Date(ticket.createdAt).getTime()) / (1000 * 60 * 60 * 24) - 7)} days</span>
-                        </>
-                      )}
-                    </div>
+              {/* Contact Column */}
+              <div className="w-64 flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium ${getAvatarColor(ticket.customer.name)}`}>
+                  {getInitials(ticket.customer.name)}
+                </div>
+                <div className="min-w-0">
+                  <div className="font-medium text-gray-900 truncate">
+                    {ticket.customer.name}
                   </div>
-
-                  {/* Right side indicators */}
-                  <div className="flex items-center gap-3 shrink-0">
-                    {/* Priority indicator */}
-                    <div className="flex items-center gap-1">
-                      <div className={`w-2 h-2 rounded-full ${
-                        ticket.priority === 'high' ? 'bg-red-500' : 
-                        ticket.priority === 'medium' ? 'bg-yellow-500' : 
-                        'bg-green-500'
-                      }`} />
-                      <span className="text-sm text-gray-500 capitalize">
-                        {ticket.priority || 'Low'}
-                      </span>
-                    </div>
-
-                    {/* Assignee */}
-                    <div className="text-sm text-gray-500 min-w-0">
-                      <span className="truncate">-- / {ticket.customer.name.split(' ')[0]}...</span>
-                    </div>
-
-                    {/* Status */}
-                    <div className="flex items-center gap-1">
-                      <div className={`w-2 h-2 rounded-full ${
-                        ticket.status === 'open' ? 'bg-green-500' :
-                        ticket.status === 'resolved' ? 'bg-gray-400' :
-                        'bg-blue-500'
-                      }`} />
-                      <span className="text-sm text-gray-700 capitalize min-w-16">
-                        {ticket.status || 'Open'}
-                      </span>
-                    </div>
+                  <div className="text-sm text-gray-500 truncate">
+                    ({ticket.customer.email.split('@')[1] || 'Customer'})
                   </div>
                 </div>
+              </div>
+
+              {/* Subject Column */}
+              <div className="flex-1 min-w-0 px-4">
+                <div className="flex items-center gap-2 mb-1">
+                  {overdue && (
+                    <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-medium rounded">
+                      Overdue
+                    </span>
+                  )}
+                  <h3 className="font-medium text-gray-900 truncate">
+                    {ticket.title}
+                  </h3>
+                  <span className="text-gray-400 text-sm shrink-0">
+                    #{(ticket as any).ticket_number || `${ticket.id.slice(-6)}`}
+                  </span>
+                </div>
+                <div className="text-sm text-gray-500">
+                  Created: {formatTicketDate(ticket.createdAt)}
+                  {overdue && (
+                    <span className="text-red-600 ml-2">
+                      • Overdue by: {Math.floor((new Date().getTime() - new Date(ticket.createdAt).getTime()) / (1000 * 60 * 60 * 24) - 7)} days
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* State Column */}
+              <div className="w-32 px-4">
+                <div className="flex items-center gap-2">
+                  {ticket.status === 'open' && (
+                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
+                      New
+                    </span>
+                  )}
+                  {ticket.status === 'resolved' && (
+                    <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded">
+                      Resolved
+                    </span>
+                  )}
+                  {ticket.status === 'in-progress' && (
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
+                      Customer responded
+                    </span>
+                  )}
+                  {overdue && ticket.status === 'open' && (
+                    <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">
+                      Overdue
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Group Column */}
+              <div className="w-24 text-sm text-gray-500 text-center">
+                Sup
               </div>
             </div>
           );
@@ -223,91 +208,159 @@ export function TicketList({
   };
 
   return (
-    <div className="h-full bg-white">
-      <div className="flex h-full">
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col">
-          {/* Top Toolbar */}
-          <div className="border-b bg-white px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm font-medium">All tickets</span>
-                  <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
-                    {processedTickets.length}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm">
-                  <span className="mr-1">🔍</span>
-                  New
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Search className="h-4 w-4 mr-1" />
-                  Search
-                </Button>
-                <Select value={sortOrder} onValueChange={setSortOrder}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Sort by:" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Date created">Date created</SelectItem>
-                    <SelectItem value="Last modified">Last modified</SelectItem>
-                    <SelectItem value="Priority">Priority</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="flex items-center gap-1 text-sm text-gray-500">
-                  <span>Layout:</span>
-                  <Button variant="outline" size="sm" className="bg-blue-50 border-blue-200">
-                    Card view
-                  </Button>
-                </div>
-                <Button variant="outline" size="sm">
-                  Export
-                </Button>
-                <div className="text-sm text-gray-500">
-                  1 - {Math.min(14, processedTickets.length)} of {processedTickets.length}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Ticket List */}
-          <div className="flex-1 overflow-auto bg-gray-50">
-            {renderTicketList()}
+    <div className="h-full bg-gray-50 flex">
+      {/* Left Sidebar - Ticket Views */}
+      <div className="w-64 bg-slate-700 text-white flex flex-col">
+        <div className="p-4 border-b border-slate-600">
+          <div className="flex items-center gap-2 text-sm">
+            <Filter className="h-4 w-4" />
+            <span>All tickets</span>
+            <span className="bg-slate-600 text-white text-xs px-2 py-1 rounded-full">
+              {processedTickets.length}
+            </span>
           </div>
         </div>
 
-        {/* Filters Panel */}
-        {showFilters && (
-          <div className="w-80 border-l bg-white">
-            <div className="p-4 border-b">
-              <div className="flex items-center justify-between">
-                <h3 className="font-medium flex items-center gap-2">
-                  <Filter className="h-4 w-4" />
-                  FILTERS
-                  <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">2</span>
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowFilters(false)}
-                  className="h-6 w-6 p-0"
-                >
-                  ×
-                </Button>
+        <div className="flex-1 p-2">
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+              <Input
+                placeholder="Search for a view"
+                className="pl-10 bg-slate-600 border-slate-500 text-white placeholder-slate-400"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="text-xs text-slate-400 uppercase font-medium mb-2">Shared</div>
+            
+            <div className="text-xs text-slate-400 uppercase font-medium mb-2">Default</div>
+            
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2 px-3 py-2 rounded text-sm bg-blue-600 text-white">
+                <List className="h-4 w-4" />
+                <span>All tickets</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 rounded text-sm text-slate-300 hover:bg-slate-600 cursor-pointer">
+                <List className="h-4 w-4" />
+                <span>All undelivered messages</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 rounded text-sm text-slate-300 hover:bg-slate-600 cursor-pointer">
+                <List className="h-4 w-4" />
+                <span>All unresolved tickets</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 rounded text-sm text-slate-300 hover:bg-slate-600 cursor-pointer">
+                <List className="h-4 w-4" />
+                <span>New and my open tickets</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 rounded text-sm text-slate-300 hover:bg-slate-600 cursor-pointer">
+                <List className="h-4 w-4" />
+                <span>Tickets I raised</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 rounded text-sm text-slate-300 hover:bg-slate-600 cursor-pointer">
+                <List className="h-4 w-4" />
+                <span>Tickets I'm watching</span>
               </div>
             </div>
-            <TicketFiltersPanel
-              onFiltersChange={setAppliedFilters}
-              onClose={() => setShowFilters(false)}
-            />
+
+            <div className="mt-6 space-y-0.5">
+              <div className="flex items-center gap-2 px-3 py-2 rounded text-sm text-slate-300 hover:bg-slate-600 cursor-pointer">
+                <List className="h-4 w-4" />
+                <span>Archive</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 rounded text-sm text-slate-300 hover:bg-slate-600 cursor-pointer">
+                <List className="h-4 w-4" />
+                <span>Spam</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 rounded text-sm text-slate-300 hover:bg-slate-600 cursor-pointer">
+                <List className="h-4 w-4" />
+                <span>Trash</span>
+              </div>
+            </div>
           </div>
-        )}
+        </div>
       </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col bg-white">
+        {/* Top Toolbar */}
+        <div className="border-b bg-white px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="outline" size="sm">
+                <span className="mr-1">🔍</span>
+                New
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">Sort by:</span>
+              <Select value={sortOrder} onValueChange={setSortOrder}>
+                <SelectTrigger className="w-32 bg-white border border-gray-300">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-white border border-gray-300 shadow-lg z-50">
+                  <SelectItem value="Date created">Date created</SelectItem>
+                  <SelectItem value="Last modified">Last modified</SelectItem>
+                  <SelectItem value="Priority">Priority</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <span className="text-sm text-gray-500">Layout:</span>
+              <Button variant="outline" size="sm" className="bg-blue-50 border-blue-200">
+                Table
+              </Button>
+              
+              <Button variant="outline" size="sm">
+                Export
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                className={showFilters ? "bg-blue-50 border-blue-200" : ""}
+              >
+                <Filter className="h-4 w-4 mr-1" />
+                Filters ({Object.keys(appliedFilters).filter(key => appliedFilters[key]).length})
+              </Button>
+              
+              <div className="text-sm text-gray-500">
+                1 - {Math.min(15, processedTickets.length)} of {processedTickets.length}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Table Header */}
+        <div className="border-b bg-gray-50 px-4 py-3">
+          <div className="flex items-center gap-4">
+            <div className="w-8">
+              <input type="checkbox" className="rounded border-gray-300" />
+            </div>
+            <div className="w-64 text-sm font-medium text-gray-700">Contact</div>
+            <div className="flex-1 text-sm font-medium text-gray-700">Subject</div>
+            <div className="w-32 text-sm font-medium text-gray-700">State</div>
+            <div className="w-24 text-sm font-medium text-gray-700">Group</div>
+          </div>
+        </div>
+
+        {/* Table Content */}
+        <div className="flex-1 overflow-auto">
+          {renderTicketList()}
+        </div>
+      </div>
+
+      {/* Filters Panel */}
+      {showFilters && (
+        <div className="w-80 border-l bg-white">
+          <TicketFiltersPanel
+            onFiltersChange={setAppliedFilters}
+            onClose={() => setShowFilters(false)}
+          />
+        </div>
+      )}
     </div>
   );
 }
