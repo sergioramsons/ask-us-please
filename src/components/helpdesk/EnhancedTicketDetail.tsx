@@ -44,6 +44,13 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
   const [currentDepartment, setCurrentDepartment] = useState<string | null>((ticket as any).department_id || null);
   const [conversationExpanded, setConversationExpanded] = useState(true);
 
+  // Ensure conversation is expanded when replies load
+  useEffect(() => {
+    if (!repliesLoading && replies.length > 0) {
+      setConversationExpanded(true);
+    }
+  }, [repliesLoading, replies.length]);
+
   // Load departments on mount
   useEffect(() => {
     fetchDepartments();
