@@ -4,8 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 import { CannedResponseSelector } from './CannedResponseSelector';
-import { MessageSquare, Send, FileText, Mail } from 'lucide-react';
+import { CCRecipientSelector } from '../contacts/CCRecipientSelector';
+import { MessageSquare, Send, FileText, Mail, Paperclip, Eye, ChevronDown, ChevronUp, Settings, Users } from 'lucide-react';
 import { CannedResponse } from '@/types/cannedResponse';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,7 +39,22 @@ export function TicketResponseForm({
   const [isInternal, setIsInternal] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [userSignature, setUserSignature] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [ccRecipients, setCcRecipients] = useState<CCRecipient[]>([]);
+  const [bccRecipients, setBccRecipients] = useState<CCRecipient[]>([]);
+  const [responseType, setResponseType] = useState<'reply' | 'forward'>('reply');
+  const [updateStatus, setUpdateStatus] = useState<string | null>(null);
+  const [sendAndClose, setSendAndClose] = useState(false);
+  const [subject, setSubject] = useState(ticketSubject);
   const { toast } = useToast();
+
+  // Helper interface for CC recipients
+  interface CCRecipient {
+    id: string;
+    email: string;
+    name: string;
+    isContact?: boolean;
+  }
 
   // Load user signature
   useEffect(() => {
@@ -62,7 +81,6 @@ export function TicketResponseForm({
   }, []);
 
   const handleCannedResponseSelect = (cannedResponse: CannedResponse) => {
-    // If there's existing content, add the canned response with some spacing
     const newContent = response 
       ? `${response}\n\n${cannedResponse.content}`
       : cannedResponse.content;
@@ -86,6 +104,8 @@ export function TicketResponseForm({
     }
 
     try {
+      setIsSendingEmail(true);
+
       // Save the comment to the database
       const { data: comment, error: commentError } = await supabase
         .from('ticket_comments')
@@ -102,23 +122,32 @@ export function TicketResponseForm({
         throw commentError;
       }
 
-      // Update ticket's last activity
+      // Update ticket status if requested
+      const updates: any = { 
+        updated_at: new Date().toISOString(),
+      };
+
+      if (updateStatus) {
+        updates.status = updateStatus;
+        if (updateStatus === 'resolved') {
+          updates.resolved_at = new Date().toISOString();
+        }
+      } else if (sendAndClose) {
+        updates.status = 'closed';
+      }
+
       const { error: ticketError } = await supabase
         .from('tickets')
-        .update({ 
-          updated_at: new Date().toISOString(),
-        })
+        .update(updates)
         .eq('id', ticketId);
 
       if (ticketError) {
-        console.warn('Could not update ticket activity:', ticketError);
+        console.warn('Could not update ticket:', ticketError);
       }
 
       // Send email if not internal and customer email is provided
       if (!isInternal && customerEmail) {
-        setIsSendingEmail(true);
         try {
-          // Check if there's an active custom email server
           const { data: activeServer } = await supabase
             .from('email_servers')
             .select('*')
@@ -129,36 +158,38 @@ export function TicketResponseForm({
           let emailResponse;
           
           if (activeServer) {
-            // Use custom email server
             emailResponse = await supabase.functions.invoke('send-custom-email', {
               body: {
                 ticketId: ticketNumber || ticketId,
                 customerName,
                 customerEmail,
-                subject: ticketSubject,
+                subject: subject,
                 message: response,
                 agentName: 'Support Agent',
                 agentSignature: userSignature,
-                ticketStatus,
+                ticketStatus: updateStatus || ticketStatus,
                 priority,
-                isResolution: ticketStatus === 'resolved',
-                emailServerId: activeServer.id
+                isResolution: updateStatus === 'resolved',
+                emailServerId: activeServer.id,
+                ccRecipients: ccRecipients.map(r => r.email),
+                bccRecipients: bccRecipients.map(r => r.email)
               }
             });
           } else {
-            // Fallback to Resend
             emailResponse = await supabase.functions.invoke('send-ticket-email', {
               body: {
                 ticketId: ticketNumber || ticketId,
                 customerName,
                 customerEmail,
-                subject: ticketSubject,
+                subject: subject,
                 message: response,
                 agentName: 'Support Agent',
                 agentSignature: userSignature,
-                ticketStatus,
+                ticketStatus: updateStatus || ticketStatus,
                 priority,
-                isResolution: ticketStatus === 'resolved'
+                isResolution: updateStatus === 'resolved',
+                ccRecipients: ccRecipients.map(r => r.email),
+                bccRecipients: bccRecipients.map(r => r.email)
               }
             });
           }
@@ -184,8 +215,6 @@ export function TicketResponseForm({
             description: "Response saved but email delivery failed.",
             variant: "destructive",
           });
-        } finally {
-          setIsSendingEmail(false);
         }
       } else {
         toast({
@@ -196,6 +225,10 @@ export function TicketResponseForm({
 
       onSubmit?.(response, isInternal);
       setResponse('');
+      setCcRecipients([]);
+      setBccRecipients([]);
+      setUpdateStatus(null);
+      setSendAndClose(false);
       
     } catch (error: any) {
       console.error('Error saving response:', error);
@@ -204,69 +237,232 @@ export function TicketResponseForm({
         description: "Could not save response. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <MessageSquare className="h-5 w-5" />
-          Add Response
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+    <div className="space-y-4">
+      {/* Response Type Header */}
+      <div className="bg-white border rounded-lg">
+        <div className="p-4 border-b">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Select value={responseType} onValueChange={(value: 'reply' | 'forward') => setResponseType(value)}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="reply">Reply</SelectItem>
+                  <SelectItem value="forward">Forward</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="internal-note"
+                  checked={isInternal}
+                  onCheckedChange={setIsInternal}
+                />
+                <Label htmlFor="internal-note" className="text-sm font-medium">
+                  {isInternal ? 'Private Note' : 'Public Reply'}
+                </Label>
+              </div>
+            </div>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="text-gray-600"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              {showAdvanced ? 'Hide Options' : 'More Options'}
+              {showAdvanced ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
+            </Button>
+          </div>
+        </div>
+
+        {/* Email Headers */}
+        {!isInternal && (
+          <div className="p-4 bg-gray-50 border-b space-y-3">
+            <div className="grid grid-cols-12 gap-3 items-center">
+              <Label className="col-span-1 text-right text-sm font-medium">To:</Label>
+              <div className="col-span-11">
+                <Input
+                  value={customerEmail}
+                  readOnly
+                  className="bg-white"
+                />
+              </div>
+            </div>
+
+            {showAdvanced && (
+              <>
+                <div className="grid grid-cols-12 gap-3 items-center">
+                  <Label className="col-span-1 text-right text-sm font-medium">CC:</Label>
+                  <div className="col-span-11">
+                    <CCRecipientSelector
+                      selectedRecipients={ccRecipients}
+                      onRecipientsChange={setCcRecipients}
+                      placeholder="Add CC recipients..."
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-12 gap-3 items-center">
+                  <Label className="col-span-1 text-right text-sm font-medium">BCC:</Label>
+                  <div className="col-span-11">
+                    <CCRecipientSelector
+                      selectedRecipients={bccRecipients}
+                      onRecipientsChange={setBccRecipients}
+                      placeholder="Add BCC recipients..."
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div className="grid grid-cols-12 gap-3 items-center">
+              <Label className="col-span-1 text-right text-sm font-medium">Subject:</Label>
+              <div className="col-span-11">
+                <Input
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  className="bg-white"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Toolbar */}
+        <div className="p-3 border-b bg-gray-50">
+          <div className="flex items-center gap-2">
             <CannedResponseSelector onSelect={handleCannedResponseSelect}>
               <Button variant="outline" size="sm">
                 <FileText className="h-4 w-4 mr-2" />
-                Use Canned Response
+                Templates
               </Button>
             </CannedResponseSelector>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="internal-note"
-              checked={isInternal}
-              onCheckedChange={setIsInternal}
-            />
-            <Label htmlFor="internal-note" className="text-sm">
-              Internal note
-            </Label>
+            
+            <Button variant="outline" size="sm" disabled>
+              <Paperclip className="h-4 w-4 mr-2" />
+              Attach
+            </Button>
+            
+            <Separator orientation="vertical" className="h-6" />
+            
+            {/* Text formatting buttons would go here */}
+            <span className="text-xs text-gray-500 ml-2">
+              {response.length} characters
+            </span>
           </div>
         </div>
 
-        <Textarea
-          placeholder="Type your response here..."
-          value={response}
-          onChange={(e) => setResponse(e.target.value)}
-          className="min-h-32"
-        />
+        {/* Message Body */}
+        <div className="p-4">
+          <Textarea
+            placeholder={isInternal ? "Add a private note..." : "Type your response here..."}
+            value={response}
+            onChange={(e) => setResponse(e.target.value)}
+            className="min-h-48 border-0 shadow-none resize-none focus-visible:ring-0 p-0"
+          />
+          
+          {userSignature && !isInternal && (
+            <div className="mt-4 pt-4 border-t text-sm text-gray-600">
+              <div dangerouslySetInnerHTML={{ __html: userSignature.replace(/\n/g, '<br>') }} />
+            </div>
+          )}
+        </div>
 
-        <div className="flex justify-between items-center">
-          <p className="text-sm text-muted-foreground">
-            {isInternal ? 'This note will only be visible to internal staff' : 
-             customerEmail ? `This response will be sent to ${customerEmail}` : 'This response will be saved to the ticket'}
-          </p>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={!response.trim() || isSendingEmail}
-          >
-            {isSendingEmail ? (
-              <>
-                <Mail className="h-4 w-4 mr-2 animate-pulse" />
-                Sending...
-              </>
+        {/* Advanced Options */}
+        {showAdvanced && (
+          <div className="p-4 border-t bg-gray-50">
+            <div className="space-y-3">
+              <div>
+                <Label className="text-sm font-medium mb-2 block">Update Status After Sending</Label>
+                <Select value={updateStatus || 'no-change'} onValueChange={(value) => setUpdateStatus(value === 'no-change' ? null : value)}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no-change">Don't change status</SelectItem>
+                    <SelectItem value="open">Open</SelectItem>
+                    <SelectItem value="in-progress">In Progress</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="resolved">Resolved</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="send-and-close"
+                  checked={sendAndClose}
+                  onCheckedChange={setSendAndClose}
+                />
+                <Label htmlFor="send-and-close" className="text-sm">
+                  Send and close ticket
+                </Label>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="p-4 border-t bg-white flex items-center justify-between">
+          <div className="text-sm text-gray-600">
+            {isInternal ? (
+              <span className="flex items-center">
+                <MessageSquare className="h-4 w-4 mr-1" />
+                This note will only be visible to internal staff
+              </span>
             ) : (
-              <>
-                {isInternal ? <MessageSquare className="h-4 w-4 mr-2" /> : <Send className="h-4 w-4 mr-2" />}
-                {isInternal ? 'Add Note' : 'Send Response'}
-              </>
+              <span className="flex items-center">
+                <Mail className="h-4 w-4 mr-1" />
+                {customerEmail ? `Will be sent to ${customerEmail}${ccRecipients.length > 0 ? ` and ${ccRecipients.length} CC recipient${ccRecipients.length > 1 ? 's' : ''}` : ''}` : 'Will be saved to the ticket'}
+              </span>
             )}
-          </Button>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="text-gray-600">
+              <Eye className="h-4 w-4 mr-2" />
+              Preview
+            </Button>
+            
+            <Button 
+              onClick={handleSubmit} 
+              disabled={!response.trim() || isSendingEmail}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isSendingEmail ? (
+                <>
+                  <Mail className="h-4 w-4 mr-2 animate-pulse" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  {isInternal ? (
+                    <>
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Add Note
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      {sendAndClose ? 'Send & Close' : 'Send Reply'}
+                    </>
+                  )}
+                </>
+              )}
+            </Button>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
