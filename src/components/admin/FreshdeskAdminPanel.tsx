@@ -154,7 +154,7 @@ export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps
       title: "Channels", 
       description: "Configure how customers can reach you",
       icon: Inbox,
-      totalCards: 8,
+      totalCards: 9,
       configuredCards: 7,
       cards: [
         {
