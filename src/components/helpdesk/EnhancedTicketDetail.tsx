@@ -336,7 +336,7 @@ export function EnhancedTicketDetail({ ticket, onBack, onStatusChange, onDepartm
             <Tabs defaultValue="conversation" className="h-full flex flex-col">
               <TabsList className="mx-6 mt-4 grid w-full grid-cols-2">
                 <TabsTrigger value="conversation">Conversation</TabsTrigger>
-                <TabsTrigger value="add-response">Add Response</TabsTrigger>
+                <TabsTrigger value="add-response">Reply</TabsTrigger>
               </TabsList>
               
               <TabsContent value="conversation" className="flex-1 overflow-y-auto mt-0">
