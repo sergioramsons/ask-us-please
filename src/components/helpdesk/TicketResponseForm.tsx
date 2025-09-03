@@ -86,26 +86,44 @@ export function TicketResponseForm({
         return;
       }
 
-      // Build conversation history
-      let conversationHistory = `---------- Forwarded Conversation ----------\n\n`;
-      conversationHistory += `Subject: ${ticketSubject}\n`;
+      // Build conversation history in Freshdesk email format
+      let conversationHistory = `\n\n--- Forwarded ticket ---\n\n`;
+      
+      // Original ticket
       conversationHistory += `From: ${customerName} <${customerEmail}>\n`;
-      conversationHistory += `Date: ${new Date(ticket.created_at).toLocaleString()}\n\n`;
+      conversationHistory += `Date: ${new Date(ticket.created_at).toLocaleDateString('en-US', { 
+        weekday: 'short', 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })}\n`;
+      conversationHistory += `Subject: ${ticketSubject}\n`;
+      conversationHistory += `Ticket ID: #${ticket.ticket_number}\n\n`;
       conversationHistory += `${ticket.description}\n\n`;
 
       // Add all comments to the conversation
       if (comments && comments.length > 0) {
         for (const comment of comments) {
           if (!comment.is_internal) { // Only include public comments in forward
-            conversationHistory += `---------- Response ----------\n`;
-            conversationHistory += `From: Support Agent\n`;
-            conversationHistory += `Date: ${new Date(comment.created_at).toLocaleString()}\n\n`;
+            conversationHistory += `________________________________\n\n`;
+            conversationHistory += `From: Support Team\n`;
+            conversationHistory += `Date: ${new Date(comment.created_at).toLocaleDateString('en-US', { 
+              weekday: 'short', 
+              year: 'numeric', 
+              month: 'short', 
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })}\n`;
+            conversationHistory += `Subject: Re: ${ticketSubject}\n\n`;
             conversationHistory += `${comment.content}\n\n`;
           }
         }
       }
 
-      conversationHistory += `---------- End of Conversation ----------\n\n`;
+      conversationHistory += `--- End of forwarded ticket ---\n\n`;
       setResponse(conversationHistory);
     } catch (error) {
       console.error('Error loading conversation history:', error);
