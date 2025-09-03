@@ -1,280 +1,218 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { 
-  Settings, 
   Users, 
   Mail, 
-  Shield, 
-  BarChart3, 
-  Workflow, 
-  Clock, 
-  Bell, 
   MessageSquare, 
   Phone, 
   Building2, 
   User, 
   Inbox,
-  ChevronRight,
-  Search
+  Search,
+  ChevronDown,
+  Facebook,
+  Workflow,
+  Cog,
+  BarChart3,
+  Clock,
+  Globe,
+  Headphones,
+  MessageCircle,
+  FileText,
+  Settings,
+  Bell,
+  ChevronRight
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+
+// Import existing components for when user clicks on cards
 import { UserRoleManager } from "./UserRoleManager";
-import { ReportsDashboard } from "@/components/reports/ReportsDashboard";
-import { EmailManager } from "./EmailManager";
-import IncomingEmailManager from "./IncomingEmailManager";
-import { ManualEmailProcessor } from "./ManualEmailProcessor";
-import IncomingMailServerConfig from "./IncomingMailServerConfig";
-import { WorkflowBuilder } from "@/components/workflow/WorkflowBuilder";
 import { BusinessHoursConfig } from "./BusinessHoursConfig";
-import { AccountDashboard } from "@/components/account/AccountDashboard";
-import { EmailNotificationTester } from "./EmailNotificationTester";
-import { SMSTester } from "./SMSTester";
-import { ContactsManager } from "./ContactsManager";
-import YeastarIntegration from "./YeastarIntegration";
-import ThreeCXIntegration from "./ThreeCXIntegration";
-import OrganizationManager from "./OrganizationManager";
+import { EmailManager } from "./EmailManager";
 import { ChannelManager } from "@/components/channels/ChannelManager";
-import { UnifiedInbox } from "@/components/channels/UnifiedInbox";
+import { WorkflowBuilder } from "@/components/workflow/WorkflowBuilder";
+import { ContactsManager } from "./ContactsManager";
+import { AccountDashboard } from "@/components/account/AccountDashboard";
 import { useOrganization } from "@/contexts/OrganizationContext";
 import { Ticket } from "@/types/ticket";
-import { MimeCleanupButton } from "./MimeCleanupButton";
 
 interface AdminPanelProps {
   tickets: Ticket[];
   onCreateTicket?: (ticketData: any) => void;
 }
 
+interface AdminCard {
+  id: string;
+  title: string;
+  description: string;
+  icon: any;
+  configured: boolean;
+  component?: React.ComponentType<any>;
+}
+
 interface AdminSection {
   id: string;
   title: string;
+  description: string;
   icon: any;
-  description?: string;
-  subsections?: AdminSubsection[];
+  totalCards: number;
+  configuredCards: number;
+  cards: AdminCard[];
 }
 
-interface AdminSubsection {
+interface SidebarItem {
   id: string;
   title: string;
-  component: React.ComponentType<any>;
-  props?: any;
+  description: string;
+  icon: any;
 }
 
 export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps) {
   const { isSuperAdmin } = useOrganization();
-  const [activeSection, setActiveSection] = useState<string>("general");
-  const [activeSubsection, setActiveSubsection] = useState<string>("");
+  const [activeSection, setActiveSection] = useState<string>("team");
+  const [activeCard, setActiveCard] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [initialized, setInitialized] = useState(false);
 
-  // Initialize from URL parameters
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const section = params.get('adminSection') || 'general';
-    const subsection = params.get('adminSubsection') || '';
-    
-    setActiveSection(section);
-    setActiveSubsection(subsection);
-    setInitialized(true);
-  }, []);
-
-  // Ensure a subsection is selected if section changes and none set
-  useEffect(() => {
-    if (!initialized) return;
-    const section = adminSections.find(s => s.id === activeSection);
-    if (section?.subsections?.length && !activeSubsection) {
-      setActiveSubsection(section.subsections[0].id);
-    }
-  }, [activeSection, initialized]);
-
-  // Update URL when section/subsection changes (skip until initialized)
-  useEffect(() => {
-    if (!initialized) return;
-    const params = new URLSearchParams(window.location.search);
-    
-    if (activeSection && activeSection !== 'general') {
-      params.set('adminSection', activeSection);
-    } else {
-      params.delete('adminSection');
-    }
-    
-    if (activeSubsection) {
-      params.set('adminSubsection', activeSubsection);
-    } else {
-      params.delete('adminSubsection');
-    }
-    
-    const newQuery = params.toString();
-    const newUrl = `${window.location.pathname}${newQuery ? `?${newQuery}` : ''}`;
-    window.history.replaceState({}, '', newUrl);
-  }, [activeSection, activeSubsection, initialized]);
+  const sidebarItems: SidebarItem[] = [
+    {
+      id: "team",
+      title: "Team",
+      description: "Define agents' access levels and working hours",
+      icon: Users,
+    },
+    {
+      id: "channels",
+      title: "Channels", 
+      description: "Bring in customer queries from various sources",
+      icon: Inbox,
+    },
+    {
+      id: "workflows",
+      title: "Workflows",
+      description: "Set up your ticket routing and resolution process", 
+      icon: Workflow,
+    },
+    {
+      id: "agent-productivity",
+      title: "Agent Productivity",
+      description: "Pre-create responses and actions for reuse",
+      icon: BarChart3,
+    },
+    {
+      id: "support-operations", 
+      title: "Support Operations",
+      description: "Map out and manage your complete support structure",
+      icon: Cog,
+    },
+    {
+      id: "account",
+      title: "Account",
+      description: "Manage your billing and account information",
+      icon: User,
+    },
+  ];
 
   const adminSections: AdminSection[] = [
     {
-      id: "general",
-      title: "General Settings",
-      icon: Settings,
-      description: "Basic helpdesk configuration and settings",
-      subsections: [
+      id: "team",
+      title: "Team",
+      description: "Manage your team members and their settings",
+      icon: Users,
+      totalCards: 3,
+      configuredCards: 3,
+      cards: [
         {
-          id: "account",
-          title: "Account Settings",
-          component: AccountDashboard,
+          id: "agents",
+          title: "Agents",
+          description: "Define agents' scope of work, type, language, and other details.",
+          icon: Users,
+          configured: true,
+          component: UserRoleManager,
+        },
+        {
+          id: "groups", 
+          title: "Groups",
+          description: "Organize agents and receive notifications on unattended tickets.",
+          icon: Users,
+          configured: true,
         },
         {
           id: "business-hours",
-          title: "Business Hours",
+          title: "Business Hours", 
+          description: "Define working hours and holidays to set expectations with customers",
+          icon: Clock,
+          configured: true,
           component: BusinessHoursConfig,
         },
       ]
     },
     {
-      id: "email",
-      title: "Email",
-      icon: Mail,
-      description: "Configure email settings and automation",
-      subsections: [
+      id: "channels",
+      title: "Channels", 
+      description: "Configure how customers can reach you",
+      icon: Inbox,
+      totalCards: 8,
+      configuredCards: 7,
+      cards: [
         {
-          id: "outgoing-email",
-          title: "Outgoing Email",
+          id: "portals",
+          title: "Portals",
+          description: "Customize the branding, visibility, and structure of your self-service portal",
+          icon: Globe,
+          configured: true,
+        },
+        {
+          id: "email",
+          title: "Email",
+          description: "Integrate support mailboxes, configure DKIM, custom mail servers, Bcc and more",
+          icon: Mail,
+          configured: true,
           component: EmailManager,
         },
         {
-          id: "incoming-servers",
-          title: "Incoming Servers",
-          component: IncomingMailServerConfig,
+          id: "widgets",
+          title: "Widgets", 
+          description: "Embed help articles or a contact form on your website or product",
+          icon: MessageSquare,
+          configured: true,
         },
         {
-          id: "incoming-emails",
-          title: "Incoming Emails",
-          component: IncomingEmailManager,
+          id: "facebook",
+          title: "Facebook",
+          description: "Associate your Facebook page to pull in customer posts, comments, and messages as tickets",
+          icon: Facebook,
+          configured: false,
         },
         {
-          id: "process-emails",
-          title: "Process Emails",
-          component: ManualEmailProcessor,
+          id: "phone",
+          title: "Phone",
+          description: "Run a virtual call center and manage phone conversations with Freshcaller",
+          icon: Phone,
+          configured: true,
         },
         {
-          id: "mime-cleanup",
-          title: "MIME Content Cleanup",
-          component: () => (
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-medium">Clean MIME Content</h3>
-                <p className="text-sm text-muted-foreground">
-                  Clean up existing tickets and replies with raw MIME email content.
-                </p>
-              </div>
-              <MimeCleanupButton />
-            </div>
-          ),
-        },
-      ]
-    },
-    {
-      id: "channels",
-      title: "Channels",
-      icon: Inbox,
-      description: "Manage communication channels and unified inbox",
-      subsections: [
-        {
-          id: "channel-manager",
-          title: "Channel Manager",
-          component: ChannelManager,
+          id: "chat",
+          title: "Chat",
+          description: "Offer instantaneous support on your website or app with Freshchat",
+          icon: MessageCircle,
+          configured: true,
         },
         {
-          id: "unified-inbox",
-          title: "Unified Inbox",
-          component: UnifiedInbox,
-        },
-      ]
-    },
-    {
-      id: "users",
-      title: "Agents & Groups",
-      icon: Users,
-      description: "Manage users, roles, and departments",
-      subsections: [
-        {
-          id: "user-roles",
-          title: "User Roles",
-          component: UserRoleManager,
-        },
-      ]
-    },
-    {
-      id: "contacts",
-      title: "Contacts",
-      icon: User,
-      description: "Manage customer contacts and information",
-      subsections: [
-        {
-          id: "contact-manager",
-          title: "Contact Manager",
-          component: ContactsManager,
-        },
-      ]
-    },
-    {
-      id: "workflows",
-      title: "Automations",
-      icon: Workflow,
-      description: "Configure workflows and business rules",
-      subsections: [
-        {
-          id: "workflow-builder",
-          title: "Workflow Builder",
-          component: WorkflowBuilder,
-        },
-      ]
-    },
-    {
-      id: "integrations",
-      title: "Integrations",
-      icon: Phone,
-      description: "Third-party integrations and PBX systems",
-      subsections: [
-        {
-          id: "yeastar",
-          title: "Yeastar PBX",
-          component: YeastarIntegration,
+          id: "feedback-form",
+          title: "Feedback Form",
+          description: "Embed your ticket form as a widget to receive customer feedback",
+          icon: FileText,
+          configured: true,
         },
         {
-          id: "3cx",
-          title: "3CX PBX",
-          component: ThreeCXIntegration,
-        },
-      ]
-    },
-    {
-      id: "reports",
-      title: "Reports & Analytics",
-      icon: BarChart3,
-      description: "View performance metrics and generate reports",
-      subsections: [
-        {
-          id: "dashboard",
-          title: "Dashboard",
-          component: ReportsDashboard,
-          props: { tickets }
-        },
-      ]
-    },
-    {
-      id: "notifications",
-      title: "Notifications",
-      icon: Bell,
-      description: "Configure email and SMS notifications",
-      subsections: [
-        {
-          id: "email-test",
-          title: "Email Testing",
-          component: EmailNotificationTester,
-        },
-        {
-          id: "sms-test",
-          title: "SMS Testing",
-          component: SMSTester,
+          id: "whatsapp",
+          title: "WhatsApp",
+          description: "Integrate your WhatsApp business number to support customers and offer instant resolutions",
+          icon: MessageSquare,
+          configured: true,
         },
       ]
     },
@@ -282,159 +220,174 @@ export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps
 
   // Add organizations section only for super admins
   if (isSuperAdmin) {
-    adminSections.unshift({
+    sidebarItems.unshift({
       id: "organizations",
-      title: "Organizations",
-      icon: Building2,
+      title: "Organizations", 
       description: "Manage multiple organizations and tenants",
-      subsections: [
-        {
-          id: "organization-manager",
-          title: "Organization Manager",
-          component: OrganizationManager,
-        },
-      ]
+      icon: Building2,
     });
   }
 
-  const filteredSections = adminSections.filter(section =>
-    section.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    section.subsections?.some(sub => 
-      sub.title.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  );
+  const getCurrentContent = () => {
+    if (activeCard) {
+      const section = adminSections.find(s => s.id === activeSection);
+      const card = section?.cards.find(c => c.id === activeCard);
+      if (card?.component) {
+        const Component = card.component;
+        return <Component />;
+      }
+      return (
+        <div className="p-8">
+          <h2 className="text-2xl font-semibold mb-4">{card?.title}</h2>
+          <p className="text-muted-foreground">{card?.description}</p>
+        </div>
+      );
+    }
 
-  const getCurrentComponent = () => {
     const section = adminSections.find(s => s.id === activeSection);
-    if (!section?.subsections?.length) return null;
-    
-    const subsection = section.subsections.find(s => s.id === activeSubsection);
-    if (!subsection) return null;
-    
-    const Component = subsection.component;
-    return <Component {...(subsection.props || {})} />;
-  };
+    if (!section) {
+      return (
+        <div className="p-8">
+          <h2 className="text-2xl font-semibold mb-4">Select a Section</h2>
+          <p className="text-muted-foreground">Choose a section from the sidebar to configure your helpdesk.</p>
+        </div>
+      );
+    }
 
-  const getBreadcrumb = () => {
-    const section = adminSections.find(s => s.id === activeSection);
-    if (!section) return [];
-    
-    const subsection = section.subsections?.find(s => s.id === activeSubsection);
-    return [section.title, subsection?.title].filter(Boolean);
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">{section.title}</h1>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+              <span>{section.configuredCards} of {section.totalCards} Configured</span>
+              <ChevronDown className="h-4 w-4" />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {section.cards.map((card) => (
+            <Card 
+              key={card.id} 
+              className="cursor-pointer hover:shadow-md transition-shadow border border-border"
+              onClick={() => setActiveCard(card.id)}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <card.icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <CardTitle className="text-base font-medium">{card.title}</CardTitle>
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-sm text-muted-foreground leading-relaxed">
+                  {card.description}
+                </CardDescription>
+                {card.configured && (
+                  <Badge variant="secondary" className="mt-3 bg-green-100 text-green-700 hover:bg-green-100">
+                    Configured
+                  </Badge>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background flex">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="fixed top-0 left-0 right-0 bg-background border-b border-border px-6 py-3 z-50">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Admin</h1>
-            <div className="flex items-center text-sm text-gray-500 mt-1">
-              {getBreadcrumb().map((crumb, index) => (
-                <span key={index} className="flex items-center">
-                  {index > 0 && <ChevronRight className="h-4 w-4 mx-1" />}
-                  {crumb}
-                </span>
-              ))}
+          <div className="flex items-center gap-4">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <span className="text-primary-foreground font-semibold text-sm">A</span>
             </div>
+            <h1 className="text-xl font-semibold">Admin</h1>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="sm">
+              Explore your plan
+            </Button>
+            <Button variant="outline" size="sm">
+              New <ChevronDown className="ml-1 h-4 w-4" />
+            </Button>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Search settings..."
+                placeholder="Search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 w-64"
               />
             </div>
+            <Button variant="ghost" size="sm">
+              <Bell className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm">
+              Apps
+            </Button>
           </div>
         </div>
       </div>
 
-      <div className="flex">
-        {/* Sidebar */}
-        <div className="w-80 bg-white border-r border-gray-200 min-h-screen">
-          <div className="p-6">
-            <div className="space-y-2">
-              {filteredSections.map((section) => (
-                <div key={section.id}>
-                  <Button
-                    variant={activeSection === section.id ? "secondary" : "ghost"}
-                    className={`w-full justify-start h-auto p-4 ${
-                      activeSection === section.id 
-                        ? "bg-blue-50 text-blue-700 border-l-4 border-blue-500" 
-                        : "hover:bg-gray-50"
-                    }`}
-                    onClick={() => {
-                      setActiveSection(section.id);
-                      if (section.subsections?.length) {
-                        setActiveSubsection(section.subsections[0].id);
-                      }
-                    }}
-                  >
-                    <div className="flex items-start space-x-3 text-left">
-                      <section.icon className={`h-5 w-5 mt-0.5 ${
-                        activeSection === section.id ? "text-blue-700" : "text-gray-400"
-                      }`} />
-                      <div>
-                        <div className="font-medium">{section.title}</div>
-                        {section.description && (
-                          <div className="text-xs text-gray-500 mt-1">{section.description}</div>
-                        )}
-                      </div>
+      {/* Sidebar */}
+      <div className="w-80 bg-background border-r border-border pt-16 fixed left-0 top-0 bottom-0 overflow-y-auto">
+        <div className="p-6">
+          <div className="space-y-2">
+            {sidebarItems.map((item) => (
+              <Button
+                key={item.id}
+                variant="ghost"
+                className={cn(
+                  "w-full justify-start h-auto p-4 text-left",
+                  activeSection === item.id && "bg-accent"
+                )}
+                onClick={() => {
+                  setActiveSection(item.id);
+                  setActiveCard("");
+                }}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="p-1.5 bg-muted rounded">
+                    <item.icon className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-medium text-sm">{item.title}</div>
+                    <div className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                      {item.description}
                     </div>
-                  </Button>
-                  
-                  {/* Subsections */}
-                  {activeSection === section.id && section.subsections && (
-                    <div className="ml-8 mt-2 space-y-1">
-                      {section.subsections.map((subsection) => (
-                        <Button
-                          key={subsection.id}
-                          variant={activeSubsection === subsection.id ? "secondary" : "ghost"}
-                          size="sm"
-                          className={`w-full justify-start ${
-                            activeSubsection === subsection.id 
-                              ? "bg-blue-100 text-blue-800" 
-                              : "text-gray-600 hover:text-gray-900"
-                          }`}
-                          onClick={() => setActiveSubsection(subsection.id)}
-                        >
-                          {subsection.title}
-                        </Button>
-                      ))}
-                    </div>
-                  )}
+                  </div>
                 </div>
-              ))}
-            </div>
+              </Button>
+            ))}
           </div>
         </div>
+      </div>
 
-        {/* Main Content */}
-        <div className="flex-1 p-6">
-          {activeSection && getCurrentComponent() ? (
-            <div className="animate-fade-in">
-              {getCurrentComponent()}
-            </div>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Settings className="h-5 w-5" />
-                  <span>Welcome to Admin Settings</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">
-                  Select a setting category from the sidebar to get started with configuring your helpdesk.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+      {/* Main Content */}
+      <div className="flex-1 ml-80 pt-16">
+        {activeCard && (
+          <div className="p-6 border-b border-border bg-muted/30">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setActiveCard("")}
+              className="mb-2"
+            >
+              <ChevronRight className="h-4 w-4 mr-1 rotate-180" />
+              Back to {adminSections.find(s => s.id === activeSection)?.title}
+            </Button>
+          </div>
+        )}
+        {getCurrentContent()}
       </div>
     </div>
   );
