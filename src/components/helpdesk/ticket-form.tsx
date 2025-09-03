@@ -1,116 +1,62 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ChevronDown, ChevronRight, User } from "lucide-react";
 import { TicketPriority, TicketCategory } from "@/types/ticket";
 import { useToast } from "@/hooks/use-toast";
 import { useContacts } from "@/hooks/useContacts";
 import { useDepartments } from "@/hooks/useDepartments";
 import { Contact } from "@/types/contact";
-import { CCRecipientSelector } from "@/components/contacts/CCRecipientSelector";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface TicketFormData {
-  title: string;
-  description: string;
+  contact: string;
+  subject: string;
+  type: TicketCategory;
+  status: string;
   priority: TicketPriority;
-  category: TicketCategory;
-  customerName: string;
-  customerEmail: string;
-  departmentId?: string;
-  cc_recipients?: Array<{
-    id: string;
-    email: string;
-    name: string;
-    isContact?: boolean;
-  }>;
+  group: string;
+  agent: string;
+  description?: string;
 }
 
 interface TicketFormProps {
   onSubmit: (ticket: TicketFormData) => void;
   onCancel?: () => void;
-  defaultPhone?: string;
-  defaultName?: string;
-  defaultEmail?: string;
 }
 
-export function TicketForm({ onSubmit, onCancel, defaultPhone, defaultName, defaultEmail }: TicketFormProps) {
+export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
   const { toast } = useToast();
-  const { contacts, getContactByEmail } = useContacts();
+  const { contacts } = useContacts();
   const { departments, fetchDepartments } = useDepartments();
-  const [customerSuggestions, setCustomerSuggestions] = useState<Contact[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [createAnother, setCreateAnother] = useState(false);
+  const [contactDetailsOpen, setContactDetailsOpen] = useState(true);
+  const [timelineOpen, setTimelineOpen] = useState(true);
+  
   const [formData, setFormData] = useState<TicketFormData>({
-    title: '',
-    description: '',
-    priority: 'medium',
-    category: 'general',
-    customerName: defaultName || '',
-    customerEmail: defaultEmail || '',
-    departmentId: undefined
+    contact: '',
+    subject: '',
+    type: 'general',
+    status: 'open',
+    priority: 'low',
+    group: '',
+    agent: 'Justine Akvueno'
   });
-
-  // Add phone field to show caller info
-  const [phoneNumber, setPhoneNumber] = useState(defaultPhone || '');
-  const [ccContacts, setCcContacts] = useState<Array<{ id: string; email: string; name: string; isContact?: boolean; }>>([]);
 
   // Load departments on mount
   useEffect(() => {
     fetchDepartments();
   }, [fetchDepartments]);
 
-  // Sync defaults if they change after mount (e.g., async contact lookup)
-  useEffect(() => {
-    if (defaultName || defaultEmail) {
-      setFormData(prev => ({
-        ...prev,
-        customerName: defaultName ?? prev.customerName,
-        customerEmail: defaultEmail ?? prev.customerEmail,
-      }));
-    }
-    if (defaultPhone) setPhoneNumber(defaultPhone);
-  }, [defaultName, defaultEmail, defaultPhone]);
-
-  const handleEmailChange = (email: string) => {
-    setFormData({ ...formData, customerEmail: email });
-    
-    if (email.length > 2) {
-      const suggestions = contacts.filter(contact => 
-        contact.email.toLowerCase().includes(email.toLowerCase()) ||
-        `${contact.first_name} ${contact.last_name}`.toLowerCase().includes(email.toLowerCase())
-      ).slice(0, 5);
-      setCustomerSuggestions(suggestions);
-      setShowSuggestions(suggestions.length > 0);
-    } else {
-      setShowSuggestions(false);
-    }
-
-    // Auto-fill name if exact email match found
-    const existingContact = getContactByEmail(email);
-    if (existingContact) {
-      setFormData(prev => ({ 
-        ...prev, 
-        customerEmail: email,
-        customerName: `${existingContact.first_name} ${existingContact.last_name}` 
-      }));
-    }
-  };
-
-  const selectContact = (contact: Contact) => {
-    setFormData(prev => ({
-      ...prev,
-      customerEmail: contact.email,
-      customerName: `${contact.first_name} ${contact.last_name}`
-    }));
-    setShowSuggestions(false);
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title || !formData.description || !formData.customerName || !formData.customerEmail) {
+    if (!formData.contact || !formData.subject) {
       toast({
         title: "Error",
         description: "Please fill in all required fields.",
@@ -119,18 +65,21 @@ export function TicketForm({ onSubmit, onCancel, defaultPhone, defaultName, defa
       return;
     }
 
-    onSubmit({ ...formData, cc_recipients: ccContacts });
+    onSubmit(formData);
     
-    // Reset form
-    setFormData({
-      title: '',
-      description: '',
-      priority: 'medium',
-      category: 'general',
-      customerName: '',
-      customerEmail: '',
-      departmentId: undefined
-    });
+    if (!createAnother) {
+      // Reset form if not creating another
+      setFormData({
+        contact: '',
+        subject: '',
+        type: 'general',
+        status: 'open',
+        priority: 'low',
+        group: '',
+        agent: 'Justine Akvueno'
+      });
+      setSelectedContact(null);
+    }
 
     toast({
       title: "Success",
@@ -139,103 +88,102 @@ export function TicketForm({ onSubmit, onCancel, defaultPhone, defaultName, defa
   };
 
   return (
-    <Card className="shadow-medium animate-fade-in">
-      <CardHeader>
-        <CardTitle>Create New Ticket</CardTitle>
-        <CardDescription>
-          Fill out the form below to create a new support ticket.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="border-b bg-background px-6 py-4">
+        <h1 className="text-xl font-medium text-foreground">New ticket</h1>
+      </div>
+
+      <div className="flex">
+        {/* Main Form Area */}
+        <div className="flex-1 p-6">
+          <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
+            {/* Contact Field */}
             <div className="space-y-2">
-              <Label htmlFor="customerName">Customer Name *</Label>
-              <Input
-                id="customerName"
-                value={formData.customerName}
-                onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                placeholder="Enter customer name"
-                required
-              />
-            </div>
-            
-            {defaultPhone && (
-              <div className="space-y-2">
-                <Label htmlFor="phoneNumber">Phone Number</Label>
-                <Input
-                  id="phoneNumber"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder="Phone number"
-                  readOnly={!!defaultPhone}
-                  className={defaultPhone ? "bg-muted" : ""}
-                />
-              </div>
-            )}
-            <div className="space-y-2 relative">
-              <Label htmlFor="customerEmail">Customer Email *</Label>
-              <Input
-                id="customerEmail"
-                type="email"
-                value={formData.customerEmail}
-                onChange={(e) => handleEmailChange(e.target.value)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                onFocus={() => {
-                  if (customerSuggestions.length > 0) setShowSuggestions(true);
-                }}
-                placeholder="Enter customer email"
-                required
-              />
-              {showSuggestions && (
-                <div className="absolute top-full left-0 right-0 z-10 bg-white border border-gray-200 rounded-md shadow-lg max-h-40 overflow-y-auto">
-                  {customerSuggestions.map(contact => (
-                    <div
-                      key={contact.id}
-                      className="p-2 hover:bg-gray-100 cursor-pointer"
-                      onClick={() => selectContact(contact)}
-                    >
-                      <div className="font-medium">{contact.first_name} {contact.last_name}</div>
-                      <div className="text-sm text-gray-600">{contact.email}</div>
-                      {contact.company && <div className="text-xs text-gray-500">{contact.company}</div>}
-                    </div>
+              <Label htmlFor="contact" className="text-sm font-medium">
+                Contact <span className="text-destructive">*</span>
+              </Label>
+              <Select value={formData.contact} onValueChange={(value) => setFormData({ ...formData, contact: value })}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Select contact" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border-border">
+                  {contacts.map(contact => (
+                    <SelectItem key={contact.id} value={`${contact.first_name} ${contact.last_name}`}>
+                      {contact.first_name} {contact.last_name} - {contact.email}
+                    </SelectItem>
                   ))}
-                </div>
-              )}
+                </SelectContent>
+              </Select>
+              <div className="text-right">
+                <button type="button" className="text-sm text-primary hover:underline mr-4">
+                  Add new contact
+                </button>
+                <button type="button" className="text-sm text-primary hover:underline">
+                  Add Cc
+                </button>
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="title">Title *</Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="Brief description of the issue"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description *</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Detailed description of the issue..."
-              rows={4}
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Subject Field */}
             <div className="space-y-2">
-              <Label htmlFor="priority">Priority</Label>
+              <Label htmlFor="subject" className="text-sm font-medium">
+                Subject <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="subject"
+                value={formData.subject}
+                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                placeholder="Enter subject"
+                className="bg-background"
+                required
+              />
+            </div>
+
+            {/* Type Field */}
+            <div className="space-y-2">
+              <Label htmlFor="type" className="text-sm font-medium">Type</Label>
+              <Select value={formData.type} onValueChange={(value: TicketCategory) => setFormData({ ...formData, type: value })}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border-border">
+                  <SelectItem value="technical">Technical</SelectItem>
+                  <SelectItem value="billing">Billing</SelectItem>
+                  <SelectItem value="general">General</SelectItem>
+                  <SelectItem value="feature-request">Feature Request</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Status Field */}
+            <div className="space-y-2">
+              <Label htmlFor="status" className="text-sm font-medium">
+                Status <span className="text-destructive">*</span>
+              </Label>
+              <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border-border">
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="resolved">Resolved</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Priority Field */}
+            <div className="space-y-2">
+              <Label htmlFor="priority" className="text-sm font-medium">
+                Priority <span className="text-destructive">*</span>
+              </Label>
               <Select value={formData.priority} onValueChange={(value: TicketPriority) => setFormData({ ...formData, priority: value })}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-background">
                   <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background border-border">
                   <SelectItem value="low">Low</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
                   <SelectItem value="high">High</SelectItem>
@@ -244,60 +192,107 @@ export function TicketForm({ onSubmit, onCancel, defaultPhone, defaultName, defa
               </Select>
             </div>
 
+            {/* Group Field */}
             <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              <Select value={formData.category} onValueChange={(value: TicketCategory) => setFormData({ ...formData, category: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
+              <Label htmlFor="group" className="text-sm font-medium">
+                Group <span className="text-destructive">*</span>
+              </Label>
+              <Select value={formData.group} onValueChange={(value) => setFormData({ ...formData, group: value })}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Select group" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="technical">Technical</SelectItem>
-                  <SelectItem value="billing">Billing</SelectItem>
-                  <SelectItem value="general">General</SelectItem>
-                  <SelectItem value="feature-request">Feature Request</SelectItem>
+                <SelectContent className="bg-background border-border">
+                  {departments.map(dept => (
+                    <SelectItem key={dept.id} value={dept.name}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="department">Department</Label>
-            <Select value={formData.departmentId || ""} onValueChange={(value) => setFormData({ ...formData, departmentId: value || undefined })}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select department (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="unassigned">No Department</SelectItem>
-                {departments.map(dept => (
-                  <SelectItem key={dept.id} value={dept.id}>
-                    {dept.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+            {/* Agent Field */}
+            <div className="space-y-2">
+              <Label htmlFor="agent" className="text-sm font-medium">Agent</Label>
+              <Select value={formData.agent} onValueChange={(value) => setFormData({ ...formData, agent: value })}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Select agent" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border-border">
+                  <SelectItem value="Justine Akvueno">Justine Akvueno</SelectItem>
+                  <SelectItem value="John Doe">John Doe</SelectItem>
+                  <SelectItem value="Jane Smith">Jane Smith</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="ccContacts">CC Recipients</Label>
-            <CCRecipientSelector 
-              selectedRecipients={ccContacts}
-              onRecipientsChange={setCcContacts}
-              placeholder="Add CC recipients..."
-            />
-          </div>
+            {/* Form Actions */}
+            <div className="flex items-center justify-between pt-6">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="createAnother" 
+                  checked={createAnother}
+                  onCheckedChange={(checked) => setCreateAnother(!!checked)}
+                />
+                <Label htmlFor="createAnother" className="text-sm">Create another</Label>
+              </div>
+              
+              <div className="flex gap-3">
+                {onCancel && (
+                  <Button type="button" variant="outline" onClick={onCancel}>
+                    Cancel
+                  </Button>
+                )}
+                <Button type="submit" className="bg-primary hover:bg-primary/90">
+                  Create
+                </Button>
+              </div>
+            </div>
+          </form>
+        </div>
 
-          <div className="flex gap-3 pt-4">
-            <Button type="submit" className="flex-1 bg-gradient-primary hover:opacity-90 transition-opacity">
-              Create Ticket
-            </Button>
-            {onCancel && (
-              <Button type="button" variant="outline" onClick={onCancel}>
-                Cancel
-              </Button>
-            )}
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+        {/* Right Sidebar */}
+        <div className="w-80 border-l bg-muted/20">
+          {/* Contact Details Section */}
+          <Collapsible open={contactDetailsOpen} onOpenChange={setContactDetailsOpen}>
+            <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-3 text-left hover:bg-muted/30">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">CONTACT DETAILS</span>
+              </div>
+              {contactDetailsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </CollapsibleTrigger>
+            <CollapsibleContent className="px-4 pb-4">
+              <div className="flex flex-col items-center py-8 text-center">
+                <Avatar className="h-16 w-16 mb-4">
+                  <AvatarImage src="" />
+                  <AvatarFallback className="bg-muted">
+                    <User className="h-8 w-8 text-muted-foreground" />
+                  </AvatarFallback>
+                </Avatar>
+                <p className="text-sm text-muted-foreground">Pick a contact</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Their details and recent conversations will appear here
+                </p>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Timeline Section */}
+          <Collapsible open={timelineOpen} onOpenChange={setTimelineOpen}>
+            <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-3 text-left hover:bg-muted/30 border-t">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">TIMELINE</span>
+              </div>
+              {timelineOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </CollapsibleTrigger>
+            <CollapsibleContent className="px-4 pb-4">
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No conversations. It's pretty quiet here!
+              </p>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+      </div>
+    </div>
   );
 }

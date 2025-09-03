@@ -722,9 +722,6 @@ const loadTickets = async () => {
           <TicketForm 
             onSubmit={handleCreateTicket}
             onCancel={() => setShowHelpdeskPopup(false)}
-            defaultPhone={callerInfo?.phone}
-            defaultName={callerInfo?.name}
-            defaultEmail={callerInfo?.email}
           />
         </DialogContent>
       </Dialog>
