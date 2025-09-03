@@ -12,162 +12,224 @@ interface TicketFiltersPanelProps {
 }
 
 export function TicketFiltersPanel({ onFiltersChange, onClose }: TicketFiltersPanelProps) {
-  const [searchFilter, setSearchFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
-  const [assigneeFilter, setAssigneeFilter] = useState('all');
-  const [sourceFilter, setSourceFilter] = useState('all');
+  const [agentsFilter, setAgentsFilter] = useState('Any agent');
+  const [groupsFilter, setGroupsFilter] = useState('Any group');
+  const [createdFilter, setCreatedFilter] = useState('Any time');
+  const [closedAtFilter, setClosedAtFilter] = useState('Any time');
+  const [resolvedAtFilter, setResolvedAtFilter] = useState('Any time');
+  const [resolutionDueByFilter, setResolutionDueByFilter] = useState('Any time');
+  const [firstResponseDueByFilter, setFirstResponseDueByFilter] = useState('Any time');
+  const [nextResponseDueByFilter, setNextResponseDueByFilter] = useState('Any time');
+  const [skillsFilter, setSkillsFilter] = useState('Any');
+  const [statusFilter, setStatusFilter] = useState('All statuses');
 
   const applyFilters = () => {
     const filters = {
-      status: statusFilter !== 'all' ? statusFilter : null,
-      priority: priorityFilter !== 'all' ? priorityFilter : null,
-      assignee: assigneeFilter !== 'all' ? assigneeFilter : null,
-      source: sourceFilter !== 'all' ? sourceFilter : null,
+      agents: agentsFilter !== 'Any agent' ? agentsFilter : null,
+      groups: groupsFilter !== 'Any group' ? groupsFilter : null,
+      created: createdFilter !== 'Any time' ? createdFilter : null,
+      closedAt: closedAtFilter !== 'Any time' ? closedAtFilter : null,
+      resolvedAt: resolvedAtFilter !== 'Any time' ? resolvedAtFilter : null,
+      status: statusFilter !== 'All statuses' ? statusFilter : null,
     };
     onFiltersChange(filters);
   };
 
   const clearFilters = () => {
-    setStatusFilter('all');
-    setPriorityFilter('all');
-    setAssigneeFilter('all');
-    setSourceFilter('all');
+    setAgentsFilter('Any agent');
+    setGroupsFilter('Any group');
+    setCreatedFilter('Any time');
+    setClosedAtFilter('Any time');
+    setResolvedAtFilter('Any time');
+    setResolutionDueByFilter('Any time');
+    setFirstResponseDueByFilter('Any time');
+    setNextResponseDueByFilter('Any time');
+    setSkillsFilter('Any');
+    setStatusFilter('All statuses');
     onFiltersChange({});
   };
 
-  const activeFiltersCount = [statusFilter, priorityFilter, assigneeFilter, sourceFilter]
-    .filter(filter => filter !== 'all').length;
-
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            <h2 className="font-medium">Filters</h2>
-            {activeFiltersCount > 0 && (
-              <Badge variant="secondary" className="text-xs">
-                {activeFiltersCount}
-              </Badge>
-            )}
-          </div>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* Search within filters */}
-      <div className="p-4 border-b">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search filters..."
-            value={searchFilter}
-            onChange={(e) => setSearchFilter(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-      </div>
-
+    <div className="h-full flex flex-col bg-white">
       {/* Filter Options */}
-      <div className="flex-1 overflow-auto p-4 space-y-6">
-        {/* Status Filter */}
+      <div className="flex-1 overflow-auto p-4 space-y-4">
+        {/* Agents Include */}
         <div>
-          <label className="text-sm font-medium mb-3 block">Status</label>
+          <label className="text-sm font-medium text-gray-700 mb-2 block">Agents include</label>
+          <Select value={agentsFilter} onValueChange={setAgentsFilter}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Any agent">Any agent</SelectItem>
+              <SelectItem value="Assigned to me">Assigned to me</SelectItem>
+              <SelectItem value="Unassigned">Unassigned</SelectItem>
+              <SelectItem value="Support Team">Support Team</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Groups Include */}
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-2 block">Groups include</label>
+          <Select value={groupsFilter} onValueChange={setGroupsFilter}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Any group">Any group</SelectItem>
+              <SelectItem value="Technical Support">Technical Support</SelectItem>
+              <SelectItem value="Customer Service">Customer Service</SelectItem>
+              <SelectItem value="Sales">Sales</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Created */}
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-2 block">Created</label>
+          <Select value={createdFilter} onValueChange={setCreatedFilter}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Any time">Any time</SelectItem>
+              <SelectItem value="Today">Today</SelectItem>
+              <SelectItem value="Yesterday">Yesterday</SelectItem>
+              <SelectItem value="This week">This week</SelectItem>
+              <SelectItem value="Last week">Last week</SelectItem>
+              <SelectItem value="This month">This month</SelectItem>
+              <SelectItem value="Last month">Last month</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Closed at */}
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-2 block">Closed at</label>
+          <Select value={closedAtFilter} onValueChange={setClosedAtFilter}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Any time">Any time</SelectItem>
+              <SelectItem value="Today">Today</SelectItem>
+              <SelectItem value="Yesterday">Yesterday</SelectItem>
+              <SelectItem value="This week">This week</SelectItem>
+              <SelectItem value="Last week">Last week</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Resolved at */}
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-2 block">Resolved at</label>
+          <Select value={resolvedAtFilter} onValueChange={setResolvedAtFilter}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Any time">Any time</SelectItem>
+              <SelectItem value="Today">Today</SelectItem>
+              <SelectItem value="Yesterday">Yesterday</SelectItem>
+              <SelectItem value="This week">This week</SelectItem>
+              <SelectItem value="Last week">Last week</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Resolution due by */}
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-2 block">Resolution due by</label>
+          <Select value={resolutionDueByFilter} onValueChange={setResolutionDueByFilter}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Any time">Any time</SelectItem>
+              <SelectItem value="Overdue">Overdue</SelectItem>
+              <SelectItem value="Today">Today</SelectItem>
+              <SelectItem value="Tomorrow">Tomorrow</SelectItem>
+              <SelectItem value="This week">This week</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* First response due by */}
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-2 block">First response due by</label>
+          <Select value={firstResponseDueByFilter} onValueChange={setFirstResponseDueByFilter}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Any time">Any time</SelectItem>
+              <SelectItem value="Overdue">Overdue</SelectItem>
+              <SelectItem value="Today">Today</SelectItem>
+              <SelectItem value="Tomorrow">Tomorrow</SelectItem>
+              <SelectItem value="This week">This week</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Next response due by */}
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-2 block">Next response due by</label>
+          <Select value={nextResponseDueByFilter} onValueChange={setNextResponseDueByFilter}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Any time">Any time</SelectItem>
+              <SelectItem value="Overdue">Overdue</SelectItem>
+              <SelectItem value="Today">Today</SelectItem>
+              <SelectItem value="Tomorrow">Tomorrow</SelectItem>
+              <SelectItem value="This week">This week</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Skills include */}
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-2 block">Skills include</label>
+          <Select value={skillsFilter} onValueChange={setSkillsFilter}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Any">Any</SelectItem>
+              <SelectItem value="Technical">Technical</SelectItem>
+              <SelectItem value="Customer Service">Customer Service</SelectItem>
+              <SelectItem value="Sales">Sales</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Status Include */}
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-2 block">Status include</label>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="open">Open</SelectItem>
-              <SelectItem value="in-progress">In Progress</SelectItem>
-              <SelectItem value="resolved">Resolved</SelectItem>
-              <SelectItem value="closed">Closed</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="All statuses">All statuses</SelectItem>
+              <SelectItem value="Open">Open</SelectItem>
+              <SelectItem value="Pending">Pending</SelectItem>
+              <SelectItem value="Resolved">Resolved</SelectItem>
+              <SelectItem value="Closed">Closed</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-
-        <Separator />
-
-        {/* Priority Filter */}
-        <div>
-          <label className="text-sm font-medium mb-3 block">Priority</label>
-          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All priorities</SelectItem>
-              <SelectItem value="low">Low</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-              <SelectItem value="urgent">Urgent</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Separator />
-
-        {/* Assignee Filter */}
-        <div>
-          <label className="text-sm font-medium mb-3 block">Assignee</label>
-          <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All agents</SelectItem>
-              <SelectItem value="unassigned">Unassigned</SelectItem>
-              <SelectItem value="me">Assigned to me</SelectItem>
-              <SelectItem value="support-team">Support Team</SelectItem>
-              <SelectItem value="technical-team">Technical Team</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Separator />
-
-        {/* Source Filter */}
-        <div>
-          <label className="text-sm font-medium mb-3 block">Source</label>
-          <Select value={sourceFilter} onValueChange={setSourceFilter}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All sources</SelectItem>
-              <SelectItem value="email">Email</SelectItem>
-              <SelectItem value="portal">Portal</SelectItem>
-              <SelectItem value="phone">Phone</SelectItem>
-              <SelectItem value="chat">Chat</SelectItem>
-              <SelectItem value="api">API</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Separator />
-
-        {/* Date Range - Placeholder for future implementation */}
-        <div>
-          <label className="text-sm font-medium mb-3 block">Created Date</label>
-          <div className="text-sm text-muted-foreground">
-            Date range filters coming soon
-          </div>
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="p-4 border-t space-y-2">
-        <Button onClick={applyFilters} className="w-full">
-          Apply Filters
-        </Button>
-        <Button variant="outline" onClick={clearFilters} className="w-full">
-          Clear All
+      {/* Apply Button */}
+      <div className="p-4 border-t">
+        <Button 
+          onClick={applyFilters} 
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          Apply
         </Button>
       </div>
     </div>
