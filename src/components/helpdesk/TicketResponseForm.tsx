@@ -86,44 +86,67 @@ export function TicketResponseForm({
         return;
       }
 
-      // Build conversation history in Freshdesk email format
-      let conversationHistory = `\n\n--- Forwarded ticket ---\n\n`;
-      
-      // Original ticket
-      conversationHistory += `From: ${customerName} <${customerEmail}>\n`;
-      conversationHistory += `Date: ${new Date(ticket.created_at).toLocaleDateString('en-US', { 
-        weekday: 'short', 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })}\n`;
-      conversationHistory += `Subject: ${ticketSubject}\n`;
-      conversationHistory += `Ticket ID: #${ticket.ticket_number}\n\n`;
-      conversationHistory += `${ticket.description}\n\n`;
+      // Build conversation history in professional Freshdesk email format
+      const formatDate = (date: string) => {
+        return new Date(date).toLocaleDateString('en-US', { 
+          weekday: 'long',
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+      };
+
+      let conversationHistory = `
+====================================================================================
+FORWARDED CONVERSATION
+====================================================================================
+
+TICKET DETAILS:
+Ticket ID: #${ticket.ticket_number}
+Subject: ${ticketSubject}
+Customer: ${customerName} <${customerEmail}>
+Created: ${formatDate(ticket.created_at)}
+Priority: ${ticket.priority?.toUpperCase() || 'NORMAL'}
+Status: ${ticket.status?.toUpperCase() || 'OPEN'}
+
+====================================================================================
+
+From: ${customerName} <${customerEmail}>
+Sent: ${formatDate(ticket.created_at)}
+To: Support Team
+Subject: ${ticketSubject}
+
+${ticket.description}
+
+`;
 
       // Add all comments to the conversation
       if (comments && comments.length > 0) {
         for (const comment of comments) {
           if (!comment.is_internal) { // Only include public comments in forward
-            conversationHistory += `________________________________\n\n`;
-            conversationHistory += `From: Support Team\n`;
-            conversationHistory += `Date: ${new Date(comment.created_at).toLocaleDateString('en-US', { 
-              weekday: 'short', 
-              year: 'numeric', 
-              month: 'short', 
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })}\n`;
-            conversationHistory += `Subject: Re: ${ticketSubject}\n\n`;
-            conversationHistory += `${comment.content}\n\n`;
+            conversationHistory += `
+------------------------------------------------------------------------------------
+
+From: Support Team
+Sent: ${formatDate(comment.created_at)}
+To: ${customerName} <${customerEmail}>
+Subject: Re: ${ticketSubject}
+
+${comment.content}
+
+`;
           }
         }
       }
 
-      conversationHistory += `--- End of forwarded ticket ---\n\n`;
+      conversationHistory += `
+====================================================================================
+END OF FORWARDED CONVERSATION
+====================================================================================
+`;
       setResponse(conversationHistory);
     } catch (error) {
       console.error('Error loading conversation history:', error);
