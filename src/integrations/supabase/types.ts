@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_availability: {
+        Row: {
+          id: string
+          is_available: boolean
+          max_tickets: number | null
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          is_available?: boolean
+          max_tickets?: number | null
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          is_available?: boolean
+          max_tickets?: number | null
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agent_skills: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          skill_level: number | null
+          skill_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          skill_level?: number | null
+          skill_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          skill_level?: number | null
+          skill_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       assignment_rules: {
         Row: {
           conditions: Json | null
@@ -74,6 +134,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      assignment_tracking: {
+        Row: {
+          assignment_method: string
+          department_id: string | null
+          group_id: string | null
+          id: string
+          last_assigned_user_id: string | null
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          assignment_method?: string
+          department_id?: string | null
+          group_id?: string | null
+          id?: string
+          last_assigned_user_id?: string | null
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          assignment_method?: string
+          department_id?: string | null
+          group_id?: string | null
+          id?: string
+          last_assigned_user_id?: string | null
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       auto_dialer_campaigns: {
         Row: {
@@ -936,6 +1026,7 @@ export type Database = {
       }
       organizations: {
         Row: {
+          assignment_settings: Json | null
           created_at: string
           domain: string | null
           id: string
@@ -948,6 +1039,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assignment_settings?: Json | null
           created_at?: string
           domain?: string | null
           id?: string
@@ -960,6 +1052,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assignment_settings?: Json | null
           created_at?: string
           domain?: string | null
           id?: string
@@ -1164,6 +1257,7 @@ export type Database = {
           id: string
           organization_id: string | null
           priority: string
+          required_skills: string[] | null
           resolved_at: string | null
           status: string
           subject: string
@@ -1183,6 +1277,7 @@ export type Database = {
           id?: string
           organization_id?: string | null
           priority?: string
+          required_skills?: string[] | null
           resolved_at?: string | null
           status?: string
           subject: string
@@ -1202,6 +1297,7 @@ export type Database = {
           id?: string
           organization_id?: string | null
           priority?: string
+          required_skills?: string[] | null
           resolved_at?: string | null
           status?: string
           subject?: string
