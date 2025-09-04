@@ -305,7 +305,7 @@ export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps
   return (
     <div className="min-h-screen bg-background flex">
       {/* Header */}
-      <div className="fixed top-0 left-0 right-0 bg-background border-b border-border px-6 py-3 z-50">
+      <div className="fixed top-[var(--header-height)] left-[var(--sidebar-width)] right-0 bg-background border-b border-border px-6 py-3 z-50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
@@ -340,7 +340,7 @@ export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps
       </div>
 
       {/* Sidebar */}
-      <div className="w-80 bg-background border-r border-border pt-16 fixed left-0 top-0 bottom-0 overflow-y-auto">
+      <div className="w-80 bg-background border-r border-border pt-16 fixed left-[var(--sidebar-width)] top-[var(--header-height)] bottom-0 overflow-y-auto">
         <div className="p-6">
           <div className="space-y-2">
             {sidebarItems.map((item) => (
