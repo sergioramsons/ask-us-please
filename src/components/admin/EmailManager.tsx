@@ -28,6 +28,14 @@ interface EmailServer {
   use_tls: boolean;
   is_active: boolean;
   password_encrypted: boolean;
+  // Advanced outgoing settings
+  max_send_rate?: number;
+  retry_attempts?: number;
+  bounce_handling?: boolean;
+  track_opens?: boolean;
+  track_clicks?: boolean;
+  dkim_enabled?: boolean;
+  custom_headers?: string;
   created_at: string;
   updated_at: string;
 }
@@ -63,7 +71,15 @@ export function EmailManager() {
     sender_email: '',
     reply_to: '',
     use_tls: true,
-    is_active: false
+    is_active: false,
+    // Advanced outgoing settings
+    max_send_rate: 100,
+    retry_attempts: 3,
+    bounce_handling: true,
+    track_opens: false,
+    track_clicks: false,
+    dkim_enabled: false,
+    custom_headers: ''
   });
 
   // Template form state
@@ -224,7 +240,14 @@ export function EmailManager() {
         sender_email: '',
         reply_to: '',
         use_tls: true,
-        is_active: false
+        is_active: false,
+        max_send_rate: 100,
+        retry_attempts: 3,
+        bounce_handling: true,
+        track_opens: false,
+        track_clicks: false,
+        dkim_enabled: false,
+        custom_headers: ''
       });
       loadServers();
     } catch (error: any) {
@@ -248,7 +271,15 @@ export function EmailManager() {
       sender_email: server.sender_email,
       reply_to: server.reply_to || '',
       use_tls: server.use_tls,
-      is_active: server.is_active
+      is_active: server.is_active,
+      // Advanced outgoing settings with defaults
+      max_send_rate: server.max_send_rate || 100,
+      retry_attempts: server.retry_attempts || 3,
+      bounce_handling: server.bounce_handling || true,
+      track_opens: server.track_opens || false,
+      track_clicks: server.track_clicks || false,
+      dkim_enabled: server.dkim_enabled || false,
+      custom_headers: server.custom_headers || ''
     });
     setShowServerDialog(true);
   };
@@ -346,34 +377,41 @@ export function EmailManager() {
       <div className="flex items-center justify-between">
       <div>
         <h2 className="text-2xl font-bold">Email Management</h2>
-        <p className="text-muted-foreground">Configure email servers and templates</p>
+        <p className="text-muted-foreground">Configure outgoing email servers, templates, and delivery settings</p>
       </div>
       </div>
 
-      {/* Email Servers */}
+      {/* Outgoing Email Servers */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              SMTP Servers
+              <Send className="h-5 w-5" />
+              Outgoing Email Servers (SMTP)
             </CardTitle>
             <Dialog open={showServerDialog} onOpenChange={setShowServerDialog}>
               <DialogTrigger asChild>
                 <Button onClick={() => {
                   setEditingServer(null);
-                  setServerForm({
-                    name: '',
-                    smtp_host: '',
-                    smtp_port: 587,
-                    smtp_username: '',
-                    smtp_password: '',
-                    sender_name: '',
-                    sender_email: '',
-                    reply_to: '',
-                    use_tls: true,
-                    is_active: false
-                  });
+        setServerForm({
+          name: '',
+          smtp_host: '',
+          smtp_port: 587,
+          smtp_username: '',
+          smtp_password: '',
+          sender_name: '',
+          sender_email: '',
+          reply_to: '',
+          use_tls: true,
+          is_active: false,
+          max_send_rate: 100,
+          retry_attempts: 3,
+          bounce_handling: true,
+          track_opens: false,
+          track_clicks: false,
+          dkim_enabled: false,
+          custom_headers: ''
+        });
                 }}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Server
@@ -382,10 +420,10 @@ export function EmailManager() {
               <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>
-                    {editingServer ? 'Edit Email Server' : 'Add Email Server'}
+                    {editingServer ? 'Edit Outgoing Email Server' : 'Add Outgoing Email Server'}
                   </DialogTitle>
                   <DialogDescription>
-                    {editingServer ? 'Update the SMTP server configuration below.' : 'Configure a new SMTP server for sending emails.'}
+                    {editingServer ? 'Update the SMTP server configuration for outgoing emails.' : 'Configure a new SMTP server for sending outgoing emails and notifications.'}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid grid-cols-2 gap-4">
@@ -463,22 +501,112 @@ export function EmailManager() {
                       placeholder="noreply@yourcompany.com"
                     />
                   </div>
+                  
+                  {/* Advanced Outgoing Settings */}
                   <div className="col-span-2 space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="use_tls"
-                        checked={serverForm.use_tls}
-                        onCheckedChange={(checked) => setServerForm(prev => ({ ...prev, use_tls: checked }))}
-                      />
-                      <Label htmlFor="use_tls">Use TLS/SSL Encryption</Label>
+                    <div className="p-4 border rounded-lg space-y-4">
+                      <h4 className="font-medium text-sm">Delivery Settings</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="max_send_rate">Max Send Rate (emails/hour)</Label>
+                          <Input
+                            id="max_send_rate"
+                            type="number"
+                            value={serverForm.max_send_rate}
+                            onChange={(e) => setServerForm(prev => ({ ...prev, max_send_rate: parseInt(e.target.value) }))}
+                            placeholder="100"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="retry_attempts">Retry Attempts</Label>
+                          <Input
+                            id="retry_attempts"
+                            type="number"
+                            value={serverForm.retry_attempts}
+                            onChange={(e) => setServerForm(prev => ({ ...prev, retry_attempts: parseInt(e.target.value) }))}
+                            placeholder="3"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="custom_headers">Custom Headers (JSON format)</Label>
+                        <Textarea
+                          id="custom_headers"
+                          value={serverForm.custom_headers}
+                          onChange={(e) => setServerForm(prev => ({ ...prev, custom_headers: e.target.value }))}
+                          placeholder='{"X-Mailer": "HelpDesk System", "X-Priority": "Normal"}'
+                          className="h-20"
+                        />
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="is_active"
-                        checked={serverForm.is_active}
-                        onCheckedChange={(checked) => setServerForm(prev => ({ ...prev, is_active: checked }))}
-                      />
-                      <Label htmlFor="is_active">Set as Active Server</Label>
+                    
+                    <div className="p-4 border rounded-lg space-y-4">
+                      <h4 className="font-medium text-sm">Email Features</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="bounce_handling"
+                            checked={serverForm.bounce_handling}
+                            onCheckedChange={(checked) => setServerForm(prev => ({ ...prev, bounce_handling: checked }))}
+                          />
+                          <Label htmlFor="bounce_handling">Enable Bounce Handling</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="track_opens"
+                            checked={serverForm.track_opens}
+                            onCheckedChange={(checked) => setServerForm(prev => ({ ...prev, track_opens: checked }))}
+                          />
+                          <Label htmlFor="track_opens">Track Email Opens</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="track_clicks"
+                            checked={serverForm.track_clicks}
+                            onCheckedChange={(checked) => setServerForm(prev => ({ ...prev, track_clicks: checked }))}
+                          />
+                          <Label htmlFor="track_clicks">Track Link Clicks</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="dkim_enabled"
+                            checked={serverForm.dkim_enabled}
+                            onCheckedChange={(checked) => setServerForm(prev => ({ ...prev, dkim_enabled: checked }))}
+                          />
+                          <Label htmlFor="dkim_enabled">Enable DKIM Signing</Label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-span-2 space-y-4">
+                    <div className="p-4 border rounded-lg space-y-4">
+                      <h4 className="font-medium text-sm">Security Settings</h4>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="use_tls"
+                          checked={serverForm.use_tls}
+                          onCheckedChange={(checked) => setServerForm(prev => ({ ...prev, use_tls: checked }))}
+                        />
+                        <Label htmlFor="use_tls">Use TLS/SSL Encryption</Label>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Port 587 (STARTTLS) or 465 (SSL/TLS) recommended for secure email delivery
+                      </p>
+                    </div>
+                    
+                    <div className="p-4 border rounded-lg space-y-4">
+                      <h4 className="font-medium text-sm">Server Status</h4>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="is_active"
+                          checked={serverForm.is_active}
+                          onCheckedChange={(checked) => setServerForm(prev => ({ ...prev, is_active: checked }))}
+                        />
+                        <Label htmlFor="is_active">Set as Active Outgoing Server</Label>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Only one outgoing server can be active at a time. Activating this will deactivate others.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -487,7 +615,7 @@ export function EmailManager() {
                     Cancel
                   </Button>
                   <Button onClick={handleSaveServer}>
-                    {editingServer ? 'Update' : 'Add'} Server
+                    {editingServer ? 'Update' : 'Add'} Outgoing Server
                   </Button>
                 </div>
               </DialogContent>
@@ -520,7 +648,7 @@ export function EmailManager() {
                         {server.sender_name} &lt;{server.sender_email}&gt;
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {server.smtp_host}:{server.smtp_port} • {server.use_tls ? 'TLS' : 'No TLS'}
+                        {server.smtp_host}:{server.smtp_port} • {server.use_tls ? 'TLS' : 'No TLS'} • Rate: {server.max_send_rate || 100}/hr
                       </p>
                       <p className="text-xs">
                         <Badge variant={server.password_encrypted ? "default" : "destructive"} className="text-xs">
