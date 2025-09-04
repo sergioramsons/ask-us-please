@@ -32,6 +32,7 @@ import { cn } from "@/lib/utils";
 import { UserRoleManager } from "./UserRoleManager";
 import { BusinessHoursConfig } from "./BusinessHoursConfig";
 import { EmailManager } from "./EmailManager";
+import IncomingMailServerConfig from "./IncomingMailServerConfig";
 import { ChannelManager } from "@/components/channels/ChannelManager";
 import { WorkflowBuilder } from "@/components/workflow/WorkflowBuilder";
 import { ContactsManager } from "./ContactsManager";

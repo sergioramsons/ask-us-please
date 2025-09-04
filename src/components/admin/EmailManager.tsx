@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Mail, Send, Edit, Trash2, TestTube, Check, X } from 'lucide-react';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import IncomingMailServerConfig from "./IncomingMailServerConfig";
 import { encryptPassword } from '@/lib/encryption';
 
 interface EmailServer {
@@ -377,7 +378,7 @@ export function EmailManager() {
       <div className="flex items-center justify-between">
       <div>
         <h2 className="text-2xl font-bold">Email Management</h2>
-        <p className="text-muted-foreground">Configure outgoing email servers, templates, and delivery settings</p>
+        <p className="text-muted-foreground">Configure outgoing email servers, incoming email servers, templates, and delivery settings</p>
       </div>
       </div>
 
@@ -692,6 +693,9 @@ export function EmailManager() {
           )}
         </CardContent>
       </Card>
+
+      {/* Incoming Email Servers */}
+      <IncomingMailServerConfig />
 
       {/* Email Templates */}
       <Card>
