@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils";
 // Import existing components for when user clicks on cards
 import { UserRoleManager } from "./UserRoleManager";
 import { BusinessHoursConfig } from "./BusinessHoursConfig";
-import { EmailManager } from "./EmailManager";
+import IncomingMailServerConfig from "./IncomingMailServerConfig";
 import { ChannelManager } from "@/components/channels/ChannelManager";
 import { WorkflowBuilder } from "@/components/workflow/WorkflowBuilder";
 import { ContactsManager } from "./ContactsManager";
@@ -154,7 +154,7 @@ export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps
       title: "Channels", 
       description: "Configure how customers can reach you",
       icon: Inbox,
-      totalCards: 9,
+      totalCards: 8,
       configuredCards: 7,
       cards: [
         {
@@ -167,10 +167,10 @@ export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps
         {
           id: "email",
           title: "Email",
-          description: "Integrate support mailboxes, configure DKIM, custom mail servers, Bcc and more",
+          description: "Integrate support mailboxes, configure DKIM, custom mail servers, POP3/IMAP, Bcc and more",
           icon: Mail,
           configured: true,
-          component: EmailManager,
+          component: IncomingMailServerConfig,
         },
         {
           id: "widgets",
@@ -213,13 +213,6 @@ export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps
           description: "Integrate your WhatsApp business number to support customers and offer instant resolutions",
           icon: MessageSquare,
           configured: true,
-        },
-        {
-          id: "pop3-imap",
-          title: "POP3/IMAP Configuration",
-          description: "Configure POP3/IMAP settings for incoming email servers",
-          icon: Mail,
-          configured: false,
         },
       ]
     },
