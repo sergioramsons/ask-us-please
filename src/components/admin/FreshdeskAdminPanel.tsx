@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils";
 // Import existing components for when user clicks on cards
 import { UserRoleManager } from "./UserRoleManager";
 import { BusinessHoursConfig } from "./BusinessHoursConfig";
-import IncomingMailServerConfig from "./IncomingMailServerConfig";
+import { EmailManager } from "./EmailManager";
 import { ChannelManager } from "@/components/channels/ChannelManager";
 import { WorkflowBuilder } from "@/components/workflow/WorkflowBuilder";
 import { ContactsManager } from "./ContactsManager";
@@ -170,7 +170,7 @@ export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps
           description: "Integrate support mailboxes, configure DKIM, custom mail servers, POP3/IMAP, Bcc and more",
           icon: Mail,
           configured: true,
-          component: IncomingMailServerConfig,
+          component: EmailManager,
         },
         {
           id: "widgets",
