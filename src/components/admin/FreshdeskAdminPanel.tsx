@@ -214,6 +214,13 @@ export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps
           icon: MessageSquare,
           configured: true,
         },
+        {
+          id: "pop3-imap",
+          title: "POP3/IMAP Configuration",
+          description: "Configure POP3/IMAP settings for incoming email servers",
+          icon: Mail,
+          configured: false,
+        },
       ]
     },
   ];
