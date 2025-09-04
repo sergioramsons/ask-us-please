@@ -37,6 +37,7 @@ import { ChannelManager } from "@/components/channels/ChannelManager";
 import { WorkflowBuilder } from "@/components/workflow/WorkflowBuilder";
 import { ContactsManager } from "./ContactsManager";
 import { AccountDashboard } from "@/components/account/AccountDashboard";
+import { AssignmentSystemManager } from "./AssignmentSystemManager";
 import { useOrganization } from "@/contexts/OrganizationContext";
 import { Ticket } from "@/types/ticket";
 
@@ -122,8 +123,8 @@ export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps
       title: "Team",
       description: "Manage your team members and their settings",
       icon: Users,
-      totalCards: 3,
-      configuredCards: 3,
+      totalCards: 4,
+      configuredCards: 4,
       cards: [
         {
           id: "agents",
@@ -147,6 +148,14 @@ export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps
           icon: Clock,
           configured: true,
           component: BusinessHoursConfig,
+        },
+        {
+          id: "assignment-system",
+          title: "Assignment System",
+          description: "Configure round-robin, load-balanced, and skill-based ticket assignment with agent availability controls",
+          icon: Settings,
+          configured: true,
+          component: AssignmentSystemManager,
         },
       ]
     },

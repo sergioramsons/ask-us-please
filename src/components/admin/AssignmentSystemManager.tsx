@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { useAssignmentSystem } from '@/hooks/useAssignmentSystem';
 import { useUserRoles } from '@/hooks/useUserRoles';
+import { AssignmentSystemDemo } from './AssignmentSystemDemo';
 import { Settings, Users, Award, Clock, Plus, Trash2, UserCheck, UserX } from 'lucide-react';
 
 interface UserWithRole {
@@ -103,11 +104,12 @@ export function AssignmentSystemManager() {
       </div>
 
       <Tabs defaultValue="settings" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="settings">Settings</TabsTrigger>
           <TabsTrigger value="availability">Agent Availability</TabsTrigger>
           <TabsTrigger value="skills">Agent Skills</TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="demo">Test Assignment</TabsTrigger>
         </TabsList>
 
         <TabsContent value="settings" className="space-y-4">
@@ -407,6 +409,10 @@ export function AssignmentSystemManager() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="demo" className="space-y-4">
+          <AssignmentSystemDemo />
         </TabsContent>
       </Tabs>
     </div>
