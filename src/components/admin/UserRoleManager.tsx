@@ -8,11 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUserRoles } from '@/hooks/useUserRoles';
-import { useGroups, Group } from '@/hooks/useGroups';
+import { useGroups, Group, GroupMember } from '@/hooks/useGroups';
 import { useDepartments, Department } from '@/hooks/useDepartments';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, UserPlus, UserMinus, Building2, Plus, Trash2, AlertTriangle, Settings } from 'lucide-react';
+import { UserPlus, UserMinus, Shield, Building2, Trash2, Plus, Settings, Edit, Check, X } from 'lucide-react';
 
 interface UserWithRole {
   id: string;
@@ -53,8 +53,14 @@ export function UserRoleManager() {
   const [newGroupDescription, setNewGroupDescription] = useState('');
   const [selectedManagerId, setSelectedManagerId] = useState<string>('');
   const [selectedGroupForMembers, setSelectedGroupForMembers] = useState<string>('');
-  const [groupMembers, setGroupMembers] = useState<any[]>([]);
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [selectedUserForGroup, setSelectedUserForGroup] = useState<string>('');
+  
+  // Edit group state
+  const [editingGroupId, setEditingGroupId] = useState<string>('');
+  const [editGroupName, setEditGroupName] = useState('');
+  const [editGroupDescription, setEditGroupDescription] = useState('');
+  const [editGroupManagerId, setEditGroupManagerId] = useState('');
   
   const { organization } = useOrganization();
   
@@ -308,6 +314,43 @@ export function UserRoleManager() {
     setSelectedGroupForMembers(groupId);
     const members = await getGroupMembers(groupId);
     setGroupMembers(members);
+  };
+
+  const handleEditGroup = (group: any) => {
+    setEditingGroupId(group.id);
+    setEditGroupName(group.name);
+    setEditGroupDescription(group.description || '');
+    setEditGroupManagerId(group.manager_id || '');
+  };
+
+  const handleSaveGroupEdit = async () => {
+    if (!editGroupName.trim()) {
+      console.error('Group name is required');
+      return;
+    }
+
+    const success = await updateGroup(editingGroupId, {
+      name: editGroupName,
+      description: editGroupDescription || undefined,
+      manager_id: editGroupManagerId || undefined
+    });
+
+    if (success) {
+      console.log('Group updated successfully');
+      setEditingGroupId('');
+      setEditGroupName('');
+      setEditGroupDescription('');
+      setEditGroupManagerId('');
+    } else {
+      console.error('Failed to update group');
+    }
+  };
+
+  const handleCancelGroupEdit = () => {
+    setEditingGroupId('');
+    setEditGroupName('');
+    setEditGroupDescription('');
+    setEditGroupManagerId('');
   };
 
   const handleAddUserToGroup = async () => {
@@ -862,6 +905,13 @@ export function UserRoleManager() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => handleEditGroup(group)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleDeleteGroup(group.id, group.name)}
                           className="text-destructive hover:text-destructive"
                         >
@@ -871,21 +921,73 @@ export function UserRoleManager() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm">
-                        <span className="font-medium">Manager: </span>
-                        <span className="text-muted-foreground">
-                          {group.manager_name || 'No manager assigned'}
-                        </span>
+                    {/* Edit Group Form */}
+                    {editingGroupId === group.id ? (
+                      <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor={`edit-group-name-${group.id}`}>Group Name *</Label>
+                            <Input
+                              id={`edit-group-name-${group.id}`}
+                              value={editGroupName}
+                              onChange={(e) => setEditGroupName(e.target.value)}
+                              placeholder="Enter group name"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`edit-group-manager-${group.id}`}>Manager</Label>
+                            <Select value={editGroupManagerId} onValueChange={setEditGroupManagerId}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select manager (optional)" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="">No manager</SelectItem>
+                                {users.map((user) => (
+                                  <SelectItem key={user.id} value={user.id}>
+                                    {user.display_name || user.email}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor={`edit-group-description-${group.id}`}>Description</Label>
+                          <Input
+                            id={`edit-group-description-${group.id}`}
+                            value={editGroupDescription}
+                            onChange={(e) => setEditGroupDescription(e.target.value)}
+                            placeholder="Enter description (optional)"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button onClick={handleSaveGroupEdit} size="sm">
+                            <Check className="h-4 w-4 mr-1" />
+                            Save
+                          </Button>
+                          <Button variant="outline" onClick={handleCancelGroupEdit} size="sm">
+                            <X className="h-4 w-4 mr-1" />
+                            Cancel
+                          </Button>
+                        </div>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleViewGroupMembers(group.id)}
-                      >
-                        Manage Members
-                      </Button>
-                    </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm">
+                          <span className="font-medium">Manager: </span>
+                          <span className="text-muted-foreground">
+                            {group.manager_name || 'No manager assigned'}
+                          </span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewGroupMembers(group.id)}
+                        >
+                          Manage Members
+                        </Button>
+                      </div>
+                    )}
                     
                     {/* Group Members Management */}
                     {selectedGroupForMembers === group.id && (

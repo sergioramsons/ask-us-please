@@ -17,7 +17,7 @@ export interface Group {
   updated_at: string;
 }
 
-interface GroupMember {
+export interface GroupMember {
   id: string;
   user_id: string;
   group_id: string;
