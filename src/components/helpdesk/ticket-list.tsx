@@ -74,7 +74,7 @@ export function TicketList({
   };
 
   const handleViewFiltersChange = (filters: any) => {
-    setAppliedFilters(prev => ({ ...prev, ...filters }));
+    setAppliedFilters(filters || {});
   };
 
   const getCurrentUserId = () => {
