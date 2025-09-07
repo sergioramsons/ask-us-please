@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Ticket, TicketStatus } from "@/types/ticket";
 import { Search, LayoutGrid, List, Inbox, Filter, Eye } from "lucide-react";
 import { TicketFiltersPanel } from "./TicketFiltersPanel";
+import { TicketViews } from "./TicketViews";
 
 interface TicketListProps {
   tickets: Ticket[];
@@ -30,6 +31,7 @@ export function TicketList({
   const [sortOrder, setSortOrder] = useState('Date created');
   const [showFilters, setShowFilters] = useState(true);
   const [appliedFilters, setAppliedFilters] = useState<any>({});
+  const [currentViewFilter, setCurrentViewFilter] = useState('all-tickets');
 
   // Helper function to get initials from name
   const getInitials = (name: string) => {
@@ -69,6 +71,10 @@ export function TicketList({
     return `${diffMonths} months ago`;
   };
 
+  const handleViewFiltersChange = (filters: any) => {
+    setAppliedFilters(prev => ({ ...prev, ...filters }));
+  };
+
   // Filter and sort tickets
   const processedTickets = tickets
     .filter(ticket => {
@@ -76,13 +82,36 @@ export function TicketList({
                            ticket.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            ticket.customer.email.toLowerCase().includes(searchTerm.toLowerCase());
       
-      // Apply additional filters from filters panel
+      // Apply additional filters from filters panel and view filters
       let matchesFilters = true;
-      if (appliedFilters.status && appliedFilters.status !== 'all') {
-        matchesFilters = matchesFilters && ticket.status === appliedFilters.status;
+      if (appliedFilters.status) {
+        if (Array.isArray(appliedFilters.status)) {
+          matchesFilters = matchesFilters && appliedFilters.status.includes(ticket.status);
+        } else if (appliedFilters.status !== 'all') {
+          matchesFilters = matchesFilters && ticket.status === appliedFilters.status;
+        }
       }
       if (appliedFilters.priority && appliedFilters.priority !== 'all') {
         matchesFilters = matchesFilters && ticket.priority === appliedFilters.priority;
+      }
+      if (appliedFilters.assignee === 'unassigned') {
+        matchesFilters = matchesFilters && !ticket.assignee;
+      }
+      if (appliedFilters.assignee === 'me') {
+        // For now, we'll skip this filter as we don't have current user context
+        // matchesFilters = matchesFilters && ticket.assignee?.id === currentUserId;
+      }
+      if (appliedFilters.overdue) {
+        matchesFilters = matchesFilters && isOverdue(ticket);
+      }
+      if (appliedFilters.dateRange === 'today') {
+        const today = new Date();
+        const ticketDate = new Date(ticket.createdAt);
+        const isToday = ticketDate.toDateString() === today.toDateString();
+        matchesFilters = matchesFilters && isToday;
+      }
+      if (appliedFilters.category && appliedFilters.category !== 'general') {
+        matchesFilters = matchesFilters && ticket.category === appliedFilters.category;
       }
       
       return matchesSearch && matchesFilters;
@@ -210,76 +239,12 @@ export function TicketList({
   return (
     <div className="h-full bg-gray-50 flex">
       {/* Left Sidebar - Ticket Views */}
-      <div className="w-64 bg-slate-700 text-white flex flex-col">
-        <div className="p-4 border-b border-slate-600">
-          <div className="flex items-center gap-2 text-sm">
-            <Filter className="h-4 w-4" />
-            <span>All tickets</span>
-            <span className="bg-slate-600 text-white text-xs px-2 py-1 rounded-full">
-              {processedTickets.length}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex-1 p-2">
-          <div className="mb-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-              <Input
-                placeholder="Search for a view"
-                className="pl-10 bg-slate-600 border-slate-500 text-white placeholder-slate-400"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <div className="text-xs text-slate-400 uppercase font-medium mb-2">Shared</div>
-            
-            <div className="text-xs text-slate-400 uppercase font-medium mb-2">Default</div>
-            
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2 px-3 py-2 rounded text-sm bg-blue-600 text-white">
-                <List className="h-4 w-4" />
-                <span>All tickets</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-2 rounded text-sm text-slate-300 hover:bg-slate-600 cursor-pointer">
-                <List className="h-4 w-4" />
-                <span>All undelivered messages</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-2 rounded text-sm text-slate-300 hover:bg-slate-600 cursor-pointer">
-                <List className="h-4 w-4" />
-                <span>All unresolved tickets</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-2 rounded text-sm text-slate-300 hover:bg-slate-600 cursor-pointer">
-                <List className="h-4 w-4" />
-                <span>New and my open tickets</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-2 rounded text-sm text-slate-300 hover:bg-slate-600 cursor-pointer">
-                <List className="h-4 w-4" />
-                <span>Tickets I raised</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-2 rounded text-sm text-slate-300 hover:bg-slate-600 cursor-pointer">
-                <List className="h-4 w-4" />
-                <span>Tickets I'm watching</span>
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-0.5">
-              <div className="flex items-center gap-2 px-3 py-2 rounded text-sm text-slate-300 hover:bg-slate-600 cursor-pointer">
-                <List className="h-4 w-4" />
-                <span>Archive</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-2 rounded text-sm text-slate-300 hover:bg-slate-600 cursor-pointer">
-                <List className="h-4 w-4" />
-                <span>Spam</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-2 rounded text-sm text-slate-300 hover:bg-slate-600 cursor-pointer">
-                <List className="h-4 w-4" />
-                <span>Trash</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className="w-64 bg-white border-r border-gray-200">
+        <TicketViews
+          currentView={currentViewFilter}
+          onViewChange={setCurrentViewFilter}
+          onFiltersChange={handleViewFiltersChange}
+        />
       </div>
 
       {/* Main Content */}

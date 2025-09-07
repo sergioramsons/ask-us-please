@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
+  import { 
   Search, 
   Star, 
   Users, 
@@ -15,7 +15,8 @@ import {
   AlertCircle,
   Trash2,
   Archive,
-  Inbox
+  Inbox,
+  Eye
 } from "lucide-react";
 
 interface TicketViewsProps {
@@ -26,6 +27,10 @@ interface TicketViewsProps {
 
 const defaultViews = [
   { id: 'all-tickets', name: 'All tickets', icon: Inbox, count: 0 },
+  { id: 'all-unresolved', name: 'All unresolved tickets', icon: AlertCircle, count: 0 },
+  { id: 'new-and-my-open', name: 'New and my open tickets', icon: User, count: 0 },
+  { id: 'tickets-i-raised', name: 'Tickets I raised', icon: User, count: 0 },
+  { id: 'tickets-im-watching', name: 'Tickets I\'m watching', icon: Eye, count: 0 },
   { id: 'my-open-tickets', name: 'My open tickets', icon: User, count: 0 },
   { id: 'unassigned', name: 'Unassigned tickets', icon: Users, count: 0 },
   { id: 'overdue', name: 'Overdue tickets', icon: Clock, count: 0 },
@@ -34,9 +39,9 @@ const defaultViews = [
 ];
 
 const systemViews = [
+  { id: 'archived', name: 'Archive', icon: Archive, count: 0 },
   { id: 'spam', name: 'Spam', icon: XCircle, count: 0 },
   { id: 'trash', name: 'Trash', icon: Trash2, count: 0 },
-  { id: 'archived', name: 'Archived', icon: Archive, count: 0 },
 ];
 
 export function TicketViews({ currentView, onViewChange, onFiltersChange }: TicketViewsProps) {
@@ -50,6 +55,19 @@ export function TicketViews({ currentView, onViewChange, onFiltersChange }: Tick
     const filters: any = {};
     
     switch (viewId) {
+      case 'all-unresolved':
+        filters.status = ['open', 'in-progress'];
+        break;
+      case 'new-and-my-open':
+        filters.status = ['open', 'in-progress'];
+        filters.assignee = 'me';
+        break;
+      case 'tickets-i-raised':
+        filters.createdBy = 'me';
+        break;
+      case 'tickets-im-watching':
+        filters.watching = 'me';
+        break;
       case 'my-open-tickets':
         filters.status = 'open';
         filters.assignee = 'me';
