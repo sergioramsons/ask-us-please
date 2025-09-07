@@ -15,6 +15,7 @@ interface TicketListProps {
   selectedTicketIds?: Set<string>;
   onToggleSelection?: (ticketId: string) => void;
   onBulkDelete?: (ticketIds: string[]) => void;
+  currentUserId?: string;
 }
 
 export function TicketList({ 
@@ -24,7 +25,8 @@ export function TicketList({
   selectionMode = false, 
   selectedTicketIds = new Set(), 
   onToggleSelection,
-  onBulkDelete 
+  onBulkDelete,
+  currentUserId 
 }: TicketListProps) {
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -75,6 +77,11 @@ export function TicketList({
     setAppliedFilters(prev => ({ ...prev, ...filters }));
   };
 
+  const getCurrentUserId = () => {
+    // Use the passed currentUserId or fallback to the hardcoded value
+    return currentUserId || "8e41a122-621b-4351-947d-bf08e1e51d84";
+  };
+
   // Filter and sort tickets
   const processedTickets = tickets
     .filter(ticket => {
@@ -98,8 +105,16 @@ export function TicketList({
         matchesFilters = matchesFilters && !ticket.assignee;
       }
       if (appliedFilters.assignee === 'me') {
-        // For now, we'll skip this filter as we don't have current user context
-        // matchesFilters = matchesFilters && ticket.assignee?.id === currentUserId;
+        const currentUserId = getCurrentUserId();
+        matchesFilters = matchesFilters && ticket.assignee?.id === currentUserId;
+      }
+      if (appliedFilters.createdBy === 'me') {
+        const currentUserId = getCurrentUserId();
+        matchesFilters = matchesFilters && (ticket as any).created_by === currentUserId;
+      }
+      if (appliedFilters.watching === 'me') {
+        const currentUserId = getCurrentUserId();
+        matchesFilters = matchesFilters && ticket.watchers.includes(currentUserId);
       }
       if (appliedFilters.overdue) {
         matchesFilters = matchesFilters && isOverdue(ticket);

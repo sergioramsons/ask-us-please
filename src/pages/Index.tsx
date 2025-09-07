@@ -175,8 +175,9 @@ const loadTickets = async () => {
           },
           createdAt: new Date(ticket.created_at),
           updatedAt: new Date(ticket.updated_at),
+          created_by: ticket.created_by, // Add the creator tracking
           tags: [],
-          watchers: [],
+          watchers: [], // TODO: Fetch actual watchers from database
           attachments: [],
           replies: [],
           slaBreached: false,
@@ -653,6 +654,7 @@ const loadTickets = async () => {
         selectionMode={isSelectionMode}
         selectedTicketIds={selectedTicketIds}
         onToggleSelection={toggleTicketSelection}
+        currentUserId={user?.id}
       />
     </div>
   );

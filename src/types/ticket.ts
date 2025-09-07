@@ -80,6 +80,9 @@ export interface Ticket {
   resolvedAt?: Date;
   closedAt?: Date;
   
+  // Creator tracking
+  created_by?: string; // User ID who created the ticket
+  
   // Additional fields
   tags: string[];
   watchers: string[]; // User IDs watching this ticket
