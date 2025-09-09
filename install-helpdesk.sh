@@ -68,7 +68,7 @@ install_prerequisites() {
         sudo apt install -y curl wget git nginx ufw certbot python3-certbot-nginx build-essential
         
         # Install Node.js 18.x
-        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo bash -
         sudo apt install -y nodejs
         
     elif [[ $OS == *"CentOS"* ]] || [[ $OS == *"Red Hat"* ]] || [[ $OS == *"Rocky"* ]]; then

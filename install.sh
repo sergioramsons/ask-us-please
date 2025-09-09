@@ -153,7 +153,7 @@ install_dependencies() {
     
     if ! command -v node &> /dev/null || [[ $(node -v | cut -d'v' -f2 | cut -d'.' -f1) -lt 18 ]]; then
         log "Installing Node.js 18..."
-        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo bash -
         sudo apt-get install -y nodejs
     else
         log "Node.js already installed: $(node -v)"
