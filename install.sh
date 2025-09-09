@@ -55,8 +55,9 @@ question() { echo -e "${BLUE}[INPUT]${NC} $1"; }
 check_system() {
     log "Checking system requirements..."
     
+    # Allow root execution for VPS installations
     if [[ ${EUID:-$(id -u)} -eq 0 ]]; then
-        error "Please do not run this script as root. Run as a regular user with sudo privileges."
+        warn "Running as root. Some commands will run without sudo."
     fi
     
     if ! sudo -n true 2>/dev/null; then
