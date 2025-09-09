@@ -12,6 +12,9 @@ import { useContacts } from "@/hooks/useContacts";
 import { useDepartments } from "@/hooks/useDepartments";
 import { Contact } from "@/types/contact";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ContactForm } from "@/components/contacts/ContactForm";
+import { CCRecipientSelector } from "@/components/contacts/CCRecipientSelector";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface TicketFormData {
   contact: string;
@@ -31,12 +34,15 @@ interface TicketFormProps {
 
 export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
   const { toast } = useToast();
-  const { contacts } = useContacts();
+  const { contacts, addContact } = useContacts();
   const { departments, fetchDepartments } = useDepartments();
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [createAnother, setCreateAnother] = useState(false);
   const [contactDetailsOpen, setContactDetailsOpen] = useState(true);
   const [timelineOpen, setTimelineOpen] = useState(true);
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [showCcSelector, setShowCcSelector] = useState(false);
+  const [ccRecipients, setCcRecipients] = useState<Array<{ id: string; email: string; name: string; isContact?: boolean }>>([]);
   
   const [formData, setFormData] = useState<TicketFormData>({
     contact: '',
@@ -79,12 +85,30 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
         agent: 'Justine Akvueno'
       });
       setSelectedContact(null);
+      setCcRecipients([]);
     }
 
     toast({
       title: "Success",
       description: "Ticket created successfully!"
     });
+  };
+
+  const handleAddContact = async (contactData: any) => {
+    try {
+      await addContact(contactData);
+      setShowContactForm(false);
+      toast({
+        title: "Success",
+        description: "Contact added successfully!"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add contact.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -109,20 +133,39 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
                 </SelectTrigger>
                 <SelectContent className="bg-background border-border">
                   {contacts.map(contact => (
-                    <SelectItem key={contact.id} value={`${contact.first_name} ${contact.last_name}`}>
+                    <SelectItem key={contact.id} value={contact.id}>
                       {contact.first_name} {contact.last_name} - {contact.email}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <div className="text-right">
-                <button type="button" className="text-sm text-primary hover:underline mr-4">
+                <button 
+                  type="button" 
+                  className="text-sm text-primary hover:underline mr-4"
+                  onClick={() => setShowContactForm(true)}
+                >
                   Add new contact
                 </button>
-                <button type="button" className="text-sm text-primary hover:underline">
+                <button 
+                  type="button" 
+                  className="text-sm text-primary hover:underline"
+                  onClick={() => setShowCcSelector(!showCcSelector)}
+                >
                   Add Cc
                 </button>
               </div>
+              
+              {/* CC Recipients */}
+              {showCcSelector && (
+                <div className="mt-2">
+                  <CCRecipientSelector
+                    selectedRecipients={ccRecipients}
+                    onRecipientsChange={setCcRecipients}
+                    placeholder="Add CC recipients..."
+                  />
+                </div>
+              )}
             </div>
 
             {/* Subject Field */}
@@ -388,6 +431,19 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
           </Collapsible>
         </div>
       </div>
+
+      {/* Add Contact Dialog */}
+      <Dialog open={showContactForm} onOpenChange={setShowContactForm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Contact</DialogTitle>
+          </DialogHeader>
+          <ContactForm
+            onSubmit={handleAddContact}
+            onCancel={() => setShowContactForm(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
