@@ -273,19 +273,20 @@ export function UserRoleManager() {
 
     setIsEditingUser(true);
     try {
-      // Update user profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          display_name: editUserDisplayName.trim() || null,
+      // Update user profile via secure edge function (admin privileges)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No active session');
+      const { data: updateData, error: updateError } = await supabase.functions.invoke('admin-update-user-profile', {
+        body: {
+          userId: editingUserId,
           email: editUserEmail.trim(),
-          department_id: editUserDepartment === 'none' ? null : editUserDepartment,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', editingUserId);
-
-      if (profileError) {
-        throw profileError;
+          displayName: editUserDisplayName.trim() || null,
+          departmentId: editUserDepartment === 'none' ? null : editUserDepartment
+        },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (updateError || (updateData as any)?.error) {
+        throw new Error(updateError?.message || (updateData as any)?.error || 'Failed to update profile');
       }
 
       // Clear edit form
