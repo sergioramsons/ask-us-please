@@ -171,22 +171,6 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
               )}
             </div>
 
-            {/* Source Field */}
-            <div className="space-y-2">
-              <Label htmlFor="source" className="text-sm font-medium">Source</Label>
-              <Select value={formData.source} onValueChange={(value) => setFormData({ ...formData, source: value })}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Select source" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border-border">
-                  <SelectItem value="phone">Phone</SelectItem>
-                  <SelectItem value="email">Email</SelectItem>
-                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                  <SelectItem value="web-chat">Web Chat</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             {/* Subject Field */}
             <div className="space-y-2">
               <Label htmlFor="subject" className="text-sm font-medium">
@@ -214,6 +198,22 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
                   <SelectItem value="billing">Billing</SelectItem>
                   <SelectItem value="general">General</SelectItem>
                   <SelectItem value="feature-request">Feature Request</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Source Field */}
+            <div className="space-y-2">
+              <Label htmlFor="source" className="text-sm font-medium">Source</Label>
+              <Select value={formData.source} onValueChange={(value) => setFormData({ ...formData, source: value })}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Select source" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border-border">
+                  <SelectItem value="phone">Phone</SelectItem>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                  <SelectItem value="web-chat">Web Chat</SelectItem>
                 </SelectContent>
               </Select>
             </div>
