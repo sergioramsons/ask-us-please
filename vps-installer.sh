@@ -177,6 +177,7 @@ mkdir -p logs
 
 # Setup Nginx
 log "🌐 Configuring Nginx..."
+$SUDO rm -f /etc/nginx/sites-enabled/default
 $SUDO tee /etc/nginx/sites-available/$DOMAIN_NAME > /dev/null <<EOF
 server {
     listen 80;
