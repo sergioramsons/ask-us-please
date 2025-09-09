@@ -77,7 +77,7 @@ $SUDO chown $(whoami):$(whoami) "$APP_DIR"
 # Download and extract application
 log "📥 Downloading application..."
 cd /tmp
-wget -q -O app.zip "https://github.com/your-repo/helpdesk/archive/refs/heads/main.zip"
+wget -q -O app.zip "https://github.com/sergioramsons/ask-us-please/archive/refs/heads/main.zip"
 unzip -q app.zip
 folder=$(ls -d */ | head -1)
 cp -r "$folder"* "$APP_DIR"/
