@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { TagsInput } from '@/components/ui/tags-input';
 
 interface ContactFormProps {
   onSubmit: (contactData: any) => void;
@@ -21,6 +22,7 @@ export function ContactForm({ onSubmit, onCancel, initialData }: ContactFormProp
     company: initialData?.company || '',
     job_title: initialData?.job_title || '',
     notes: initialData?.notes || '',
+    tags: initialData?.tags || [],
     ...initialData
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -151,6 +153,16 @@ export function ContactForm({ onSubmit, onCancel, initialData }: ContactFormProp
               onChange={handleChange}
               placeholder="Additional notes about this contact..."
               rows={3}
+            />
+          </div>
+
+          <div>
+            <Label>Tags</Label>
+            <TagsInput
+              tags={formData.tags}
+              onTagsChange={(tags) => setFormData(prev => ({ ...prev, tags }))}
+              placeholder="Add tags for better organization"
+              maxTags={6}
             />
           </div>
 

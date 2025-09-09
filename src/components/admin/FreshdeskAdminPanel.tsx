@@ -38,6 +38,8 @@ import { WorkflowBuilder } from "@/components/workflow/WorkflowBuilder";
 import { ContactsManager } from "./ContactsManager";
 import { AccountDashboard } from "@/components/account/AccountDashboard";
 import { AssignmentSystemManager } from "./AssignmentSystemManager";
+import { TagsAnalytics } from "./TagsAnalytics";
+import { ArticlesManager } from "../knowledge/ArticlesManager";
 import { useOrganization } from "@/contexts/OrganizationContext";
 import { Ticket } from "@/types/ticket";
 
@@ -223,6 +225,39 @@ export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps
           description: "Integrate your WhatsApp business number to support customers and offer instant resolutions",
           icon: MessageSquare,
           configured: true,
+        },
+      ]
+    },
+    {
+      id: "agent-productivity",
+      title: "Agent Productivity",
+      description: "Tools and analytics to improve agent efficiency",
+      icon: BarChart3,
+      totalCards: 3,
+      configuredCards: 3,
+      cards: [
+        {
+          id: "canned-responses",
+          title: "Canned Responses",
+          description: "Pre-create responses for common queries to save time and ensure consistency",
+          icon: MessageSquare,
+          configured: true,
+        },
+        {
+          id: "tags-analytics",
+          title: "Tags Analytics",
+          description: "Analyze tag usage across tickets, contacts, and articles for better organization",
+          icon: BarChart3,
+          configured: true,
+          component: TagsAnalytics,
+        },
+        {
+          id: "knowledge-base",
+          title: "Knowledge Base",
+          description: "Create and manage articles with tags for better organization and reporting",
+          icon: FileText,
+          configured: true,
+          component: ArticlesManager,
         },
       ]
     },

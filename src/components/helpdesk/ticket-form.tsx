@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useContacts } from "@/hooks/useContacts";
 import { useDepartments } from "@/hooks/useDepartments";
 import { useUserRoles } from "@/hooks/useUserRoles";
+import { TagsInput } from "@/components/ui/tags-input";
 import { Contact } from "@/types/contact";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ContactForm } from "@/components/contacts/ContactForm";
@@ -27,6 +28,7 @@ interface TicketFormData {
   agent: string;
   source: string;
   description?: string;
+  tags: string[];
 }
 
 interface TicketFormProps {
@@ -58,7 +60,8 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
     priority: 'low',
     group: '',
     agent: 'Justine Akvueno',
-    source: 'email'
+    source: 'email',
+    tags: []
   });
 
   // Load departments and agents on mount
@@ -97,16 +100,17 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
     
     if (!createAnother) {
       // Reset form if not creating another
-      setFormData({
-        contact: '',
-        subject: '',
-        type: 'general',
-        status: 'open',
-        priority: 'low',
-        group: '',
-        agent: 'Justine Akvueno',
-        source: 'email'
-      });
+        setFormData({
+          contact: '',
+          subject: '',
+          type: 'general',
+          status: 'open',
+          priority: 'low',
+          group: '',
+          agent: 'Justine Akvueno',
+          source: 'email',
+          tags: []
+        });
       setSelectedContact(null);
       setCcRecipients([]);
       setAttachments([]);
@@ -482,11 +486,12 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
 
             {/* Tags Field */}
             <div className="space-y-2">
-              <Label htmlFor="tags" className="text-sm font-medium">Tags</Label>
-              <Input
-                id="tags"
-                placeholder="Add tags"
-                className="bg-background"
+              <Label className="text-sm font-medium">Tags</Label>
+              <TagsInput
+                tags={formData.tags || []}
+                onTagsChange={(tags) => setFormData({ ...formData, tags })}
+                placeholder="Add tags for better organization"
+                maxTags={8}
               />
             </div>
 
