@@ -101,14 +101,15 @@ pm2 save
 pm2 startup systemd -u $(whoami) --hp $HOME >/dev/null 2>&1 || true
 
 log "Configuring Nginx..."
-$SUDO tee /etc/nginx/sites-available/$DOMAIN_NAME >/dev/null <<EOF
+$SUDO tee /etc/nginx/sites-available/$DOMAIN_NAME.conf >/dev/null <<EOF
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
-    server_name $DOMAIN_NAME www.$DOMAIN_NAME _;
+    server_name $DOMAIN_NAME www.$DOMAIN_NAME;
 
     location / {
         proxy_pass http://127.0.0.1:$APP_PORT;
+        proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -120,7 +121,8 @@ server {
 EOF
 
 $SUDO rm -f /etc/nginx/sites-enabled/*
-$SUDO ln -sf /etc/nginx/sites-available/$DOMAIN_NAME /etc/nginx/sites-enabled/$DOMAIN_NAME
+$SUDO ln -sf /etc/nginx/sites-available/$DOMAIN_NAME.conf /etc/nginx/sites-enabled/$DOMAIN_NAME.conf
+$SUDO rm -f /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default /var/www/html/index.nginx-debian.html
 $SUDO nginx -t && $SUDO systemctl reload nginx
 
 log "Enabling firewall..."
@@ -128,9 +130,10 @@ $SUDO ufw allow ssh >/dev/null 2>&1 || true
 $SUDO ufw allow 'Nginx Full' >/dev/null 2>&1 || true
 $SUDO ufw --force enable >/dev/null 2>&1 || true
 
-log "Verifying local app..."
+log "Verifying app (local and via Nginx)..."
 set +e
-curl -sS -I http://127.0.0.1:$APP_PORT | head -n1 || true
+echo " - Local (app): $(curl -sS -I http://127.0.0.1:$APP_PORT | head -n1 || echo 'unreachable')"
+echo " - Nginx (domain): $(curl -sS -I http://$DOMAIN_NAME | head -n1 || echo 'unreachable')"
 set -e
 
 cat <<MSG
