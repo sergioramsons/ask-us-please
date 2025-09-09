@@ -24,6 +24,7 @@ interface TicketFormData {
   priority: TicketPriority;
   group: string;
   agent: string;
+  source: string;
   description?: string;
 }
 
@@ -51,7 +52,8 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
     status: 'open',
     priority: 'low',
     group: '',
-    agent: 'Justine Akvueno'
+    agent: 'Justine Akvueno',
+    source: 'email'
   });
 
   // Load departments on mount
@@ -82,7 +84,8 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
         status: 'open',
         priority: 'low',
         group: '',
-        agent: 'Justine Akvueno'
+        agent: 'Justine Akvueno',
+        source: 'email'
       });
       setSelectedContact(null);
       setCcRecipients([]);
@@ -166,6 +169,22 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
                   />
                 </div>
               )}
+            </div>
+
+            {/* Source Field */}
+            <div className="space-y-2">
+              <Label htmlFor="source" className="text-sm font-medium">Source</Label>
+              <Select value={formData.source} onValueChange={(value) => setFormData({ ...formData, source: value })}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Select source" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border-border">
+                  <SelectItem value="phone">Phone</SelectItem>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                  <SelectItem value="web-chat">Web Chat</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Subject Field */}
