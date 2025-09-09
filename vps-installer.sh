@@ -50,14 +50,23 @@ $SUDO apt-get install -qq -y curl wget unzip nginx ufw certbot python3-certbot-n
 # Install Node.js 18
 if ! command -v node &> /dev/null; then
     log "📦 Installing Node.js..."
-    curl -fsSL https://deb.nodesource.com/setup_18.x | $SUDO -E bash -
-    $SUDO apt-get install -y nodejs
+    if [[ ${EUID:-$(id -u)} -eq 0 ]]; then
+        curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+        apt-get install -y nodejs
+    else
+        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+    fi
 fi
 
 # Install PM2
 if ! command -v pm2 &> /dev/null; then
     log "📦 Installing PM2..."
-    $SUDO npm install -g pm2
+    if [[ ${EUID:-$(id -u)} -eq 0 ]]; then
+        npm install -g pm2
+    else
+        sudo npm install -g pm2
+    fi
 fi
 
 # Create application directory
