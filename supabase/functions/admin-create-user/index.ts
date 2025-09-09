@@ -159,6 +159,7 @@ serve(async (req) => {
         .from('profiles')
         .insert({
           user_id: targetUser.id,
+          email: email,
           display_name: displayName || null,
           department_id: departmentId === 'none' ? null : (departmentId || null),
           organization_id: userOrgId
@@ -166,10 +167,11 @@ serve(async (req) => {
       if (insertProfileError) {
         console.error('Error inserting profile:', insertProfileError);
       }
-    } else if (displayName || departmentId) {
+    } else {
       const { error: updateProfileError } = await supabaseAdmin
         .from('profiles')
         .update({
+          email: email,
           display_name: displayName || null,
           department_id: departmentId === 'none' ? null : (departmentId || null),
           organization_id: userOrgId
