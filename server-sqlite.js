@@ -8,10 +8,13 @@ const USE_SQLITE = process.env.USE_SQLITE === 'true';
 
 if (USE_SQLITE) {
   console.log('🗄️ Starting in SQLite mode...');
-  
-  // Import and start SQLite server
-  const { startSQLiteServer } = require('./dist/lib/sqlite/server.js');
-  startSQLiteServer();
+  try {
+    // Import and start SQLite server
+    const { startSQLiteServer } = require('./dist/lib/sqlite/server.js');
+    startSQLiteServer();
+  } catch (err) {
+    console.error('⚠️ Failed to start SQLite API server. Continuing without it.', err?.message || err);
+  }
 }
 
 // Start the main application server
