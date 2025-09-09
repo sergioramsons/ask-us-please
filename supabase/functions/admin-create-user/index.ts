@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { Resend } from 'npm:resend@4.0.0';
+import { renderAsync } from 'npm:@react-email/components@0.0.22';
+import React from 'npm:react@18.3.1';
+import { WelcomeEmail } from './_templates/welcome-email.tsx';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -216,6 +220,47 @@ serve(async (req) => {
           console.error('Error assigning role:', addRoleError);
         }
       }
+    }
+
+    // Send welcome email
+    try {
+      const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+      
+      // Get organization details for the email
+      const { data: organization } = await supabaseAdmin
+        .from('organizations')
+        .select('name')
+        .eq('id', userOrgId)
+        .maybeSingle();
+
+      const organizationName = organization?.name || 'Your Organization';
+      
+      // Generate login URL (using the Supabase URL as base)
+      const loginUrl = `${Deno.env.get('SUPABASE_URL')?.replace('/auth/v1', '')}/auth`;
+      
+      // Render the email template
+      const emailHtml = await renderAsync(
+        React.createElement(WelcomeEmail, {
+          userName: displayName || email.split('@')[0],
+          userEmail: email,
+          temporaryPassword: password,
+          loginUrl: loginUrl,
+          organizationName: organizationName,
+        })
+      );
+
+      // Send the email
+      const emailResponse = await resend.emails.send({
+        from: `${organizationName} <onboarding@resend.dev>`,
+        to: [email],
+        subject: `Welcome to ${organizationName} - Your account is ready`,
+        html: emailHtml,
+      });
+
+      console.log('Welcome email sent successfully:', emailResponse);
+    } catch (emailError: any) {
+      console.error('Error sending welcome email:', emailError);
+      // Don't fail the user creation if email fails
     }
 
     return new Response(
