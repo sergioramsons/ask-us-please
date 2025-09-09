@@ -23,19 +23,22 @@ log "Installing prerequisites..."
 $SUDO apt-get update -qq
 $SUDO apt-get install -qq -y curl wget unzip nginx ufw ca-certificates gnupg build-essential
 
-# Node.js 18
-if ! command -v node >/dev/null 2>&1 || [ "${$(node -v)##v}" != "${$(node -v)##v}" ] && [ "$(node -v | cut -dv -f2 | cut -d. -f1)" -lt 18 ]; then
-  log "Installing Node.js 18..."
-  if [[ ${EUID:-$(id -u)} -eq 0 ]]; then
-    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-    apt-get install -y nodejs
-  else
-    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo bash -
-    sudo apt-get install -y nodejs
-  fi
-else
-  log "Node.js present: $(node -v)"
+# Node.js 18 + npm
+need_node=true
+if command -v node >/dev/null 2>&1; then
+  NODE_MAJOR=$(node -v | sed 's/v//' | cut -d. -f1)
+  if [ "$NODE_MAJOR" -ge 18 ]; then need_node=false; fi
 fi
+if $need_node; then
+  log "Installing Node.js 18 LTS..."
+  $SUDO bash -c "curl -fsSL https://deb.nodesource.com/setup_18.x | bash -"
+  $SUDO apt-get install -y nodejs
+fi
+if ! command -v npm >/dev/null 2>&1; then
+  warn "npm not found; installing..."
+  $SUDO apt-get install -y npm || { err "Failed to install npm"; exit 1; }
+fi
+log "Node: $(node -v 2>/dev/null || echo not-installed), npm: $(npm -v 2>/dev/null || echo not-installed)"
 
 # PM2
 if ! command -v pm2 >/dev/null 2>&1; then
@@ -51,8 +54,8 @@ rm -f app.zip || true
 wget -q -O app.zip "$ZIP_URL"
 unzip -q app.zip
 src_folder=$(ls -d */ | head -1)
-rsync -a --delete "$src_folder" "${APP_DIR%/}/../" >/dev/null 2>&1 || true
-cp -r "$src_folder"* "$APP_DIR"/
+rm -rf "${APP_DIR:?}/"*
+cp -a "$src_folder"/* "$APP_DIR"/
 rm -rf app.zip "$src_folder"
 
 log "Installing app dependencies..."
@@ -74,7 +77,7 @@ app.get('(.*)', (_req, res) => res.sendFile(path.join(distPath, 'index.html')));
 app.listen(PORT, '127.0.0.1', () => console.log(`✅ Helpdesk running on http://127.0.0.1:${PORT}`));
 EOF
 
-npm install express --silent
+node -e "require.resolve('express')" 2>/dev/null || npm install express --silent
 
 log "Configuring PM2..."
 cat > ecosystem.config.cjs <<EOF
