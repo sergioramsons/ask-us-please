@@ -133,7 +133,7 @@ const loadTickets = async () => {
       }
 
       // If user is not admin, filter by their department
-      if (!isAdmin && user) {
+      if (!isAdmin() && user) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('department_id')

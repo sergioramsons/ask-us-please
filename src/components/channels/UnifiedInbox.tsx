@@ -28,6 +28,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRoles } from '@/hooks/useUserRoles';
 import { NotificationService } from '@/services/NotificationService';
 import { parseMultipartEmail } from '@/lib/emailParser';
 
@@ -94,6 +95,7 @@ export function UnifiedInbox() {
   const { organization } = useOrganization();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { isAdmin } = useUserRoles();
   const [tickets, setTickets] = useState<UnifiedTicket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -204,6 +206,19 @@ export function UnifiedInbox() {
 
       if (organization?.id) {
         query = query.eq('organization_id', organization.id);
+      }
+
+      // If user is not admin, restrict to their department
+      if (!isAdmin() && user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('department_id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (profile?.department_id) {
+          query = query.eq('department_id', profile.department_id);
+          console.log('UnifiedInbox: filtering by department', profile.department_id);
+        }
       }
 
       const { data, error } = await query;
