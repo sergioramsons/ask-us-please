@@ -30,10 +30,9 @@ if [[ -z "$DOMAIN_NAME" ]]; then
     exit 1
 fi
 
-# Check if running as root
+# Allow root execution for VPS installations
 if [[ ${EUID:-$(id -u)} -eq 0 ]]; then
-    error "Do not run this script as root"
-    exit 1
+    warn "Running as root. Some commands will run without sudo."
 fi
 
 SUDO=""
