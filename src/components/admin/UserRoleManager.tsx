@@ -38,6 +38,13 @@ export function UserRoleManager() {
   const [newUserRole, setNewUserRole] = useState<string>('agent');
   const [isCreatingUser, setIsCreatingUser] = useState(false);
 
+  // Edit user form state
+  const [editingUserId, setEditingUserId] = useState<string>('');
+  const [editUserDisplayName, setEditUserDisplayName] = useState('');
+  const [editUserEmail, setEditUserEmail] = useState('');
+  const [editUserDepartment, setEditUserDepartment] = useState<string>('');
+  const [isEditingUser, setIsEditingUser] = useState(false);
+
   // Custom role form state
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleDescription, setNewRoleDescription] = useState('');
@@ -250,6 +257,63 @@ export function UserRoleManager() {
     }
   };
 
+  const handleEditUser = (user: UserWithRole) => {
+    setEditingUserId(user.id);
+    setEditUserDisplayName(user.display_name || '');
+    setEditUserEmail(user.email);
+    setEditUserDepartment(user.department_id || '');
+    setIsEditingUser(false);
+  };
+
+  const handleSaveUserEdit = async () => {
+    if (!editingUserId || !editUserEmail.trim()) {
+      console.error('User ID and email are required');
+      return;
+    }
+
+    setIsEditingUser(true);
+    try {
+      // Update user profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          display_name: editUserDisplayName.trim() || null,
+          email: editUserEmail.trim(),
+          department_id: editUserDepartment === '' ? null : editUserDepartment,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', editingUserId);
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      // Clear edit form
+      setEditingUserId('');
+      setEditUserDisplayName('');
+      setEditUserEmail('');
+      setEditUserDepartment('');
+
+      // Reload users
+      await loadUsers();
+
+      console.log('User updated successfully');
+    } catch (error: any) {
+      console.error('Error updating user:', error);
+      alert('Failed to update user: ' + (error.message || 'Unknown error'));
+    } finally {
+      setIsEditingUser(false);
+    }
+  };
+
+  const handleCancelUserEdit = () => {
+    setEditingUserId('');
+    setEditUserDisplayName('');
+    setEditUserEmail('');
+    setEditUserDepartment('');
+    setIsEditingUser(false);
+  };
+
   // Permissions management functions
   const handleRolePermissionsChange = async (roleId: string) => {
     setSelectedRoleForPermissions(roleId);
@@ -447,88 +511,150 @@ export function UserRoleManager() {
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors"
                 >
                   <div className="flex-1">
-                    <div className="font-medium">{user.display_name || 'Unknown User'}</div>
-                    <div className="text-sm text-muted-foreground">{user.email}</div>
-                    
-                    {/* Department Badge */}
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge variant="outline" className="flex items-center gap-1">
-                        <Building2 className="h-3 w-3" />
-                        {user.department_name || 'No Department'}
-                      </Badge>
-                    </div>
-                    
-                    {/* Roles */}
-                    <div className="flex gap-2 mt-2">
-                      {user.roles.length > 0 ? (
-                        user.roles.map((role) => (
-                          <Badge key={role} variant="secondary" className="flex items-center gap-1">
-                            {role}
-                            <button
-                              onClick={() => handleRemoveRole(user.id, role)}
-                              className="ml-1 hover:text-destructive"
-                              title={`Remove ${role} role`}
-                            >
-                              <UserMinus className="h-3 w-3" />
-                            </button>
+                    {editingUserId === user.id ? (
+                      // Edit form
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="edit-display-name">Display Name</Label>
+                            <Input
+                              id="edit-display-name"
+                              value={editUserDisplayName}
+                              onChange={(e) => setEditUserDisplayName(e.target.value)}
+                              placeholder="Enter display name"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="edit-email">Email</Label>
+                            <Input
+                              id="edit-email"
+                              type="email"
+                              value={editUserEmail}
+                              onChange={(e) => setEditUserEmail(e.target.value)}
+                              placeholder="Enter email"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="edit-department">Department</Label>
+                          <Select value={editUserDepartment} onValueChange={setEditUserDepartment}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select department" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">No Department</SelectItem>
+                              {departments.map((dept) => (
+                                <SelectItem key={dept.id} value={dept.id}>
+                                  {dept.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            onClick={handleSaveUserEdit}
+                            disabled={isEditingUser}
+                          >
+                            <Check className="h-4 w-4 mr-1" />
+                            Save
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={handleCancelUserEdit}
+                            disabled={isEditingUser}
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      // View mode
+                      <>
+                        <div className="font-medium">{user.display_name || 'Unknown User'}</div>
+                        <div className="text-sm text-muted-foreground">{user.email}</div>
+                        
+                        {/* Department Badge */}
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge variant="outline" className="flex items-center gap-1">
+                            <Building2 className="h-3 w-3" />
+                            {user.department_name || 'No Department'}
                           </Badge>
-                        ))
-                      ) : (
-                        <Badge variant="outline">No roles assigned</Badge>
-                      )}
-                    </div>
+                        </div>
+                        
+                        {/* Roles */}
+                        <div className="flex gap-2 mt-2">
+                          {user.roles.length > 0 ? (
+                            user.roles.map((role) => (
+                              <Badge key={role} variant="secondary" className="flex items-center gap-1">
+                                {role}
+                                <button
+                                  onClick={() => handleRemoveRole(user.id, role)}
+                                  className="ml-1 hover:text-destructive"
+                                  title={`Remove ${role} role`}
+                                >
+                                  <UserMinus className="h-3 w-3" />
+                                </button>
+                              </Badge>
+                            ))
+                          ) : (
+                            <Badge variant="outline">No roles assigned</Badge>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                    
-                   <div className="flex flex-col gap-2">
-                     <Button
-                       size="sm"
-                       variant="outline"
-                       onClick={() => handleAssignRole(user.id)}
-                       disabled={isLoading || user.roles.includes(selectedRole)}
-                       title={`Assign ${selectedRole} role`}
-                     >
-                       <UserPlus className="h-4 w-4 mr-1" />
-                       Add {selectedRole}
-                     </Button>
-                     
-                     {selectedDepartment && selectedDepartment !== 'none' && (
-                       <Button
-                         size="sm"
-                         variant="outline"
-                         onClick={() => handleAssignDepartment(user.id, selectedDepartment === 'none' ? null : selectedDepartment)}
-                         disabled={isDepartmentsLoading || user.department_id === selectedDepartment}
-                         title="Assign to department"
-                       >
-                         <Building2 className="h-4 w-4 mr-1" />
-                         {selectedDepartment === 'none' ? 'Remove Dept' : 'Assign Dept'}
-                       </Button>
-                     )}
-                     
-                     {selectedDepartment === 'none' && user.department_id && (
-                       <Button
-                         size="sm"
-                         variant="outline"
-                         onClick={() => handleAssignDepartment(user.id, null)}
-                         disabled={isDepartmentsLoading}
-                         title="Remove from department"
-                       >
-                         <Building2 className="h-4 w-4 mr-1" />
-                         Remove Dept
-                       </Button>
-                     )}
-                     
-                     <Button
-                       size="sm"
-                       variant="destructive"
-                       onClick={() => handleDeleteUser(user.id, user.email)}
-                       disabled={isLoading}
-                       title="Delete user permanently"
-                       className="mt-2"
-                     >
-                       <Trash2 className="h-4 w-4 mr-1" />
-                       Delete User
-                     </Button>
-                   </div>
+                  {editingUserId !== user.id && (
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleAssignRole(user.id)}
+                        disabled={isLoading || user.roles.includes(selectedRole)}
+                        title={`Assign ${selectedRole} role`}
+                      >
+                        <UserPlus className="h-4 w-4 mr-1" />
+                        Add {selectedRole}
+                      </Button>
+                      
+                      {selectedDepartment && selectedDepartment !== 'none' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleAssignDepartment(user.id, selectedDepartment === 'none' ? null : selectedDepartment)}
+                          disabled={isLoading}
+                          title={`Assign to ${departments.find(d => d.id === selectedDepartment)?.name}`}
+                        >
+                          <Building2 className="h-4 w-4 mr-1" />
+                          Set Dept
+                        </Button>
+                      )}
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEditUser(user)}
+                        title="Edit user details"
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDeleteUser(user.id, user.email)}
+                        title="Delete user"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -586,25 +712,6 @@ export function UserRoleManager() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="new-user-dept">Department</Label>
-                    <Select value={newUserDepartment} onValueChange={setNewUserDepartment}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select department" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No Department</SelectItem>
-                        {departments.map((dept) => (
-                          <SelectItem key={dept.id} value={dept.id}>
-                            {dept.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
                     <Label htmlFor="new-user-role">Initial Role</Label>
                     <Select value={newUserRole} onValueChange={(value: string) => setNewUserRole(value)}>
                       <SelectTrigger>
@@ -620,6 +727,23 @@ export function UserRoleManager() {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="new-user-department">Department</Label>
+                  <Select value={newUserDepartment} onValueChange={setNewUserDepartment}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Department</SelectItem>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 
                 <div className="flex gap-2 pt-4">
