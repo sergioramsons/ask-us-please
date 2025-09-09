@@ -35,13 +35,14 @@ export function useUserRoles() {
   const { organization } = useOrganization();
 
   const fetchCurrentUserRoles = useCallback(async () => {
-    if (!user) return;
+    if (!user || !organization?.id) return;
 
     try {
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .eq('organization_id', organization.id);
 
       if (error) throw error;
 
@@ -54,7 +55,7 @@ export function useUserRoles() {
     } catch (error) {
       console.error('Error fetching current user roles:', error);
     }
-  }, [user]);
+  }, [user, organization?.id]);
 
   const fetchAllUserRoles = useCallback(async () => {
     setIsLoading(true);
