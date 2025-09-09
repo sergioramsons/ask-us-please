@@ -10,6 +10,7 @@ import { TicketPriority, TicketCategory } from "@/types/ticket";
 import { useToast } from "@/hooks/use-toast";
 import { useContacts } from "@/hooks/useContacts";
 import { useDepartments } from "@/hooks/useDepartments";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import { Contact } from "@/types/contact";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ContactForm } from "@/components/contacts/ContactForm";
@@ -37,7 +38,9 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
   const { toast } = useToast();
   const { contacts, addContact } = useContacts();
   const { departments, fetchDepartments } = useDepartments();
+  const { getUsersWithRoles } = useUserRoles();
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [agents, setAgents] = useState<Array<{ id: string; name: string }>>([]);
   const [createAnother, setCreateAnother] = useState(false);
   const [contactDetailsOpen, setContactDetailsOpen] = useState(true);
   const [timelineOpen, setTimelineOpen] = useState(true);
@@ -56,10 +59,25 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
     source: 'email'
   });
 
-  // Load departments on mount
+  // Load departments and agents on mount
   useEffect(() => {
     fetchDepartments();
-  }, [fetchDepartments]);
+    
+    const loadAgents = async () => {
+      try {
+        const users = await getUsersWithRoles();
+        const agentList = users.map(user => ({
+          id: user.id,
+          name: user.display_name || user.email
+        }));
+        setAgents(agentList);
+      } catch (error) {
+        console.error('Failed to load agents:', error);
+      }
+    };
+    
+    loadAgents();
+  }, [fetchDepartments, getUsersWithRoles]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -281,9 +299,11 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
                   <SelectValue placeholder="Select agent" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border-border">
-                  <SelectItem value="Justine Akusung">Justine Akusung</SelectItem>
-                  <SelectItem value="John Doe">John Doe</SelectItem>
-                  <SelectItem value="Jane Smith">Jane Smith</SelectItem>
+                  {agents.map(agent => (
+                    <SelectItem key={agent.id} value={agent.id}>
+                      {agent.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
