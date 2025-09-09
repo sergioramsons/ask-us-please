@@ -25,17 +25,9 @@ export function useContacts() {
 
   const addContact = async (contactData: Partial<Contact>) => {
     try {
-      // Get current user profile for organization context
+      // Get current user for created_by field
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.organization_id) throw new Error('User organization not found');
 
       // Build the name field from first_name and last_name if provided
       const fullName = contactData.first_name && contactData.last_name 
@@ -47,7 +39,7 @@ export function useContacts() {
         .insert({
           ...contactData,
           name: fullName,
-          organization_id: profile.organization_id,
+          organization_id: '00000000-0000-0000-0000-000000000001', // Default org for single tenant
           created_by: user.id,
           status: 'active'
         })

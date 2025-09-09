@@ -32,14 +32,12 @@ export function useTags() {
   const { organization } = useOrganization();
 
   const loadTags = async () => {
-    if (!organization?.id) return;
-    
     try {
       setLoading(true);
+      // Single tenant - get all tags without organization filtering
       const { data, error } = await supabase
         .from('tags')
         .select('*')
-        .eq('organization_id', organization.id)
         .eq('is_active', true)
         .order('usage_count', { ascending: false });
 
@@ -58,13 +56,11 @@ export function useTags() {
   };
 
   const loadCategories = async () => {
-    if (!organization?.id) return;
-    
     try {
+      // Single tenant - get all categories without organization filtering
       const { data, error } = await supabase
         .from('tag_categories')
         .select('*')
-        .eq('organization_id', organization.id)
         .order('name');
 
       if (error) throw error;
@@ -80,14 +76,15 @@ export function useTags() {
   };
 
   const createTag = async (tagData: Omit<Tag, 'id' | 'usage_count' | 'created_at' | 'updated_at'>) => {
-    if (!organization?.id) return null;
+    // Get the default organization ID for single tenant
+    const defaultOrgId = '00000000-0000-0000-0000-000000000001';
 
     try {
       const { data, error } = await supabase
         .from('tags')
         .insert({
           ...tagData,
-          organization_id: organization.id
+          organization_id: defaultOrgId
         })
         .select()
         .single();
@@ -167,14 +164,15 @@ export function useTags() {
   };
 
   const createCategory = async (categoryData: Omit<TagCategory, 'id' | 'created_at' | 'updated_at'>) => {
-    if (!organization?.id) return null;
+    // Get the default organization ID for single tenant
+    const defaultOrgId = '00000000-0000-0000-0000-000000000001';
 
     try {
       const { data, error } = await supabase
         .from('tag_categories')
         .insert({
           ...categoryData,
-          organization_id: organization.id
+          organization_id: defaultOrgId
         })
         .select()
         .single();
@@ -234,11 +232,10 @@ export function useTags() {
   };
 
   useEffect(() => {
-    if (organization?.id) {
-      loadTags();
-      loadCategories();
-    }
-  }, [organization?.id]);
+    // Load tags and categories immediately without waiting for organization
+    loadTags();
+    loadCategories();
+  }, []);
 
   return {
     tags,

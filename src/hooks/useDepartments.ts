@@ -46,7 +46,7 @@ export function useDepartments() {
         .insert({ 
           name, 
           description,
-          organization_id: organization_id && organization_id.trim() !== '' ? organization_id : null
+          organization_id: '00000000-0000-0000-0000-000000000001' // Default org for single tenant
         })
         .select()
         .single();

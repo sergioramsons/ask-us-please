@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
-import { detectTenant, TenantInfo } from '@/lib/subdomain';
 
 interface Organization {
   id: string;
@@ -25,6 +24,8 @@ interface OrganizationContextType {
   loading: boolean;
   switchOrganization: (orgId: string) => Promise<void>;
   refreshOrganization: () => Promise<void>;
+  setOrganization: (org: Organization | null) => void;
+  isLoading: boolean;
 }
 
 const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
@@ -41,8 +42,8 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const { user, session } = useAuth();
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [userOrganizations, setUserOrganizations] = useState<Organization[]>([]);
-  const [isOrgAdmin, setIsOrgAdmin] = useState(false);
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [isOrgAdmin, setIsOrgAdmin] = useState(true); // Single tenant = everyone is admin
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false); // No super admin in single tenant
   const [loading, setLoading] = useState(true);
 
   const fetchUserOrganization = async () => {
@@ -56,101 +57,65 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     try {
-      // Check if we should resolve organization by subdomain
-      const hostname = window.location.hostname;
-      let targetOrgId: string | null = null;
+      // In single-tenant mode, get the first available organization
+      const { data: orgs } = await supabase
+        .from('organizations')
+        .select('*')
+        .limit(1);
 
-      // Try to resolve organization from subdomain/hostname
-      if (hostname && hostname !== 'localhost' && !hostname.includes('lovableproject.com')) {
-        const { data: resolvedOrgId } = await supabase
-          .rpc('resolve_organization_by_subdomain', { hostname });
-        
-        if (resolvedOrgId) {
-          targetOrgId = resolvedOrgId;
-        }
-      }
-
-      // If no subdomain organization found, get user's current organization from profile
-      if (!targetOrgId) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('organization_id')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        targetOrgId = profile?.organization_id;
-      }
-
-      if (targetOrgId) {
-        // Fetch current organization
-        const { data: org } = await supabase
+      if (orgs && orgs.length > 0) {
+        const org = orgs[0] as Organization;
+        setOrganization(org);
+        setUserOrganizations([org]);
+        setIsOrgAdmin(true); // Everyone is admin in single tenant
+        setIsSuperAdmin(false);
+      } else {
+        // Create a default organization if none exists
+        const { data: newOrg } = await supabase
           .from('organizations')
-          .select('*')
-          .eq('id', targetOrgId)
+          .insert({
+            name: 'My Organization',
+            slug: 'main',
+            settings: {},
+            subscription_status: 'active',
+            max_users: 1000
+          })
+          .select()
           .single();
-
-        if (org) {
-          setOrganization(org as Organization);
-          
-          // Update user's profile if we switched via subdomain
-          const { data: currentProfile } = await supabase
-            .from('profiles')
-            .select('organization_id')
-            .eq('user_id', user.id)
-            .maybeSingle();
-
-          if (currentProfile?.organization_id !== targetOrgId) {
-            await supabase
-              .from('profiles')
-              .update({ organization_id: targetOrgId })
-              .eq('user_id', user.id);
-          }
+        
+        if (newOrg) {
+          const org = newOrg as Organization;
+          setOrganization(org);
+          setUserOrganizations([org]);
+          setIsOrgAdmin(true);
+          setIsSuperAdmin(false);
         }
-      }
-
-      // Fetch all organizations user has admin access to
-      const { data: adminOrgs } = await supabase
-        .from('organization_admins')
-        .select(`
-          organization_id,
-          role,
-          organizations (*)
-        `)
-        .eq('user_id', user.id);
-
-      if (adminOrgs) {
-        const orgs = adminOrgs
-          .map(admin => admin.organizations)
-          .filter(Boolean) as Organization[];
-        setUserOrganizations(orgs);
-        setIsOrgAdmin(adminOrgs.length > 0);
-        setIsSuperAdmin(adminOrgs.some(admin => admin.role === 'super_admin'));
       }
     } catch (error) {
       console.error('Error fetching organization:', error);
+      // Set a default organization for single-tenant mode
+      const defaultOrg: Organization = {
+        id: '00000000-0000-0000-0000-000000000001',
+        name: 'Default Organization',
+        slug: 'default',
+        settings: {},
+        subscription_status: 'active',
+        max_users: 1000,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      setOrganization(defaultOrg);
+      setUserOrganizations([defaultOrg]);
+      setIsOrgAdmin(true);
+      setIsSuperAdmin(false);
     } finally {
       setLoading(false);
     }
   };
 
   const switchOrganization = async (orgId: string) => {
-    if (!user) return;
-
-    try {
-      // Update user's profile to switch organization
-      const { error } = await supabase
-        .from('profiles')
-        .update({ organization_id: orgId })
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
-      // Refresh organization data
-      await fetchUserOrganization();
-    } catch (error) {
-      console.error('Error switching organization:', error);
-      throw error;
-    }
+    // In single-tenant mode, this is a no-op since there's only one organization
+    return Promise.resolve();
   };
 
   const refreshOrganization = async () => {
@@ -173,6 +138,8 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         loading,
         switchOrganization,
         refreshOrganization,
+        setOrganization,
+        isLoading: loading
       }}
     >
       {children}
