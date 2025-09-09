@@ -183,6 +183,25 @@ export function UserRoleManager() {
         throw new Error(data.error);
       }
 
+      // Ensure profile email is set for the new user via secure edge function
+      const createdUserId = (data as any)?.user?.id as string | undefined;
+      try {
+        if (createdUserId) {
+          const { error: updErr } = await supabase.functions.invoke('admin-update-user-profile', {
+            body: {
+              userId: createdUserId,
+              email: newUserEmail.trim(),
+              displayName: newUserDisplayName.trim() || null,
+              departmentId: newUserDepartment === 'none' ? null : newUserDepartment || null,
+            },
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          if (updErr) console.warn('Post-create profile update failed:', updErr);
+        }
+      } catch (e) {
+        console.warn('Post-create profile update exception:', e);
+      }
+
       // Clear form on success
       setNewUserEmail('');
       setNewUserPassword('');
@@ -194,7 +213,7 @@ export function UserRoleManager() {
       await loadUsers();
 
       // Show success message
-      console.log('User created successfully:', data.user);
+      console.log('User created successfully:', (data as any)?.user);
     } catch (error: any) {
       console.error('Error creating user:', error);
       // You might want to show a toast notification here
