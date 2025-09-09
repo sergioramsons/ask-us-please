@@ -431,28 +431,55 @@ export function useUserRoles() {
 
       console.log('Removing role:', { userId, role, orgId });
 
-      const { data, error, count } = await supabase
+      // 1) Verify the role exists for this user/org
+      const { data: existing, error: checkError } = await supabase
         .from('user_roles')
-        .delete({ count: 'exact' })
+        .select('id')
         .eq('user_id', userId)
-        .eq('role', role)
-        .eq('organization_id', orgId);
+        .eq('organization_id', orgId)
+        .eq('role', role);
 
-      if (error) throw error;
+      if (checkError) throw checkError;
 
-      console.log('Role deletion result:', { data, count });
+      if (!existing || existing.length === 0) {
+        // Try case-insensitive match as a fallback
+        const { data: existingIlike, error: ilikeError } = await supabase
+          .from('user_roles')
+          .select('id, role')
+          .eq('user_id', userId)
+          .eq('organization_id', orgId)
+          .ilike('role', role);
 
-      if (count === 0) {
-        toast({
-          title: "Warning",
-          description: `No matching role found to remove`,
-          variant: "destructive",
-        });
-        return;
+        if (ilikeError) throw ilikeError;
+
+        if (!existingIlike || existingIlike.length === 0) {
+          toast({
+            title: 'No matching role found',
+            description: `Could not find role "${role}" for this user in the current organization`,
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        // Use ilike-found ids
+        const ids = existingIlike.map(r => r.id);
+        const { error: delError2 } = await supabase
+          .from('user_roles')
+          .delete()
+          .in('id', ids);
+        if (delError2) throw delError2;
+      } else {
+        // 2) Delete exactly those rows
+        const ids = existing.map(r => r.id);
+        const { error: delError } = await supabase
+          .from('user_roles')
+          .delete()
+          .in('id', ids);
+        if (delError) throw delError;
       }
 
       toast({
-        title: "Success",
+        title: 'Success',
         description: `Role ${role} removed successfully`,
       });
 
@@ -464,9 +491,9 @@ export function useUserRoles() {
     } catch (error: any) {
       console.error('Error removing role:', error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to remove role",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to remove role',
+        variant: 'destructive',
       });
     }
   }, [fetchAllUserRoles, fetchCurrentUserRoles, user?.id, toast, organization?.id]);
