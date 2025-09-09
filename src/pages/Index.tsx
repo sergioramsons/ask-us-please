@@ -132,6 +132,20 @@ const loadTickets = async () => {
         query = query.eq('organization_id', orgId);
       }
 
+      // If user is not admin, filter by their department
+      if (!isAdmin && user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('department_id')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profile?.department_id) {
+          query = query.eq('department_id', profile.department_id);
+          console.log('Filtering tickets for department:', profile.department_id);
+        }
+      }
+
       const { data, error } = await query;
 
       if (error) throw error;
