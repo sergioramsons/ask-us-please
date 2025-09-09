@@ -115,6 +115,8 @@ export function UserRoleManager() {
 
   const handleRemoveRole = async (userId: string, role: string) => {
     await removeRole(userId, role);
+    // Add a small delay to ensure database consistency
+    await new Promise(resolve => setTimeout(resolve, 300));
     await loadUsers();
   };
 

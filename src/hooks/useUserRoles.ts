@@ -419,13 +419,37 @@ export function useUserRoles() {
 
   const removeRole = useCallback(async (userId: string, role: string) => {
     try {
-      const { error } = await supabase
+      const orgId = organization?.id;
+      if (!orgId) {
+        toast({
+          title: "Organization not found",
+          description: "Cannot remove role without an organization context.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Removing role:', { userId, role, orgId });
+
+      const { data, error, count } = await supabase
         .from('user_roles')
-        .delete()
+        .delete({ count: 'exact' })
         .eq('user_id', userId)
-        .eq('role', role);
+        .eq('role', role)
+        .eq('organization_id', orgId);
 
       if (error) throw error;
+
+      console.log('Role deletion result:', { data, count });
+
+      if (count === 0) {
+        toast({
+          title: "Warning",
+          description: `No matching role found to remove`,
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Success",
@@ -445,7 +469,7 @@ export function useUserRoles() {
         variant: "destructive",
       });
     }
-  }, [fetchAllUserRoles, fetchCurrentUserRoles, user?.id, toast]);
+  }, [fetchAllUserRoles, fetchCurrentUserRoles, user?.id, toast, organization?.id]);
 
   const hasRole = useCallback((role: string): boolean => {
     return currentUserRoles.includes(role);
