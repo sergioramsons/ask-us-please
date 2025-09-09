@@ -87,8 +87,9 @@ pm2 startup systemd -u $(whoami) --hp $HOME >/dev/null 2>&1 || true
 # Nginx setup
 $SUDO tee /etc/nginx/sites-available/$DOMAIN_NAME >/dev/null <<EOF
 server {
-  listen 80;
-  server_name $DOMAIN_NAME;
+  listen 80 default_server;
+  listen [::]:80 default_server;
+  server_name $DOMAIN_NAME www.$DOMAIN_NAME _;
   location / {
     proxy_pass http://127.0.0.1:$APP_PORT;
     proxy_set_header Host \$host;
@@ -100,6 +101,7 @@ server {
 EOF
 
 $SUDO ln -sf /etc/nginx/sites-available/$DOMAIN_NAME /etc/nginx/sites-enabled/$DOMAIN_NAME
+$SUDO rm -f /etc/nginx/sites-enabled/default
 $SUDO nginx -t && $SUDO systemctl reload nginx
 
 # Firewall
