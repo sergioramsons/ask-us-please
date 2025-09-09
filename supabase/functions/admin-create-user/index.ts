@@ -60,7 +60,18 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .maybeSingle();
 
-    const userOrgId = currentUserProfile?.organization_id;
+    let userOrgId = currentUserProfile?.organization_id;
+
+    // Fallback resolve organization from user_roles if profile has no org
+    if (!userOrgId) {
+      const { data: roleOrg } = await supabaseAdmin
+        .from('user_roles')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .not('organization_id', 'is', null)
+        .maybeSingle();
+      userOrgId = roleOrg?.organization_id ?? null;
+    }
 
     // Check if user has admin privileges (super_admin or org/admin roles)
     let isAuthorized = false;
@@ -192,12 +203,13 @@ serve(async (req) => {
       .select('role')
       .eq('user_id', targetUser.id)
       .eq('role', 'agent')
+      .eq('organization_id', userOrgId)
       .maybeSingle();
 
     if (!hasAgent) {
       const { error: addAgentError } = await supabaseAdmin
         .from('user_roles')
-        .insert({ user_id: targetUser.id, role: 'agent' });
+        .insert({ user_id: targetUser.id, role: 'agent', organization_id: userOrgId });
       if (addAgentError) {
         console.error('Error assigning default agent role:', addAgentError);
       }
@@ -210,12 +222,13 @@ serve(async (req) => {
         .select('role')
         .eq('user_id', targetUser.id)
         .eq('role', role)
+        .eq('organization_id', userOrgId)
         .maybeSingle();
 
       if (!hasRole) {
         const { error: addRoleError } = await supabaseAdmin
           .from('user_roles')
-          .insert({ user_id: targetUser.id, role });
+          .insert({ user_id: targetUser.id, role, organization_id: userOrgId });
         if (addRoleError) {
           console.error('Error assigning role:', addRoleError);
         }
