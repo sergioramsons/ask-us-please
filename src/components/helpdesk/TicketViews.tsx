@@ -28,6 +28,7 @@ interface TicketViewsProps {
 const defaultViews = [
   { id: 'all-tickets', name: 'All tickets', icon: Inbox, count: 0 },
   { id: 'all-unresolved', name: 'All unresolved tickets', icon: AlertCircle, count: 0 },
+  { id: 'all-resolved', name: 'All resolved tickets', icon: CheckCircle, count: 0 },
   { id: 'new-and-my-open', name: 'New and my open tickets', icon: User, count: 0 },
   { id: 'tickets-i-raised', name: 'Tickets I raised', icon: User, count: 0 },
   { id: 'tickets-im-watching', name: 'Tickets I\'m watching', icon: Eye, count: 0 },
@@ -57,6 +58,9 @@ export function TicketViews({ currentView, onViewChange, onFiltersChange }: Tick
     switch (viewId) {
       case 'all-unresolved':
         filters.status = ['open', 'in-progress'];
+        break;
+      case 'all-resolved':
+        filters.status = 'resolved';
         break;
       case 'new-and-my-open':
         filters.status = ['open', 'in-progress'];
