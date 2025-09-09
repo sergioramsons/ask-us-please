@@ -20,7 +20,8 @@ import {
   FileText,
   Settings,
   Bell,
-  ChevronRight
+  ChevronRight,
+  Tag
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,6 +40,7 @@ import { ContactsManager } from "./ContactsManager";
 import { AccountDashboard } from "@/components/account/AccountDashboard";
 import { AssignmentSystemManager } from "./AssignmentSystemManager";
 import { TagsAnalytics } from "./TagsAnalytics";
+import { TagsManager } from "./TagsManager";
 import { ArticlesManager } from "../knowledge/ArticlesManager";
 import { useOrganization } from "@/contexts/OrganizationContext";
 import { Ticket } from "@/types/ticket";
@@ -233,8 +235,8 @@ export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps
       title: "Agent Productivity",
       description: "Tools and analytics to improve agent efficiency",
       icon: BarChart3,
-      totalCards: 3,
-      configuredCards: 3,
+      totalCards: 4,
+      configuredCards: 4,
       cards: [
         {
           id: "canned-responses",
@@ -244,12 +246,12 @@ export function FreshdeskAdminPanel({ tickets, onCreateTicket }: AdminPanelProps
           configured: true,
         },
         {
-          id: "tags-analytics",
-          title: "Tags Analytics",
-          description: "Analyze tag usage across tickets, contacts, and articles for better organization",
-          icon: BarChart3,
+          id: "tags-manager",
+          title: "Tags Management",
+          description: "Create, organize, and manage tags with colors and categories like Freshdesk",
+          icon: Tag,
           configured: true,
-          component: TagsAnalytics,
+          component: TagsManager,
         },
         {
           id: "knowledge-base",
