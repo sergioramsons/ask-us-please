@@ -121,8 +121,12 @@ export function TicketList({
       }
       if (appliedFilters.dateRange === 'today') {
         const today = new Date();
-        const ticketDate = new Date(ticket.createdAt);
-        const isToday = ticketDate.toDateString() === today.toDateString();
+        const statusFilter = appliedFilters.status;
+        const checkResolved = statusFilter === 'resolved' || (Array.isArray(statusFilter) && statusFilter.includes('resolved'));
+        const dateToCheck = checkResolved
+          ? (ticket.resolvedAt ?? ticket.updatedAt ?? ticket.createdAt)
+          : ticket.createdAt;
+        const isToday = new Date(dateToCheck).toDateString() === today.toDateString();
         matchesFilters = matchesFilters && isToday;
       }
       if (appliedFilters.category && appliedFilters.category !== 'general') {
