@@ -261,7 +261,7 @@ export function UserRoleManager() {
     setEditingUserId(user.id);
     setEditUserDisplayName(user.display_name || '');
     setEditUserEmail(user.email);
-    setEditUserDepartment(user.department_id || '');
+    setEditUserDepartment(user.department_id || 'none');
     setIsEditingUser(false);
   };
 
@@ -279,7 +279,7 @@ export function UserRoleManager() {
         .update({
           display_name: editUserDisplayName.trim() || null,
           email: editUserEmail.trim(),
-          department_id: editUserDepartment === '' ? null : editUserDepartment,
+          department_id: editUserDepartment === 'none' ? null : editUserDepartment,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', editingUserId);
@@ -542,7 +542,7 @@ export function UserRoleManager() {
                               <SelectValue placeholder="Select department" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">No Department</SelectItem>
+                              <SelectItem value="none">No Department</SelectItem>
                               {departments.map((dept) => (
                                 <SelectItem key={dept.id} value={dept.id}>
                                   {dept.name}
