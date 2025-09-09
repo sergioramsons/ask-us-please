@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ChevronDown, ChevronRight, User } from "lucide-react";
+import { ChevronDown, ChevronRight, User, X, Paperclip, Image } from "lucide-react";
 import { TicketPriority, TicketCategory } from "@/types/ticket";
 import { useToast } from "@/hooks/use-toast";
 import { useContacts } from "@/hooks/useContacts";
@@ -47,6 +47,8 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
   const [showContactForm, setShowContactForm] = useState(false);
   const [showCcSelector, setShowCcSelector] = useState(false);
   const [ccRecipients, setCcRecipients] = useState<Array<{ id: string; email: string; name: string; isContact?: boolean }>>([]);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState<TicketFormData>({
     contact: '',
@@ -107,6 +109,7 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
       });
       setSelectedContact(null);
       setCcRecipients([]);
+      setAttachments([]);
     }
 
     toast({
@@ -130,6 +133,37 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
         variant: "destructive"
       });
     }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    const maxSize = 20 * 1024 * 1024; // 20MB in bytes
+    
+    const validFiles = files.filter(file => {
+      if (file.size > maxSize) {
+        toast({
+          title: "File too large",
+          description: `${file.name} exceeds 20MB limit`,
+          variant: "destructive"
+        });
+        return false;
+      }
+      return true;
+    });
+
+    setAttachments(prev => [...prev, ...validFiles]);
+    
+    if (event.target) {
+      event.target.value = '';
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAttachClick = () => {
+    fileInputRef.current?.click();
   };
 
   return (
@@ -370,17 +404,70 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
                   <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
                     <span className="text-xs">A</span>
                   </Button>
-                  <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <span className="text-xs">📎</span>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 w-8 p-0"
+                    onClick={handleAttachClick}
+                    title="Attach file (max 20MB)"
+                  >
+                    <Paperclip className="h-4 w-4" />
                   </Button>
-                  <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <span className="text-xs">🖼️</span>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 w-8 p-0"
+                    onClick={handleAttachClick}
+                    title="Attach image (max 20MB)"
+                  >
+                    <Image className="h-4 w-4" />
                   </Button>
                   <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0">
                     <span className="text-xs">📊</span>
                   </Button>
                 </div>
+                
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  accept="*/*"
+                />
               </div>
+              
+              {/* Attachments Display */}
+              {attachments.length > 0 && (
+                <div className="mt-2 space-y-2">
+                  <Label className="text-sm font-medium">Attachments</Label>
+                  <div className="space-y-2">
+                    {attachments.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between bg-muted p-2 rounded border">
+                        <div className="flex items-center gap-2">
+                          <Paperclip className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">{file.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                          </span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeAttachment(index)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Reference Number Field */}
