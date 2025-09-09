@@ -327,86 +327,57 @@ export function useUserRoles() {
 
   const getUsersWithRoles = useCallback(async (): Promise<UserWithRole[]> => {
     try {
-      // Get all profiles with their roles and departments
+      // Get all profiles with their email, roles, and departments
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select(`
           user_id,
           display_name,
+          email,
           department_id,
           departments(name)
         `);
 
       if (profilesError) throw profilesError;
 
-      // Get all user roles
+      // Get all user roles for the organization
       const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
-        .select('user_id, role');
+        .select('user_id, role')
+        .eq('organization_id', organization?.id);
 
       if (rolesError) throw rolesError;
 
-      // Get users from auth (this might need admin privileges)
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-
-      if (authError) {
-        console.warn('Cannot fetch auth users (admin required):', authError);
-        // Fallback: use profiles data only
-        const usersMap = new Map<string, UserWithRole>();
-        
-        profiles?.forEach(profile => {
-          if (!usersMap.has(profile.user_id)) {
-            usersMap.set(profile.user_id, {
-              id: profile.user_id,
-              email: 'Unknown',
-              display_name: profile.display_name,
-              department_id: profile.department_id,
-              department_name: (profile as any).departments?.name,
-              roles: []
-            });
-          }
-        });
-
-         roles?.forEach(role => {
-           const user = usersMap.get(role.user_id);
-           if (user && role.role && typeof role.role === 'string') {
-             user.roles.push(role.role);
-           }
-         });
-
-        return Array.from(usersMap.values());
-      }
-
-      // Create a map of users with their roles
+      // Create a map of users with their roles using only profiles data
       const usersMap = new Map<string, UserWithRole>();
-
-      // Add auth users
-      authUsers.users.forEach((authUser: any) => {
-        const profile = profiles?.find(p => p.user_id === authUser.id);
-        usersMap.set(authUser.id, {
-          id: authUser.id,
-          email: authUser.email || 'No email',
-          display_name: profile?.display_name,
-          department_id: profile?.department_id,
-          department_name: (profile as any)?.departments?.name,
-          roles: []
-        });
+      
+      profiles?.forEach(profile => {
+        if (!usersMap.has(profile.user_id)) {
+          usersMap.set(profile.user_id, {
+            id: profile.user_id,
+            email: profile.email || 'Unknown',
+            display_name: profile.display_name,
+            department_id: profile.department_id,
+            department_name: (profile as any).departments?.name,
+            roles: []
+          });
+        }
       });
 
-       // Add roles to users
-        roles?.forEach(role => {
-          const user = usersMap.get(role.user_id);
-          if (user && role.role && typeof role.role === 'string') {
-            user.roles.push(role.role);
-          }
-        });
+      // Add roles to users
+      roles?.forEach(role => {
+        const user = usersMap.get(role.user_id);
+        if (user && role.role && typeof role.role === 'string') {
+          user.roles.push(role.role);
+        }
+      });
 
       return Array.from(usersMap.values());
     } catch (error) {
       console.error('Error fetching users with roles:', error);
       return [];
     }
-  }, []);
+  }, [organization?.id]);
 
   const assignRole = useCallback(async (userId: string, role: string) => {
     try {
