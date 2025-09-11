@@ -17,12 +17,12 @@ fi
 SUDO=""
 [[ ${EUID:-$(id -u)} -ne 0 ]] && SUDO="sudo"
 
-echo "🚀 Installing helpdesk application (local mode)..."
+echo "🚀 Installing helpdesk application (Supabase mode - no SQLite compilation needed)..."
 
 # Install prerequisites
 echo "📦 Installing prerequisites..."
 $SUDO apt-get update -qq
-$SUDO apt-get install -qq -y curl wget unzip build-essential
+$SUDO apt-get install -qq -y curl wget unzip
 
 # Install Node.js 18 if not present
 if ! command -v node >/dev/null 2>&1 || [[ $(node -v | cut -d'.' -f1 | tr -d 'v') -lt 18 ]]; then
@@ -60,9 +60,17 @@ cp -r "$folder"* "$APP_DIR"/
 rm -rf app.zip "$folder"
 
 # Install dependencies and build
-echo "🔧 Installing dependencies..."
+echo "🔧 Installing dependencies (excluding SQLite packages)..."
 cd "$APP_DIR"
+
+# Remove SQLite-related dependencies to avoid compilation issues
+echo "📝 Configuring for Supabase-only mode..."
+npm pkg delete dependencies.better-sqlite3 dependencies.bcrypt --silent 2>/dev/null || true
+npm pkg delete devDependencies."@types/better-sqlite3" devDependencies."@types/bcrypt" --silent 2>/dev/null || true
+
+# Install remaining dependencies
 npm install --silent --no-audit --no-fund
+
 echo "🏗️ Building application..."
 npm run build
 
